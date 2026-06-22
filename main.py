@@ -183,6 +183,12 @@ def seed(db: Session):
     admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
     if not admin:
         db.add(User(username=ADMIN_USERNAME, password_hash=hash_password(ADMIN_PASSWORD), approved=True, is_admin=True))
+    else:
+        # Mantém o admin sincronizado com as variáveis do Railway a cada deploy.
+        # Assim, trocar ADMIN_PASSWORD no Railway troca a senha real de login.
+        admin.password_hash = hash_password(ADMIN_PASSWORD)
+        admin.approved = True
+        admin.is_admin = True
     chars = [
         ("katrina","Katrina","Guerreira","Zona Diamante","Fria como aço. Sobreviveu onde todos caíram.","Fúria de Aço", "#c84030"),
         ("sarah","Sarah","Estrategista","Zona Áurea","Mente brilhante. Usa lógica como lâmina.","Visão Tática", "#3878c8"),
@@ -348,6 +354,39 @@ def mine(db: Session = Depends(db_dep), user: User = Depends(current_user)):
     for rp in rows:
         r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"name":r.name,"role":rp.role,"map_id":r.active_map_id})
     return out
+
+
+@app.post("/rooms/{room_id}/leave")
+async def leave_room(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    if not rp:
+        return {"ok": True, "message": "Você já não está nesta sala."}
+
+    was_master = (rp.role == "mestre")
+    db.delete(rp)
+    db.flush()
+
+    remaining = db.query(RoomPlayer).filter_by(room_id=room_id).all()
+    if not remaining:
+        db.delete(r)
+        db.commit()
+        await manager.broadcast(room_id, {"type":"room_deleted"})
+        return {"ok": True, "deleted": True, "message": "Você saiu da sala. Como não havia mais jogadoras, a sala foi encerrada."}
+
+    if was_master:
+        remaining[0].role = "mestre"
+        r.owner_id = remaining[0].user_id
+        promoted_user = db.get(User, remaining[0].user_id)
+        db.add(EventLog(room_id=room_id, kind="system", text=f"{user.username} saiu da mesa. {promoted_user.username if promoted_user else 'Outra jogadora'} agora é Mestre."))
+    else:
+        db.add(EventLog(room_id=room_id, kind="system", text=f"{user.username} saiu da mesa."))
+    r.updated_at = datetime.utcnow()
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "deleted": False, "message": "Você saiu da sala."}
 
 @app.get("/rooms/{room_id}")
 def get_room(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
