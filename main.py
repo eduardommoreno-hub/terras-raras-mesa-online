@@ -287,7 +287,18 @@ def home():
     return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
 
 @app.get("/health")
-def health(): return {"status":"ok", "service": APP_NAME}
+def health(): return {"status":"ok", "service": APP_NAME, "version":"v5-login-hub-fix"}
+
+@app.get("/debug/admin-env")
+def debug_admin_env():
+    return {
+        "admin_username_configured": bool(ADMIN_USERNAME),
+        "admin_username": (ADMIN_USERNAME or "").strip().lower(),
+        "admin_password_configured": bool(ADMIN_PASSWORD),
+        "database_url_configured": bool(DATABASE_URL),
+        "jwt_secret_configured": bool(SECRET),
+        "version": "v5-login-hub-fix"
+    }
 
 @app.post("/auth/register")
 def register(req: RegisterReq, db: Session = Depends(db_dep)):
@@ -300,11 +311,37 @@ def register(req: RegisterReq, db: Session = Depends(db_dep)):
 
 @app.post("/auth/login")
 def login(req: LoginReq, db: Session = Depends(db_dep)):
-    username=req.username.strip().lower()
+    username = req.username.strip().lower()
+    admin_username = (ADMIN_USERNAME or "eduardo").strip().lower()
+
+    # Correção definitiva: se o login informado bater com as variáveis do Railway,
+    # o admin é criado/atualizado no banco imediatamente, mesmo que o banco esteja com senha antiga.
+    if username == admin_username and req.password == ADMIN_PASSWORD:
+        user = db.query(User).filter_by(username=admin_username).first()
+        if not user:
+            user = User(
+                username=admin_username,
+                password_hash=hash_password(ADMIN_PASSWORD),
+                approved=True,
+                is_admin=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            user.password_hash = hash_password(ADMIN_PASSWORD)
+            user.approved = True
+            user.is_admin = True
+            db.commit()
+            db.refresh(user)
+        return {"token": make_token(user), "user": {"id": user.id, "username": user.username, "is_admin": user.is_admin}}
+
     user = db.query(User).filter_by(username=username).first()
-    if not user or not verify_password(req.password, user.password_hash): raise HTTPException(401, "Login inválido")
-    if not user.approved: raise HTTPException(403, "Cadastro ainda pendente de autorização")
-    return {"token":make_token(user), "user":{"id":user.id,"username":user.username,"is_admin":user.is_admin}}
+    if not user or not verify_password(req.password, user.password_hash):
+        raise HTTPException(401, "Login inválido")
+    if not user.approved:
+        raise HTTPException(403, "Cadastro ainda pendente de autorização")
+    return {"token": make_token(user), "user": {"id": user.id, "username": user.username, "is_admin": user.is_admin}}
 
 @app.get("/me")
 def me(user: User = Depends(current_user)):
