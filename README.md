@@ -39,3 +39,7 @@ As jogadoras fazem cadastro, mas ficam como `pendente`. O admin acessa o painel 
 - Chat.
 - Diário da mesa.
 - WebSocket para atualizar todas as telas em tempo real.
+
+## Atualização: sair da sala
+
+Esta versão adiciona a rota `POST /rooms/{room_id}/leave` e botões no frontend para a jogadora sair da sala. Ao sair, a sala deixa de aparecer em "Minhas mesas". Se a Mestre sair e houver outras jogadoras, a primeira participante remanescente é promovida a Mestre. Se a sala ficar vazia, ela é encerrada.
