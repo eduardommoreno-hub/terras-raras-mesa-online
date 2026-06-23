@@ -1,10 +1,10 @@
-import os, json, random, string, hashlib, secrets
+import os, json, random, string, hashlib, secrets, re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List
 
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,7 +14,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v8.15-layout-responsivo"
+APP_VERSION = "v9.7.4-responsivo-funcoes-iguais"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -80,6 +80,9 @@ class Room(Base):
     name = Column(String(120), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     active_map_id = Column(String(40), ForeignKey("maps.id"), default="floresta_negra")
+    is_public = Column(Boolean, default=False)
+    scheduled_start = Column(DateTime, nullable=True)
+    session_status = Column(String(20), default="waiting")  # waiting/active/ended
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
@@ -97,6 +100,7 @@ class RoomPlayer(Base):
     weakness = Column(Text, default="")
     notes = Column(Text, default="")
     inventory = Column(Text, default="Cantil vazio\nAdaga simples")
+    muted_until = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
     __table_args__ = (UniqueConstraint("room_id", "user_id", name="uq_room_user"),)
 
@@ -132,6 +136,22 @@ class EventLog(Base):
     text = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class SecurityLog(Base):
+    __tablename__ = "security_logs"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    username = Column(String(80), default="")
+    reason = Column(String(80), default="")
+    categories = Column(String(300), default="")
+    masked_text = Column(Text, default="")
+    ip_address = Column(String(80), default="")
+    user_agent = Column(Text, default="")
+    source = Column(String(40), default="chat")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class AIJob(Base):
     __tablename__ = "ai_jobs"
     id = Column(Integer, primary_key=True)
@@ -156,6 +176,18 @@ class RoomLocationDescription(Base):
     updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
     __table_args__ = (UniqueConstraint("room_id", "map_id", "location_id", name="uq_room_map_location_desc"),)
+
+class RoomProgressFlag(Base):
+    __tablename__ = "room_progress_flags"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    map_id = Column(String(40), nullable=False)
+    key = Column(String(160), nullable=False)
+    value = Column(Boolean, default=True)
+    label = Column(String(240), default="")
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("room_id", "map_id", "key", name="uq_room_progress_flag"),)
 
 # ---------- helpers ----------
 def db_dep():
@@ -216,8 +248,34 @@ def svg_map(label, bg):
     a,b,c = palettes.get(bg, palettes["forest"])
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none"><defs><radialGradient id="r"><stop offset="0" stop-color="{c}" stop-opacity=".36"/><stop offset="1" stop-color="{a}"/></radialGradient><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .18"/></feComponentTransfer></filter></defs><rect width="1200" height="700" fill="url(#r)"/><rect width="1200" height="700" filter="url(#noise)" opacity=".55"/><path d="M0 540 C180 420 260 610 390 480 S660 390 780 520 S1010 360 1200 480 L1200 700 L0 700Z" fill="{b}" opacity=".8"/><path d="M120 170 C250 70 420 230 560 120 S860 90 1040 190" fill="none" stroke="{c}" stroke-width="5" opacity=".25"/><text x="60" y="92" fill="#e6bd58" font-size="48" font-family="serif" letter-spacing="8">{label}</text></svg>'''
 
+
+def ensure_schema_columns():
+    """Migração leve para bancos já existentes no Railway/SQLite."""
+    with engine.begin() as conn:
+        dialect = engine.dialect.name
+        if dialect == "sqlite":
+            rows = conn.exec_driver_sql("PRAGMA table_info(rooms)").fetchall()
+            cols = {r[1] for r in rows}
+            if "is_public" not in cols:
+                conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN is_public BOOLEAN DEFAULT 0")
+            if "scheduled_start" not in cols:
+                conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN scheduled_start DATETIME")
+            if "session_status" not in cols:
+                conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN session_status VARCHAR(20) DEFAULT 'waiting'")
+            rp_rows = conn.exec_driver_sql("PRAGMA table_info(room_players)").fetchall()
+            rp_cols = {r[1] for r in rp_rows}
+            if "muted_until" not in rp_cols:
+                conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN muted_until DATETIME")
+        else:
+            conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE")
+            conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP")
+            conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS session_status VARCHAR(20) DEFAULT 'waiting'")
+            conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN IF NOT EXISTS muted_until TIMESTAMP")
+
+
 def seed(db: Session):
     Base.metadata.create_all(bind=engine)
+    ensure_schema_columns()
     admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
     if not admin:
         db.add(User(username=ADMIN_USERNAME, password_hash=hash_password(ADMIN_PASSWORD), approved=True, is_admin=True))
@@ -239,7 +297,7 @@ def seed(db: Session):
         if not db.get(Character, cid):
             db.add(Character(id=cid,name=n,role=r,zone=z,description=d,ability=a,color=col,avatar_svg=svg_avatar(n,col)))
     maps = [
-        ("floresta_negra",1,"Floresta Negra","Uma floresta viva, densa, hostil, com árvores que mudam os polos.","forest"),
+        ("floresta_negra",1,"Floresta Negra","Uma floresta viva, antiga e consciente. Trilhas mudam, vozes enganam, pistas surgem em lugares errados e o Portal da Próxima Zona observa quem se aproxima.","forest"),
         ("fabrica_doces",2,"Fábrica dos Doces Pesadelos","Uma fábrica alucinante onde o cheiro cria ilusões.","candy"),
         ("montanhas_arcaicas",3,"Montanhas Arcaicas","Pterodáctilos, cavernas e monstros que farejam medo.","mountain"),
         ("gelo_eterno",4,"Gelo Eterno","Frio tão intenso que congela escolhas.","ice"),
@@ -249,8 +307,13 @@ def seed(db: Session):
         ("o_vazio",8,"O Vazio","Escuridão, baixa luz e solidão como inimiga.","void"),
     ]
     for mid,num,n,d,bg in maps:
-        if not db.get(GameMap, mid):
+        existing_map = db.get(GameMap, mid)
+        if not existing_map:
             db.add(GameMap(id=mid, name=n, zone_number=num, description=d, background=bg, image_svg=svg_map(n,bg)))
+        elif mid == "floresta_negra":
+            existing_map.description = d
+            existing_map.background = bg
+            existing_map.image_svg = svg_map(n,bg)
     db.commit()
 
 @app.on_event("startup")
@@ -260,14 +323,23 @@ def startup():
 # ---------- schemas ----------
 class RegisterReq(BaseModel): username: str; password: str
 class LoginReq(BaseModel): username: str; password: str
-class CreateRoomReq(BaseModel): name: str; role: str="mestre"
-class JoinReq(BaseModel): code: str; role: str="participante"
+class CreateRoomReq(BaseModel):
+    name: str
+    role: str="mestre"
+    is_public: bool=False
+    scheduled_start: Optional[datetime]=None
+class JoinReq(BaseModel):
+    code: str
+    role: str="participante"
 class ChooseCharReq(BaseModel): room_id: str; character_id: str
 class MoveReq(BaseModel): player_id: int; x: float; y: float
 class StatsReq(BaseModel): player_id: int; hp: Optional[int]=None; energy: Optional[int]=None; weakness: Optional[str]=None; notes: Optional[str]=None; inventory: Optional[str]=None
 class MapReq(BaseModel): map_id: str
 class ChatReq(BaseModel): text: str
 class RoomRoleReq(BaseModel): role: str="participante"
+class RoomVisibilityReq(BaseModel):
+    is_public: bool=False
+    scheduled_start: Optional[datetime]=None
 class NoteReq(BaseModel): title: str="Nota da Mestre"; text: str
 class AIRequestReq(BaseModel):
     action: str
@@ -283,6 +355,12 @@ class AIPublishReq(BaseModel):
 class AIWorkerPingReq(BaseModel):
     model: str = ""
     ollama_url: str = ""
+
+class ProgressFlagReq(BaseModel):
+    map_id: str
+    key: str
+    value: bool=True
+    label: str=""
 
 # ---------- websocket manager ----------
 class WSManager:
@@ -302,7 +380,7 @@ manager = WSManager()
 # ---------- serializers ----------
 def player_dict(db: Session, p: RoomPlayer):
     u = db.get(User, p.user_id); ch = db.get(Character, p.character_id) if p.character_id else None
-    return {"id":p.id,"username":u.username if u else "?","role":p.role,"character": char_dict(ch) if ch else None,"hp":p.hp,"energy":p.energy,"x":p.token_x,"y":p.token_y,"weakness":p.weakness,"notes":p.notes,"inventory":p.inventory}
+    return {"id":p.id,"username":u.username if u else "?","role":p.role,"character": char_dict(ch) if ch else None,"hp":p.hp,"energy":p.energy,"x":p.token_x,"y":p.token_y,"weakness":p.weakness,"notes":p.notes,"inventory":p.inventory,"muted_until":p.muted_until.isoformat() if p.muted_until else None}
 
 def char_dict(c: Optional[Character]):
     if not c: return None
@@ -321,15 +399,17 @@ def room_state(db: Session, room_id: str):
     ai_jobs = db.query(AIJob).filter(AIJob.room_id == room_id).order_by(AIJob.id.desc()).limit(12).all()
     maps = db.query(GameMap).order_by(GameMap.zone_number).all()
     loc_descs = db.query(RoomLocationDescription).filter(RoomLocationDescription.room_id == room_id).all()
+    progress_flags = db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id).all()
     return {
-        "room":{"id":r.id,"code":r.code,"name":r.name,"active_map_id":r.active_map_id},
+        "room":{"id":r.id,"code":r.code,"name":r.name,"active_map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, room_id),"tokens_used":room_players_count(db, room_id),"tokens_available":max(0, room_token_capacity(db, room_id)-room_players_count(db, room_id))},
         "map": map_dict(db.get(GameMap, r.active_map_id)),
         "maps":[map_dict(x) for x in maps],
         "players":[player_dict(db,p) for p in players],
         "chat":[{"id":c.id,"username":db.get(User,c.user_id).username,"text":c.text,"created_at":c.created_at.isoformat()} for c in chats],
         "notes":[{"id":n.id,"title":n.title,"text":n.text,"created_at":n.created_at.isoformat()} for n in notes],
         "ai_jobs":[ai_job_dict(j) for j in ai_jobs],
-        "location_descriptions":[{"id":d.id,"map_id":d.map_id,"location_id":d.location_id,"location_name":d.location_name,"description":d.description,"updated_at":d.updated_at.isoformat()} for d in loc_descs]
+        "location_descriptions":[{"id":d.id,"map_id":d.map_id,"location_id":d.location_id,"location_name":d.location_name,"description":d.description,"updated_at":d.updated_at.isoformat()} for d in loc_descs],
+        "progress_flags":[{"id":f.id,"map_id":f.map_id,"key":f.key,"value":bool(f.value),"label":f.label,"updated_at":f.updated_at.isoformat()} for f in progress_flags]
     }
 
 def normalize_room_role(role: str) -> str:
@@ -340,6 +420,195 @@ def normalize_room_role(role: str) -> str:
 
 def role_label(role: str) -> str:
     return {"mestre":"Mestre", "ajudante":"Ajudante da Mestre", "participante":"Jogadora"}.get(role, role)
+
+
+def eligible_room_characters(db: Session, room_id: Optional[str]=None):
+    """
+    Fonte única para definir quais totens/personagens existem para uma sala.
+
+    Hoje os personagens são globais, então todos são elegíveis.
+    A assinatura já recebe room_id para permitir, no futuro, filtrar por:
+    - campanha;
+    - mapa/zona ativa;
+    - pacote de personagens da sala;
+    - personagens liberados pela Mestre.
+    """
+    q = db.query(Character).order_by(Character.id.asc())
+    return q.all()
+
+def room_token_capacity(db: Session, room_id: Optional[str]=None) -> int:
+    return len(eligible_room_characters(db, room_id))
+
+def room_players_count(db: Session, room_id: str) -> int:
+    return db.query(RoomPlayer).filter_by(room_id=room_id).count()
+
+def used_character_ids(db: Session, room_id: str, except_player_id: Optional[int]=None):
+    q = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.character_id.isnot(None))
+    if except_player_id is not None:
+        q = q.filter(RoomPlayer.id != except_player_id)
+    return {p.character_id for p in q.all() if p.character_id}
+
+def first_available_character_id(db: Session, room_id: str) -> Optional[str]:
+    used = used_character_ids(db, room_id)
+    for ch in eligible_room_characters(db, room_id):
+        if ch.id not in used:
+            return ch.id
+    return None
+
+def ensure_room_has_token_capacity(db: Session, room_id: str):
+    capacity = room_token_capacity(db, room_id)
+    current = room_players_count(db, room_id)
+    if current >= capacity:
+        raise HTTPException(400, "Esta sala já está cheia. Não há totens/personagens disponíveis.")
+
+
+
+# ---------- segurança infantil / moderação fixa ----------
+SAFE_CHAT_BLOCK_MESSAGE = "Mensagem bloqueada por segurança. Não envie dados pessoais, conteúdo sexual, convite para conversa fora do jogo ou mensagens inadequadas."
+
+CONTACT_PATTERNS = [
+    ("EMAIL", re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)),
+    ("LINK_EXTERNO", re.compile(r"\b(?:https?://|www\.)\S+\b", re.I)),
+    ("TELEFONE", re.compile(r"(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4}[-.\s]?\d{4}\b")),
+    ("CPF", re.compile(r"\b\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\b")),
+    ("CEP", re.compile(r"\b\d{5}[-\s]?\d{3}\b")),
+    ("REDE_SOCIAL", re.compile(r"(?<!\w)@\w{3,30}\b")),
+]
+
+BLOCK_KEYWORDS = {
+    "CONTATO_FORA_DO_JOGO": [
+        "whatsapp","wpp","zap","zapi","telegram","discord","insta","instagram","tiktok",
+        "me chama","me manda mensagem","chama no privado","pv","dm","direct",
+        "conversar em outro lugar","fora do jogo","passa teu número","passa seu número",
+        "manda teu número","manda seu número","qual seu número","qual teu número",
+        "não conta pra ninguém","não conta para ninguém","segredo entre nós"
+    ],
+    "DADOS_PESSOAIS": [
+        "meu endereço","meu endereco","moro na","moro em","minha rua","minha casa",
+        "qual sua idade","qual tua idade","quantos anos você tem","quantos anos vc tem",
+        "onde você mora","onde vc mora","onde tu mora","qual sua escola","qual teu colégio"
+    ],
+    "CONTEUDO_SEXUAL": [
+        "nude","nudes","manda foto","manda uma foto","foto do corpo","sem roupa",
+        "pelada","pelado","sexo","sexual","beijo na boca","ficar comigo","namorar escondido",
+        "tesão","tesao","gostosa","gostoso","safada","safado"
+    ],
+    "ASSESSIO_GROOMING": [
+        "você está sozinha","vc está sozinha","voce esta sozinha","seus pais estão","seus pais tao",
+        "apaga a mensagem","não mostra pra ninguém","não mostra para ninguém"
+    ],
+    "LINGUAGEM_OFENSIVA_GRAVE": [
+        "filho da puta","fdp","desgraçada","desgraçado","vagabunda","vagabundo"
+    ]
+}
+
+def get_client_ip(request: Optional[Request]) -> str:
+    if not request:
+        return ""
+    xff = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
+    if xff:
+        return xff.split(",")[0].strip()[:80]
+    return (request.client.host if request.client else "")[:80]
+
+def compact_contact_text(text: str) -> str:
+    """Versão auxiliar para detectar evasões simples com espaços em e-mail/telefone."""
+    raw = text or ""
+    # Remove espaços somente entre caracteres típicos de contato, preservando a análise normal do texto original.
+    return re.sub(r"(?<=[A-Z0-9._%+\-@])\s+(?=[A-Z0-9._%+\-@])", "", raw, flags=re.I)
+
+def has_spaced_phone(text: str) -> bool:
+    digits = re.sub(r"\D", "", text or "")
+    if digits.startswith("55") and len(digits) in (12, 13):
+        return True
+    return len(digits) in (10, 11)
+
+def mask_sensitive_text(text: str) -> str:
+    masked = text or ""
+    compacted = compact_contact_text(masked)
+    if re.search(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", compacted, re.I) or has_spaced_phone(masked):
+        # Evita gravar no log dados de contato digitados com espaços para burlar o filtro.
+        return "[contato bloqueado e mascarado]"
+    masked = re.sub(r"\b([A-Z0-9._%+-])[A-Z0-9._%+-]*(@[A-Z0-9.-]+\.[A-Z]{2,})\b", r"\1****\2", masked, flags=re.I)
+    masked = re.sub(r"(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4}[-.\s]?\d{4}\b", lambda m: "*"*max(0, len(m.group(0))-4)+m.group(0)[-4:], masked)
+    masked = re.sub(r"\b\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\b", "***.***.***-**", masked)
+    masked = re.sub(r"\b\d{5}[-\s]?\d{3}\b", "*****-***", masked)
+    masked = re.sub(r"(?<!\w)@\w{3,30}\b", "@******", masked)
+    masked = re.sub(r"\b(?:https?://|www\.)\S+\b", "[link bloqueado]", masked, flags=re.I)
+    return masked[:1200]
+
+def moderate_text(text: str):
+    raw = (text or "").strip()
+    low = raw.lower()
+    compacted = compact_contact_text(raw)
+    categories = []
+    for label, pattern in CONTACT_PATTERNS:
+        if pattern.search(raw) or (label in ("EMAIL", "LINK_EXTERNO", "REDE_SOCIAL") and pattern.search(compacted)):
+            categories.append(label)
+    if has_spaced_phone(raw):
+        categories.append("TELEFONE")
+    for label, words in BLOCK_KEYWORDS.items():
+        if any(w in low for w in words):
+            categories.append(label)
+    # Remove duplicatas preservando ordem.
+    seen = set()
+    categories = [c for c in categories if not (c in seen or seen.add(c))]
+    return {
+        "blocked": bool(categories),
+        "categories": categories,
+        "reason": categories[0] if categories else "",
+        "masked_text": mask_sensitive_text(raw)
+    }
+
+def log_security_block(db: Session, room_id: Optional[str], user: User, request: Optional[Request], text: str, source: str):
+    result = moderate_text(text)
+    if not result["blocked"]:
+        return result
+    ip = get_client_ip(request)
+    ua = (request.headers.get("user-agent") if request else "")[:1000]
+    db.add(SecurityLog(
+        room_id=room_id,
+        user_id=user.id if user else None,
+        username=user.username if user else "",
+        reason=result["reason"],
+        categories=",".join(result["categories"])[:300],
+        masked_text=result["masked_text"],
+        ip_address=ip,
+        user_agent=ua,
+        source=source
+    ))
+    db.commit()
+    return result
+
+def enforce_safe_message(db: Session, room_id: Optional[str], user: User, request: Optional[Request], text: str, source: str="chat"):
+    result = moderate_text(text)
+    if result["blocked"]:
+        log_security_block(db, room_id, user, request, text, source)
+        raise HTTPException(400, SAFE_CHAT_BLOCK_MESSAGE)
+    return text
+
+
+def security_log_or_404(db: Session, log_id: int) -> SecurityLog:
+    log = db.get(SecurityLog, log_id)
+    if not log:
+        raise HTTPException(404, "Alerta de segurança não encontrado")
+    return log
+
+def ensure_target_user(db: Session, log: SecurityLog) -> User:
+    target = db.get(User, log.user_id) if log.user_id else None
+    if not target:
+        raise HTTPException(404, "Usuária do alerta não encontrada")
+    return target
+
+def current_room_player_for_log(db: Session, log: SecurityLog) -> Optional[RoomPlayer]:
+    if not log.room_id or not log.user_id:
+        return None
+    return db.query(RoomPlayer).filter_by(room_id=log.room_id, user_id=log.user_id).first()
+
+def ensure_not_muted(rp: Optional[RoomPlayer]):
+    if rp and rp.muted_until and rp.muted_until > datetime.utcnow():
+        remaining = int((rp.muted_until - datetime.utcnow()).total_seconds() // 60) + 1
+        raise HTTPException(403, f"Você está temporariamente silenciada por segurança. Tente novamente em aproximadamente {remaining} min.")
+
 
 def require_master(db: Session, room_id: str, user: User):
     rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
@@ -390,6 +659,8 @@ def build_ai_prompt(db: Session, room_id: str, user: User, action: str, job_type
             player_lines.append(f"- {u.username if u else '?'} / {ch.name if ch else 'sem personagem'} / papel: {p.role} / HP {p.hp} / energia {p.energy} / posição no mapa: x={p.token_x:.1f}%, y={p.token_y:.1f}% / inventário: {p.inventory}")
     diary = "\n".join([f"{n.title}: {n.text}" for n in notes]) or "Sem notas ainda."
     history = "\n".join([f"{db.get(User,c.user_id).username if db.get(User,c.user_id) else '?'}: {c.text}" for c in chats]) or "Sem histórico ainda."
+    progress_flags = db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id, RoomProgressFlag.value == True).all()
+    progress = "\n".join([f"- {f.label or f.key}" for f in progress_flags]) or "Sem progresso marcado ainda."
     # Para perguntas em modo rápido, o prompt é propositalmente curto para acelerar PCs fracos.
     if job_type == "question" and response_mode == "short":
         return f"""[[TR_RESPONSE_MODE=short]]
@@ -426,6 +697,9 @@ DIÁRIO DA MESTRE:
 HISTÓRICO RECENTE:
 {history}
 
+PROGRESSO MARCADO PELA MESTRE:
+{progress}
+
 PEDIDO DA MESTRE/AJUDANTE:
 {action}
 """
@@ -446,6 +720,13 @@ Responda como copilota da Mestre. Ajude com ideias práticas para conduzir a ses
 - Não use linguagem jurídica ou formal, como “Vossa Senhoria”, “Excelência” ou termos parecidos.
 - Máximo de 3 blocos curtos.
 - Se ajudar, comece com uma fala pronta entre aspas e depois dê 2 ou 3 sugestões curtas."""
+    if job_type == "location_event":
+        return base + """
+Crie um evento rápido para o local selecionado. Formato:
+1) Fala pronta da Mestre em até 4 linhas.
+2) Uma pista sutil.
+3) Duas escolhas objetivas para as jogadoras.
+Não revele segredos internos demais; transforme segredo em suspeita, pista ou clima."""
     return base + """
 Gere a próxima narração da cena em 2 parágrafos curtos. Depois, se fizer sentido, liste 2 ou 3 escolhas objetivas para as jogadoras. Não use títulos longos."""
 
@@ -457,11 +738,15 @@ def ai_job_dict(j: AIJob):
 def home():
     return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
 
+@app.get("/script.js")
+def script_js():
+    return HTMLResponse(Path("script.js").read_text(encoding="utf-8"), media_type="application/javascript")
+
 @app.get("/health")
 def health(): return {"status":"ok", "service": APP_NAME, "version": APP_VERSION}
 
 @app.get("/debug/admin-env")
-def debug_admin_env():
+def debug_admin_env(user: User = Depends(admin_user)):
     return {
         "admin_username_configured": bool(ADMIN_USERNAME),
         "admin_username": (ADMIN_USERNAME or "").strip().lower(),
@@ -529,6 +814,93 @@ def approve(user_id: int, _: User = Depends(admin_user), db: Session = Depends(d
     if not u: raise HTTPException(404, "Usuário não encontrado")
     u.approved=True; db.commit(); return {"ok": True}
 
+
+@app.get("/admin/security/logs")
+def admin_security_logs(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    logs = db.query(SecurityLog).order_by(SecurityLog.id.desc()).limit(100).all()
+    out = []
+    for l in logs:
+        room = db.get(Room, l.room_id) if l.room_id else None
+        repeat_count = db.query(SecurityLog).filter(SecurityLog.user_id == l.user_id).count() if l.user_id else 1
+        out.append({
+            "id": l.id,
+            "room_id": l.room_id,
+            "room_name": room.name if room else "",
+            "user_id": l.user_id,
+            "username": l.username,
+            "reason": l.reason,
+            "categories": l.categories.split(",") if l.categories else [],
+            "masked_text": l.masked_text,
+            "ip_address": l.ip_address,
+            "user_agent": l.user_agent,
+            "source": l.source,
+            "repeat_count": repeat_count,
+            "created_at": l.created_at.isoformat()
+        })
+    return out
+
+
+@app.post("/admin/security/{log_id}/warn")
+async def admin_security_warn(log_id: int, admin: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    log = security_log_or_404(db, log_id)
+    target = ensure_target_user(db, log)
+    if log.room_id:
+        db.add(ChatMessage(room_id=log.room_id, user_id=admin.id, text=f"⚠️ Aviso de segurança para {target.username}: não compartilhe dados pessoais, contatos externos ou conteúdo inadequado no jogo."))
+        db.add(EventLog(room_id=log.room_id, kind="security_warn", text=f"{target.username} recebeu advertência de segurança."))
+        db.commit()
+        await manager.broadcast(log.room_id, {"type":"state", "state":room_state(db, log.room_id)})
+    return {"ok": True, "action": "warn", "user": target.username}
+
+@app.post("/admin/security/{log_id}/mute")
+async def admin_security_mute(log_id: int, admin: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    log = security_log_or_404(db, log_id)
+    target = ensure_target_user(db, log)
+    rp = current_room_player_for_log(db, log)
+    if not rp:
+        raise HTTPException(404, "Usuária não está mais nesta sala")
+    rp.muted_until = datetime.utcnow() + timedelta(minutes=10)
+    rp.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=log.room_id, kind="security_mute", text=f"{target.username} foi silenciada por 10 minutos."))
+    db.add(ChatMessage(room_id=log.room_id, user_id=admin.id, text=f"🔇 {target.username} foi temporariamente silenciada por segurança."))
+    db.commit()
+    await manager.broadcast(log.room_id, {"type":"state", "state":room_state(db, log.room_id)})
+    return {"ok": True, "action": "mute", "user": target.username, "muted_until": rp.muted_until.isoformat()}
+
+@app.post("/admin/security/{log_id}/remove")
+async def admin_security_remove(log_id: int, admin: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    log = security_log_or_404(db, log_id)
+    target = ensure_target_user(db, log)
+    rp = current_room_player_for_log(db, log)
+    if not rp:
+        raise HTTPException(404, "Usuária não está mais nesta sala")
+    room_id = log.room_id
+    db.delete(rp)
+    db.add(EventLog(room_id=room_id, kind="security_remove", text=f"{target.username} foi removida da sala por segurança."))
+    db.add(ChatMessage(room_id=room_id, user_id=admin.id, text=f"🚪 {target.username} foi removida da sala por segurança."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "action": "remove", "user": target.username}
+
+@app.post("/admin/security/{log_id}/block-user")
+async def admin_security_block_user(log_id: int, admin: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    log = security_log_or_404(db, log_id)
+    target = ensure_target_user(db, log)
+    if target.is_admin:
+        raise HTTPException(400, "Não é possível bloquear outro administrador por este painel")
+    target.approved = False
+    # Remove a usuária de todas as salas para encerrar acesso imediato com novos requests.
+    memberships = db.query(RoomPlayer).filter_by(user_id=target.id).all()
+    affected_rooms = [rp.room_id for rp in memberships]
+    for rp in memberships:
+        db.delete(rp)
+    if log.room_id:
+        db.add(EventLog(room_id=log.room_id, kind="security_block_user", text=f"{target.username} teve a conta bloqueada por segurança."))
+        db.add(ChatMessage(room_id=log.room_id, user_id=admin.id, text=f"⛔ {target.username} teve a conta bloqueada por segurança."))
+    db.commit()
+    for room_id in set(affected_rooms):
+        await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "action": "block-user", "user": target.username}
+
 @app.get("/characters")
 def characters(db: Session = Depends(db_dep), user: User = Depends(current_user)):
     return [char_dict(c) for c in db.query(Character).all()]
@@ -540,23 +912,30 @@ def maps(db: Session = Depends(db_dep), user: User = Depends(current_user)):
 @app.post("/rooms/create")
 def create_room(req: CreateRoomReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     chosen_role = normalize_room_role(req.role)
-    r = Room(id=rid(), code=code(), name=req.name.strip() or "Mesa Terras Raras", owner_id=user.id)
+    r = Room(id=rid(), code=code(), name=req.name.strip() or "Mesa Terras Raras", owner_id=user.id, is_public=bool(req.is_public), scheduled_start=req.scheduled_start if req.is_public else None, session_status="waiting")
     db.add(r); db.flush()
-    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id="sarah" if chosen_role == "mestre" else None, token_x=50, token_y=50))
-    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa como {role_label(chosen_role)}."))
-    db.commit(); return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role}
+    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=first_available_character_id(db, r.id), token_x=50, token_y=50))
+    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa como {role_label(chosen_role)}." + (" Sala pública." if r.is_public else " Sala fechada.")))
+    db.commit(); return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"tokens_used":room_players_count(db, r.id),"tokens_available":max(0, room_token_capacity(db, r.id)-room_players_count(db, r.id))}
 
 @app.post("/rooms/join")
 def join_room(req: JoinReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     r = db.query(Room).filter(Room.code == req.code.strip().upper()).first()
     if not r: raise HTTPException(404, "Código de sala não encontrado")
+    existing_player = db.query(RoomPlayer).filter_by(room_id=r.id, user_id=user.id).first()
+    if (r.session_status or "waiting") == "ended" and not existing_player:
+        raise HTTPException(400, "Esta sessão já foi encerrada.")
     chosen_role = normalize_room_role(req.role)
     master_exists = db.query(RoomPlayer).filter_by(room_id=r.id, role="mestre").first()
-    rp = db.query(RoomPlayer).filter_by(room_id=r.id, user_id=user.id).first()
+    rp = existing_player
     if chosen_role == "mestre" and master_exists and (not rp or rp.role != "mestre") and not user.is_admin:
         raise HTTPException(400, "Esta sala já tem Mestre. Entre como Ajudante da Mestre ou Jogadora.")
     if not rp:
-        db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, token_x=random.randint(35,65), token_y=random.randint(35,65)))
+        ensure_room_has_token_capacity(db, r.id)
+        available_char = first_available_character_id(db, r.id)
+        if not available_char:
+            raise HTTPException(400, "Esta sala já está cheia. Não há totens/personagens disponíveis.")
+        db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=available_char, token_x=random.randint(35,65), token_y=random.randint(35,65)))
         db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou na mesa como {role_label(chosen_role)}."))
         db.commit()
     else:
@@ -571,7 +950,32 @@ def mine(db: Session = Depends(db_dep), user: User = Depends(current_user)):
     rows = db.query(RoomPlayer).filter_by(user_id=user.id).all()
     out=[]
     for rp in rows:
-        r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"name":r.name,"role":rp.role,"map_id":r.active_map_id})
+        r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"name":r.name,"role":rp.role,"map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"players_count":room_players_count(db, r.id)})
+    return out
+
+
+@app.get("/rooms/public")
+def public_rooms(db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rooms = db.query(Room).filter(Room.is_public == True, Room.session_status != "ended").order_by(Room.scheduled_start.asc().nullslast(), Room.created_at.desc()).limit(30).all()
+    out=[]
+    for r in rooms:
+        players = db.query(RoomPlayer).filter_by(room_id=r.id).all()
+        master = next((p for p in players if p.role == "mestre"), None)
+        master_user = db.get(User, master.user_id) if master else db.get(User, r.owner_id)
+        already = any(p.user_id == user.id for p in players)
+        out.append({
+            "id": r.id,
+            "code": r.code,
+            "name": r.name,
+            "master": master_user.username if master_user else "?",
+            "players_count": len(players),
+            "token_capacity": room_token_capacity(db, r.id),
+            "tokens_available": max(0, room_token_capacity(db, r.id)-len(players)),
+            "map_id": r.active_map_id,
+            "scheduled_start": r.scheduled_start.isoformat() if r.scheduled_start else None,
+            "session_status": r.session_status or "waiting",
+            "already_joined": already
+        })
     return out
 
 
@@ -595,6 +999,38 @@ async def set_room_role(room_id: str, req: RoomRoleReq, db: Session = Depends(db
     db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True, "role": chosen_role}
+
+
+
+@app.post("/rooms/{room_id}/visibility")
+async def set_room_visibility(room_id: str, req: RoomVisibilityReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    r.is_public = bool(req.is_public)
+    r.scheduled_start = req.scheduled_start if r.is_public else None
+    r.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="visibility", text=f"Sala agora é {'pública' if r.is_public else 'fechada'}." ))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "is_public": bool(r.is_public), "scheduled_start": r.scheduled_start.isoformat() if r.scheduled_start else None}
+
+
+@app.post("/rooms/{room_id}/session/start")
+async def start_session(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    if r.session_status == "ended":
+        raise HTTPException(400, "Esta sessão já foi encerrada.")
+    r.session_status = "active"
+    r.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="session", text="A Mestre iniciou a sessão. O mapa foi liberado."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "session_status": r.session_status}
 
 
 @app.post("/rooms/{room_id}/leave")
@@ -643,6 +1079,9 @@ async def choose_character(room_id: str, req: ChooseCharReq, db: Session = Depen
     rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
     if not rp: raise HTTPException(403, "Você não está nesta sala")
     if not db.get(Character, req.character_id): raise HTTPException(404, "Personagem não encontrado")
+    duplicate = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.character_id == req.character_id, RoomPlayer.id != rp.id).first()
+    if duplicate:
+        raise HTTPException(400, "Este totem/personagem já está em uso nesta sala.")
     rp.character_id = req.character_id; rp.updated_at=datetime.utcnow(); db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
@@ -683,17 +1122,98 @@ async def change_map(room_id: str, req: MapReq, db: Session = Depends(db_dep), u
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
+
+@app.post("/rooms/{room_id}/map/end")
+async def end_current_map(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    current = db.get(GameMap, r.active_map_id)
+    if not current:
+        raise HTTPException(404, "Mapa atual não encontrado")
+    next_map = (
+        db.query(GameMap)
+        .filter(GameMap.zone_number > current.zone_number)
+        .order_by(GameMap.zone_number.asc())
+        .first()
+    )
+    if not next_map:
+        r.session_status = "ended"
+        r.is_public = False
+        r.updated_at = datetime.utcnow()
+        db.add(EventLog(room_id=room_id, kind="session", text=f"{current.name} encerrado. A sessão foi encerrada."))
+        db.commit()
+        await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+        return {"ok": False, "finished": True, "message": "Este já é o último mapa disponível. Sessão encerrada."}
+
+    # Marca encerramento do mapa atual e libera o portal, caso exista.
+    done_key = f"map:{current.id}:completed"
+    flag = db.query(RoomProgressFlag).filter_by(room_id=room_id, map_id=current.id, key=done_key).first()
+    if not flag:
+        flag = RoomProgressFlag(room_id=room_id, map_id=current.id, key=done_key)
+    flag.value = True
+    flag.label = f"Mapa encerrado: {current.name}"
+    flag.updated_by = user.id
+    flag.updated_at = datetime.utcnow()
+    db.add(flag)
+
+    portal = db.query(RoomProgressFlag).filter_by(room_id=room_id, map_id=current.id, key="portal_released").first()
+    if not portal:
+        portal = RoomProgressFlag(room_id=room_id, map_id=current.id, key="portal_released")
+    portal.value = True
+    portal.label = "Portal liberado ao encerrar o mapa"
+    portal.updated_by = user.id
+    portal.updated_at = datetime.utcnow()
+    db.add(portal)
+
+    r.active_map_id = next_map.id
+    r.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="map_end", text=f"{current.name} encerrado. Próxima zona aberta: {next_map.name}."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "previous_map": map_dict(current), "next_map": map_dict(next_map), "message": f"{current.name} encerrado. {next_map.name} aberta."}
+
+@app.post("/rooms/{room_id}/progress")
+async def set_progress_flag(room_id: str, req: ProgressFlagReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    key = (req.key or "").strip()[:160]
+    if not key:
+        raise HTTPException(400, "Chave de progresso inválida")
+    map_id = (req.map_id or r.active_map_id or "").strip()[:40]
+    flag = db.query(RoomProgressFlag).filter_by(room_id=room_id, map_id=map_id, key=key).first()
+    if not flag:
+        flag = RoomProgressFlag(room_id=room_id, map_id=map_id, key=key)
+    flag.value = bool(req.value)
+    flag.label = (req.label or key)[:240]
+    flag.updated_by = user.id
+    flag.updated_at = datetime.utcnow()
+    db.add(flag)
+    db.add(EventLog(room_id=room_id, kind="progress", text=f"Progresso atualizado: {flag.label} = {flag.value}."))
+    db.commit(); db.refresh(flag)
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "flag": {"id":flag.id,"map_id":flag.map_id,"key":flag.key,"value":bool(flag.value),"label":flag.label,"updated_at":flag.updated_at.isoformat()}}
+
 @app.post("/rooms/{room_id}/chat")
-async def chat(room_id: str, req: ChatReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    if not db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first() and not user.is_admin: raise HTTPException(403, "Você não está nesta sala")
-    msg = ChatMessage(room_id=room_id, user_id=user.id, text=req.text.strip()[:1000]); db.add(msg); db.commit()
+async def chat(room_id: str, req: ChatReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    if not rp and not user.is_admin: raise HTTPException(403, "Você não está nesta sala")
+    ensure_not_muted(rp)
+    safe_text = enforce_safe_message(db, room_id, user, request, req.text.strip()[:1000], "chat")
+    msg = ChatMessage(room_id=room_id, user_id=user.id, text=safe_text); db.add(msg); db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
 @app.post("/rooms/{room_id}/notes")
-async def notes(room_id: str, req: NoteReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_staff(db, room_id, user)
-    db.add(SessionNote(room_id=room_id, title=req.title[:120], text=req.text[:5000])); db.commit()
+async def notes(room_id: str, req: NoteReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = require_staff(db, room_id, user)
+    ensure_not_muted(rp)
+    safe_title = enforce_safe_message(db, room_id, user, request, req.title.strip()[:120], "notes_title")
+    safe_text = enforce_safe_message(db, room_id, user, request, req.text.strip()[:5000], "notes")
+    db.add(SessionNote(room_id=room_id, title=safe_title[:120], text=safe_text[:5000])); db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
@@ -705,9 +1225,11 @@ def get_staff_chat(room_id: str, db: Session = Depends(db_dep), user: User = Dep
     return [{"id":m.id,"username":db.get(User,m.user_id).username if db.get(User,m.user_id) else "?","text":m.text,"created_at":m.created_at.isoformat()} for m in msgs]
 
 @app.post("/rooms/{room_id}/staff-chat")
-async def post_staff_chat(room_id: str, req: ChatReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_staff(db, room_id, user)
-    msg = StaffChatMessage(room_id=room_id, user_id=user.id, text=req.text.strip()[:1000])
+async def post_staff_chat(room_id: str, req: ChatReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = require_staff(db, room_id, user)
+    ensure_not_muted(rp)
+    safe_text = enforce_safe_message(db, room_id, user, request, req.text.strip()[:1000], "staff_chat")
+    msg = StaffChatMessage(room_id=room_id, user_id=user.id, text=safe_text)
     db.add(msg); db.commit()
     await manager.broadcast(room_id, {"type":"staff_chat_updated"})
     return {"ok": True}
@@ -744,7 +1266,7 @@ def ai_worker_status():
 @app.post("/rooms/{room_id}/ai/request")
 async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     require_staff(db, room_id, user)
-    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary", "question") else "narrative"
+    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary", "question", "location_event") else "narrative"
 
     # v8.2: evita criar vários pedidos iguais se o worker estiver desligado.
     existing = (
@@ -861,8 +1383,9 @@ async def complete_ai_job(job_id: int, req: AICompleteReq, token: str = "", db: 
 
 
 @app.post("/rooms/{room_id}/ai/jobs/{job_id}/publish")
-async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_staff(db, room_id, user)
+async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = require_staff(db, room_id, user)
+    ensure_not_muted(rp)
     job = db.get(AIJob, job_id)
     if not job or job.room_id != room_id:
         raise HTTPException(404, "Resposta de IA não encontrada")
@@ -875,11 +1398,15 @@ async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, db: Sessi
         title = "Prompt de imagem gerado pela IA Local"
     elif job.job_type == "question":
         title = "Resposta da IA Local"
+    elif job.job_type == "location_event":
+        title = "Evento do local gerado pela IA Local"
 
     target = (req.target or "chat").strip().lower()
     final_text = (req.text if req.text is not None else job.result).strip()
     if not final_text:
         raise HTTPException(400, "O texto final está vazio")
+    if target in ("chat", "staff", "bastidores", "notes", "location"):
+        final_text = enforce_safe_message(db, room_id, user, request, final_text, "ai_publish_" + target)
     if target == "notes":
         db.add(SessionNote(room_id=room_id, title=title, text=final_text[:5000]))
     elif target in ("staff", "bastidores"):
