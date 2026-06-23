@@ -10,11 +10,12 @@ Uso:
 """
 import json
 import os
+import re
 import time
 import urllib.parse
 import urllib.request
 
-RAILWAY_URL = os.getenv("TERRAS_RARAS_URL", "https://web-production-0ce81.up.railway.app").rstrip("/")
+RAILWAY_URL = os.getenv("TERRAS_RARAS_URL", "http://127.0.0.1:8000").rstrip("/")
 WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker-eduardo-2026")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
@@ -32,18 +33,51 @@ def request_json(method: str, url: str, payload=None, timeout=60):
         return json.loads(raw) if raw else {}
 
 
-def ollama_generate(prompt: str) -> str:
+def prompt_mode(prompt: str) -> tuple[str, str]:
+    mode = "short"
+    m = re.search(r"\[\[TR_RESPONSE_MODE=(short|normal|detailed)\]\]", prompt or "")
+    if m:
+        mode = m.group(1)
+        prompt = re.sub(r"\[\[TR_RESPONSE_MODE=(short|normal|detailed)\]\]\s*", "", prompt, count=1)
+    return mode, prompt
+
+def generation_options(job_type: str, mode: str) -> dict:
+    # Limites menores deixam o Ollama mais rápido em computadores modestos.
+    limits = {
+        "short": {"question": 160, "narrative": 220, "summary": 240, "image_prompt": 180},
+        "normal": {"question": 260, "narrative": 360, "summary": 420, "image_prompt": 260},
+        "detailed": {"question": 450, "narrative": 620, "summary": 700, "image_prompt": 360},
+    }
+    num_predict = limits.get(mode, limits["short"]).get(job_type, 260)
+    return {
+        "temperature": 0.72,
+        "num_ctx": 4096 if mode == "short" else 8192,
+        "num_predict": num_predict,
+    }
+
+def ollama_generate(prompt: str, job_type: str = "narrative") -> str:
+    mode, clean_prompt = prompt_mode(prompt)
     payload = {
         "model": OLLAMA_MODEL,
-        "prompt": prompt,
+        "prompt": clean_prompt,
         "stream": False,
-        "options": {
-            "temperature": 0.75,
-            "num_ctx": 8192,
-        },
+        "options": generation_options(job_type, mode),
     }
-    data = request_json("POST", f"{OLLAMA_URL}/api/generate", payload, timeout=180)
+    timeout = 120 if mode == "short" else 220
+    data = request_json("POST", f"{OLLAMA_URL}/api/generate", payload, timeout=timeout)
     return (data.get("response") or "").strip()
+
+
+def ping_worker(token_q: str):
+    try:
+        request_json(
+            "POST",
+            f"{RAILWAY_URL}/ai/worker/ping?{token_q}",
+            {"model": OLLAMA_MODEL, "ollama_url": OLLAMA_URL},
+            timeout=10,
+        )
+    except Exception:
+        pass
 
 
 def main():
@@ -58,6 +92,7 @@ def main():
     token_q = urllib.parse.urlencode({"token": WORKER_TOKEN})
     while True:
         try:
+            ping_worker(token_q)
             nxt = request_json("GET", f"{RAILWAY_URL}/ai/jobs/next?{token_q}", timeout=30)
             job = nxt.get("job")
             if not job:
@@ -66,7 +101,7 @@ def main():
 
             print(f"Processando job #{job['id']} ({job['job_type']})...")
             try:
-                result = ollama_generate(job["prompt"])
+                result = ollama_generate(job["prompt"], job.get("job_type", "narrative"))
                 if not result:
                     raise RuntimeError("Ollama retornou resposta vazia")
                 request_json(

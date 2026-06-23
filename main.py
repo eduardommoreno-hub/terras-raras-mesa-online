@@ -14,11 +14,15 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
+APP_VERSION = "v8.15-layout-responsivo"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./terras_raras.db")
-LOCAL_AI_WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker")
+LOCAL_AI_WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker-eduardo-2026")
+WORKER_LAST_SEEN = None
+WORKER_LAST_MODEL = ""
+WORKER_LAST_URL = ""
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -104,6 +108,14 @@ class ChatMessage(Base):
     text = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class StaffChatMessage(Base):
+    __tablename__ = "staff_chat_messages"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class SessionNote(Base):
     __tablename__ = "session_notes"
     id = Column(Integer, primary_key=True)
@@ -132,6 +144,18 @@ class AIJob(Base):
     error = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+class RoomLocationDescription(Base):
+    __tablename__ = "room_location_descriptions"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    map_id = Column(String(40), nullable=False)
+    location_id = Column(String(80), nullable=False)
+    location_name = Column(String(160), default="Local")
+    description = Column(Text, nullable=False)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("room_id", "map_id", "location_id", name="uq_room_map_location_desc"),)
 
 # ---------- helpers ----------
 def db_dep():
@@ -236,17 +260,29 @@ def startup():
 # ---------- schemas ----------
 class RegisterReq(BaseModel): username: str; password: str
 class LoginReq(BaseModel): username: str; password: str
-class CreateRoomReq(BaseModel): name: str
-class JoinReq(BaseModel): code: str
+class CreateRoomReq(BaseModel): name: str; role: str="mestre"
+class JoinReq(BaseModel): code: str; role: str="participante"
 class ChooseCharReq(BaseModel): room_id: str; character_id: str
 class MoveReq(BaseModel): player_id: int; x: float; y: float
 class StatsReq(BaseModel): player_id: int; hp: Optional[int]=None; energy: Optional[int]=None; weakness: Optional[str]=None; notes: Optional[str]=None; inventory: Optional[str]=None
 class MapReq(BaseModel): map_id: str
 class ChatReq(BaseModel): text: str
+class RoomRoleReq(BaseModel): role: str="participante"
 class NoteReq(BaseModel): title: str="Nota da Mestre"; text: str
-class AIRequestReq(BaseModel): action: str; job_type: str="narrative"
+class AIRequestReq(BaseModel):
+    action: str
+    job_type: str="narrative"
+    response_mode: str="short"
 class AICompleteReq(BaseModel): result: str=""; error: str=""; status: str="done"
-class AIPublishReq(BaseModel): target: str="chat"
+class AIPublishReq(BaseModel):
+    target: str="chat"
+    text: Optional[str]=None
+    map_id: Optional[str]=None
+    location_id: Optional[str]=None
+    location_name: Optional[str]=None
+class AIWorkerPingReq(BaseModel):
+    model: str = ""
+    ollama_url: str = ""
 
 # ---------- websocket manager ----------
 class WSManager:
@@ -284,6 +320,7 @@ def room_state(db: Session, room_id: str):
     notes = db.query(SessionNote).filter(SessionNote.room_id == room_id).order_by(SessionNote.id.desc()).limit(20).all()
     ai_jobs = db.query(AIJob).filter(AIJob.room_id == room_id).order_by(AIJob.id.desc()).limit(12).all()
     maps = db.query(GameMap).order_by(GameMap.zone_number).all()
+    loc_descs = db.query(RoomLocationDescription).filter(RoomLocationDescription.room_id == room_id).all()
     return {
         "room":{"id":r.id,"code":r.code,"name":r.name,"active_map_id":r.active_map_id},
         "map": map_dict(db.get(GameMap, r.active_map_id)),
@@ -291,8 +328,18 @@ def room_state(db: Session, room_id: str):
         "players":[player_dict(db,p) for p in players],
         "chat":[{"id":c.id,"username":db.get(User,c.user_id).username,"text":c.text,"created_at":c.created_at.isoformat()} for c in chats],
         "notes":[{"id":n.id,"title":n.title,"text":n.text,"created_at":n.created_at.isoformat()} for n in notes],
-        "ai_jobs":[ai_job_dict(j) for j in ai_jobs]
+        "ai_jobs":[ai_job_dict(j) for j in ai_jobs],
+        "location_descriptions":[{"id":d.id,"map_id":d.map_id,"location_id":d.location_id,"location_name":d.location_name,"description":d.description,"updated_at":d.updated_at.isoformat()} for d in loc_descs]
     }
+
+def normalize_room_role(role: str) -> str:
+    role = (role or "participante").strip().lower()
+    aliases = {"jogadora":"participante", "jogador":"participante", "player":"participante", "helper":"ajudante", "assistente":"ajudante", "gm":"mestre", "master":"mestre"}
+    role = aliases.get(role, role)
+    return role if role in ("mestre", "ajudante", "participante") else "participante"
+
+def role_label(role: str) -> str:
+    return {"mestre":"Mestre", "ajudante":"Ajudante da Mestre", "participante":"Jogadora"}.get(role, role)
 
 def require_master(db: Session, room_id: str, user: User):
     rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
@@ -300,24 +347,61 @@ def require_master(db: Session, room_id: str, user: User):
         raise HTTPException(403, "Apenas a Mestre/admin pode fazer isso")
     return rp
 
+def require_staff(db: Session, room_id: str, user: User):
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    if not rp or (rp.role not in ("mestre", "ajudante") and not user.is_admin):
+        raise HTTPException(403, "Apenas Mestre, Ajudante ou admin pode fazer isso")
+    return rp
+
 
 def worker_ok(token: Optional[str]) -> bool:
     return bool(token) and secrets.compare_digest(token, LOCAL_AI_WORKER_TOKEN)
 
-def build_ai_prompt(db: Session, room_id: str, user: User, action: str, job_type: str) -> str:
+def normalize_response_mode(mode: str) -> str:
+    mode = (mode or "short").strip().lower()
+    return mode if mode in ("short", "normal", "detailed") else "short"
+
+def mode_instruction(mode: str, job_type: str) -> str:
+    mode = normalize_response_mode(mode)
+    if job_type == "image_prompt":
+        return "Resposta objetiva: apenas 1 prompt de imagem em inglês, sem explicações."
+    if mode == "short":
+        return "MODO RÁPIDO: responda curto. Máximo de 1 parágrafo curto ou 4 tópicos. Sem enrolação."
+    if mode == "detailed":
+        return "MODO DETALHADO: até 3 parágrafos curtos, com opções práticas quando fizer sentido."
+    return "MODO NORMAL: até 2 parágrafos curtos, direto e útil para jogo ao vivo."
+
+def build_ai_prompt(db: Session, room_id: str, user: User, action: str, job_type: str, response_mode: str="short") -> str:
+    response_mode = normalize_response_mode(response_mode)
     r = db.get(Room, room_id)
     m = db.get(GameMap, r.active_map_id) if r else None
     players = db.query(RoomPlayer).filter_by(room_id=room_id).all()
-    notes = db.query(SessionNote).filter(SessionNote.room_id == room_id).order_by(SessionNote.id.desc()).limit(5).all()[::-1]
-    chats = db.query(ChatMessage).filter(ChatMessage.room_id == room_id).order_by(ChatMessage.id.desc()).limit(12).all()[::-1]
+    notes_limit = 2 if response_mode == "short" else 5
+    chats_limit = 4 if response_mode == "short" else 12
+    notes = db.query(SessionNote).filter(SessionNote.room_id == room_id).order_by(SessionNote.id.desc()).limit(notes_limit).all()[::-1]
+    chats = db.query(ChatMessage).filter(ChatMessage.room_id == room_id).order_by(ChatMessage.id.desc()).limit(chats_limit).all()[::-1]
     player_lines = []
     for p in players:
         u = db.get(User, p.user_id)
         ch = db.get(Character, p.character_id) if p.character_id else None
-        player_lines.append(f"- {u.username if u else '?'} / {ch.name if ch else 'sem personagem'} / papel: {p.role} / HP {p.hp} / energia {p.energy} / posição no mapa: x={p.token_x:.1f}%, y={p.token_y:.1f}% / inventário: {p.inventory}")
+        if response_mode == "short":
+            player_lines.append(f"- {u.username if u else '?'} / {ch.name if ch else 'sem personagem'} / papel: {p.role}")
+        else:
+            player_lines.append(f"- {u.username if u else '?'} / {ch.name if ch else 'sem personagem'} / papel: {p.role} / HP {p.hp} / energia {p.energy} / posição no mapa: x={p.token_x:.1f}%, y={p.token_y:.1f}% / inventário: {p.inventory}")
     diary = "\n".join([f"{n.title}: {n.text}" for n in notes]) or "Sem notas ainda."
     history = "\n".join([f"{db.get(User,c.user_id).username if db.get(User,c.user_id) else '?'}: {c.text}" for c in chats]) or "Sem histórico ainda."
-    base = f"""Você é a Narradora Local do jogo TERRAS RARAS, um RPG de sobrevivência para crianças/adolescentes, com tom cinematográfico, sombrio porém seguro.
+    # Para perguntas em modo rápido, o prompt é propositalmente curto para acelerar PCs fracos.
+    if job_type == "question" and response_mode == "short":
+        return f"""[[TR_RESPONSE_MODE=short]]
+Você é copilota da Mestre no RPG TERRAS RARAS. Responda em português brasileiro, natural, sem linguagem formal ou jurídica.
+Ajude a Mestre/Ajudante com uma resposta prática para jogo ao vivo.
+Contexto: mesa {r.name if r else room_id}; zona atual: {m.name if m else 'Mapa desconhecido'}.
+{mode_instruction(response_mode, job_type)}
+Pedido: {action}
+"""
+
+    base = f"""[[TR_RESPONSE_MODE={response_mode}]]
+Você é a Narradora Local do jogo TERRAS RARAS, um RPG de sobrevivência para crianças/adolescentes, com tom cinematográfico, sombrio porém seguro.
 
 REGRAS IMPORTANTES:
 - Escreva em português brasileiro.
@@ -325,6 +409,9 @@ REGRAS IMPORTANTES:
 - Não use violência gráfica, sexualização, drogas ou terror excessivo.
 - Preserve o controle da Mestre: gere sugestão publicável, mas clara e curta.
 - Máximo de 3 parágrafos para narrativa.
+
+FORMATO DA RESPOSTA:
+{mode_instruction(response_mode, job_type)}
 
 MESA: {r.name if r else room_id}
 MAPA/ZONA ATUAL: {m.name if m else 'Mapa desconhecido'}
@@ -339,7 +426,7 @@ DIÁRIO DA MESTRE:
 HISTÓRICO RECENTE:
 {history}
 
-PEDIDO DA MESTRE/JOGADORA:
+PEDIDO DA MESTRE/AJUDANTE:
 {action}
 """
     if job_type == "image_prompt":
@@ -350,6 +437,15 @@ Não gere narrativa; gere somente o prompt de imagem."""
     if job_type == "summary":
         return base + """
 Crie um resumo de sessão organizado em tópicos: eventos importantes, posição dos personagens, itens/fraquezas descobertas e ganchos para a próxima sessão."""
+    if job_type == "question":
+        return base + """
+Responda como copilota da Mestre. Ajude com ideias práticas para conduzir a sessão.
+- Pode sugerir falas prontas para a Mestre dizer às participantes.
+- Pode sugerir ganchos, pistas, consequências, clima da cena e próximos passos.
+- Seja útil, clara, direta e natural.
+- Não use linguagem jurídica ou formal, como “Vossa Senhoria”, “Excelência” ou termos parecidos.
+- Máximo de 3 blocos curtos.
+- Se ajudar, comece com uma fala pronta entre aspas e depois dê 2 ou 3 sugestões curtas."""
     return base + """
 Gere a próxima narração da cena em 2 parágrafos curtos. Depois, se fizer sentido, liste 2 ou 3 escolhas objetivas para as jogadoras. Não use títulos longos."""
 
@@ -362,7 +458,7 @@ def home():
     return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
 
 @app.get("/health")
-def health(): return {"status":"ok", "service": APP_NAME, "version":"v8.4-login-feedback"}
+def health(): return {"status":"ok", "service": APP_NAME, "version": APP_VERSION}
 
 @app.get("/debug/admin-env")
 def debug_admin_env():
@@ -373,7 +469,7 @@ def debug_admin_env():
         "database_url_configured": bool(DATABASE_URL),
         "jwt_secret_configured": bool(SECRET),
         "local_ai_worker_token_configured": bool(LOCAL_AI_WORKER_TOKEN),
-        "version": "v8.4-login-feedback"
+        "version": APP_VERSION
     }
 
 @app.post("/auth/register")
@@ -443,22 +539,32 @@ def maps(db: Session = Depends(db_dep), user: User = Depends(current_user)):
 
 @app.post("/rooms/create")
 def create_room(req: CreateRoomReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    chosen_role = normalize_room_role(req.role)
     r = Room(id=rid(), code=code(), name=req.name.strip() or "Mesa Terras Raras", owner_id=user.id)
     db.add(r); db.flush()
-    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role="mestre", character_id="sarah", token_x=50, token_y=50))
-    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa."))
-    db.commit(); return {"id":r.id,"code":r.code,"name":r.name}
+    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id="sarah" if chosen_role == "mestre" else None, token_x=50, token_y=50))
+    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa como {role_label(chosen_role)}."))
+    db.commit(); return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role}
 
 @app.post("/rooms/join")
 def join_room(req: JoinReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     r = db.query(Room).filter(Room.code == req.code.strip().upper()).first()
     if not r: raise HTTPException(404, "Código de sala não encontrado")
+    chosen_role = normalize_room_role(req.role)
+    master_exists = db.query(RoomPlayer).filter_by(room_id=r.id, role="mestre").first()
     rp = db.query(RoomPlayer).filter_by(room_id=r.id, user_id=user.id).first()
+    if chosen_role == "mestre" and master_exists and (not rp or rp.role != "mestre") and not user.is_admin:
+        raise HTTPException(400, "Esta sala já tem Mestre. Entre como Ajudante da Mestre ou Jogadora.")
     if not rp:
-        db.add(RoomPlayer(room_id=r.id, user_id=user.id, role="participante", token_x=random.randint(35,65), token_y=random.randint(35,65)))
-        db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou na mesa."))
+        db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, token_x=random.randint(35,65), token_y=random.randint(35,65)))
+        db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou na mesa como {role_label(chosen_role)}."))
         db.commit()
-    return {"id":r.id,"code":r.code,"name":r.name}
+    else:
+        if rp.role == "participante" and chosen_role in ("ajudante", "mestre"):
+            rp.role = chosen_role
+            db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} mudou função para {role_label(chosen_role)}."))
+            db.commit()
+    return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role}
 
 @app.get("/rooms/mine")
 def mine(db: Session = Depends(db_dep), user: User = Depends(current_user)):
@@ -467,6 +573,28 @@ def mine(db: Session = Depends(db_dep), user: User = Depends(current_user)):
     for rp in rows:
         r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"name":r.name,"role":rp.role,"map_id":r.active_map_id})
     return out
+
+
+@app.post("/rooms/{room_id}/role")
+async def set_room_role(room_id: str, req: RoomRoleReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    r = db.get(Room, room_id)
+    if not r:
+        raise HTTPException(404, "Sala não encontrada")
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    if not rp:
+        raise HTTPException(403, "Você não está nesta sala")
+    chosen_role = normalize_room_role(req.role)
+    if chosen_role == "mestre":
+        master = db.query(RoomPlayer).filter_by(room_id=room_id, role="mestre").first()
+        if master and master.user_id != user.id and not user.is_admin:
+            raise HTTPException(400, "Esta sala já tem Mestre principal")
+        r.owner_id = user.id
+    rp.role = chosen_role
+    rp.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="role", text=f"{user.username} agora é {role_label(chosen_role)}."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "role": chosen_role}
 
 
 @app.post("/rooms/{room_id}/leave")
@@ -564,16 +692,59 @@ async def chat(room_id: str, req: ChatReq, db: Session = Depends(db_dep), user: 
 
 @app.post("/rooms/{room_id}/notes")
 async def notes(room_id: str, req: NoteReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    require_staff(db, room_id, user)
     db.add(SessionNote(room_id=room_id, title=req.title[:120], text=req.text[:5000])); db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
 
+@app.get("/rooms/{room_id}/staff-chat")
+def get_staff_chat(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    msgs = db.query(StaffChatMessage).filter(StaffChatMessage.room_id == room_id).order_by(StaffChatMessage.id.desc()).limit(50).all()[::-1]
+    return [{"id":m.id,"username":db.get(User,m.user_id).username if db.get(User,m.user_id) else "?","text":m.text,"created_at":m.created_at.isoformat()} for m in msgs]
+
+@app.post("/rooms/{room_id}/staff-chat")
+async def post_staff_chat(room_id: str, req: ChatReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    msg = StaffChatMessage(room_id=room_id, user_id=user.id, text=req.text.strip()[:1000])
+    db.add(msg); db.commit()
+    await manager.broadcast(room_id, {"type":"staff_chat_updated"})
+    return {"ok": True}
+
+
+@app.post("/ai/worker/ping")
+def ai_worker_ping(req: AIWorkerPingReq, token: str = ""):
+    if not worker_ok(token):
+        raise HTTPException(401, "Worker token inválido")
+    global WORKER_LAST_SEEN, WORKER_LAST_MODEL, WORKER_LAST_URL
+    WORKER_LAST_SEEN = datetime.utcnow()
+    WORKER_LAST_MODEL = req.model or ""
+    WORKER_LAST_URL = req.ollama_url or ""
+    return {"ok": True, "last_seen": WORKER_LAST_SEEN.isoformat()}
+
+@app.get("/ai/worker/status")
+def ai_worker_status():
+    now = datetime.utcnow()
+    online = False
+    age_seconds = None
+    if WORKER_LAST_SEEN:
+        age_seconds = int((now - WORKER_LAST_SEEN).total_seconds())
+        online = age_seconds <= 20
+    return {
+        "ok": True,
+        "online": online,
+        "last_seen": WORKER_LAST_SEEN.isoformat() if WORKER_LAST_SEEN else None,
+        "age_seconds": age_seconds,
+        "model": WORKER_LAST_MODEL,
+        "ollama_url": WORKER_LAST_URL,
+        "version": APP_VERSION,
+    }
+
 @app.post("/rooms/{room_id}/ai/request")
 async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
-    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary") else "narrative"
+    require_staff(db, room_id, user)
+    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary", "question") else "narrative"
 
     # v8.2: evita criar vários pedidos iguais se o worker estiver desligado.
     existing = (
@@ -590,7 +761,8 @@ async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depend
             "message": "Já existe um pedido de IA desse tipo aguardando o worker local. Processe, cancele ou limpe pendentes antes de criar outro."
         }
 
-    prompt = build_ai_prompt(db, room_id, user, req.action.strip() or "Continue a cena.", job_type)
+    response_mode = normalize_response_mode(req.response_mode)
+    prompt = build_ai_prompt(db, room_id, user, req.action.strip() or "Continue a cena.", job_type, response_mode)
     job = AIJob(room_id=room_id, user_id=user.id, job_type=job_type, status="pending", prompt=prompt)
     db.add(job)
     db.add(EventLog(room_id=room_id, kind="ai", text=f"Pedido de IA local criado: {job_type}."))
@@ -608,7 +780,7 @@ def list_room_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: User = 
 
 @app.post("/rooms/{room_id}/ai/jobs/{job_id}/cancel")
 async def cancel_ai_job(room_id: str, job_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    require_staff(db, room_id, user)
     job = db.get(AIJob, job_id)
     if not job or job.room_id != room_id:
         raise HTTPException(404, "Pedido de IA não encontrado")
@@ -626,7 +798,7 @@ async def cancel_ai_job(room_id: str, job_id: int, db: Session = Depends(db_dep)
 
 @app.post("/rooms/{room_id}/ai/clear-pending")
 async def clear_pending_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    require_staff(db, room_id, user)
     jobs = db.query(AIJob).filter(AIJob.room_id == room_id, AIJob.status.in_(["pending", "processing"])).all()
     count = len(jobs)
     for job in jobs:
@@ -643,6 +815,8 @@ async def clear_pending_ai_jobs(room_id: str, db: Session = Depends(db_dep), use
 def next_ai_job(token: str = "", db: Session = Depends(db_dep)):
     if not worker_ok(token):
         raise HTTPException(401, "Worker token inválido")
+    global WORKER_LAST_SEEN
+    WORKER_LAST_SEEN = datetime.utcnow()
 
     # v8.2: se o worker caiu durante um processamento, devolve jobs travados para a fila.
     stale = datetime.utcnow() - timedelta(minutes=8)
@@ -665,6 +839,8 @@ def next_ai_job(token: str = "", db: Session = Depends(db_dep)):
 async def complete_ai_job(job_id: int, req: AICompleteReq, token: str = "", db: Session = Depends(db_dep)):
     if not worker_ok(token):
         raise HTTPException(401, "Worker token inválido")
+    global WORKER_LAST_SEEN
+    WORKER_LAST_SEEN = datetime.utcnow()
     job = db.get(AIJob, job_id)
     if not job:
         raise HTTPException(404, "Job não encontrado")
@@ -686,7 +862,7 @@ async def complete_ai_job(job_id: int, req: AICompleteReq, token: str = "", db: 
 
 @app.post("/rooms/{room_id}/ai/jobs/{job_id}/publish")
 async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    require_staff(db, room_id, user)
     job = db.get(AIJob, job_id)
     if not job or job.room_id != room_id:
         raise HTTPException(404, "Resposta de IA não encontrada")
@@ -697,14 +873,49 @@ async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, db: Sessi
         title = "Resumo gerado pela IA Local"
     elif job.job_type == "image_prompt":
         title = "Prompt de imagem gerado pela IA Local"
-    if req.target == "notes":
-        db.add(SessionNote(room_id=room_id, title=title, text=job.result[:5000]))
+    elif job.job_type == "question":
+        title = "Resposta da IA Local"
+
+    target = (req.target or "chat").strip().lower()
+    final_text = (req.text if req.text is not None else job.result).strip()
+    if not final_text:
+        raise HTTPException(400, "O texto final está vazio")
+    if target == "notes":
+        db.add(SessionNote(room_id=room_id, title=title, text=final_text[:5000]))
+    elif target in ("staff", "bastidores"):
+        db.add(StaffChatMessage(room_id=room_id, user_id=user.id, text=("🤫 " + title + ":\n" + final_text)[:5000]))
+    elif target == "location":
+        if not req.map_id or not req.location_id:
+            raise HTTPException(400, "Selecione um local do mapa antes de usar como descrição")
+        loc = db.query(RoomLocationDescription).filter_by(room_id=room_id, map_id=req.map_id, location_id=req.location_id).first()
+        if not loc:
+            loc = RoomLocationDescription(room_id=room_id, map_id=req.map_id, location_id=req.location_id)
+        loc.location_name = (req.location_name or "Local")[:160]
+        loc.description = final_text[:5000]
+        loc.updated_by = user.id
+        loc.updated_at = datetime.utcnow()
+        db.add(loc)
     else:
-        db.add(ChatMessage(room_id=room_id, user_id=user.id, text=("🎙️ " + title + ":\n" + job.result)[:1000]))
-    db.add(EventLog(room_id=room_id, kind="ai_publish", text=f"{title} publicado em {req.target}."))
+        db.add(ChatMessage(room_id=room_id, user_id=user.id, text=("🎙️ " + title + ":\n" + final_text)[:5000]))
+    db.add(EventLog(room_id=room_id, kind="ai_publish", text=f"{title} publicado em {target}."))
     db.commit()
     await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
+    if target in ("staff", "bastidores"):
+        await manager.broadcast(room_id, {"type":"staff_chat_updated"})
     return {"ok": True}
+
+@app.post("/rooms/{room_id}/ai/clear-done")
+async def clear_done_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    jobs = db.query(AIJob).filter(AIJob.room_id == room_id, AIJob.status.in_(["done", "error"])).all()
+    count = len(jobs)
+    for job in jobs:
+        db.delete(job)
+    if count:
+        db.add(EventLog(room_id=room_id, kind="ai_clear", text=f"{count} resposta(s) concluída(s)/com erro da IA foram limpas."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
+    return {"ok": True, "cleared": count}
 
 @app.websocket("/ws/{room_id}")
 async def ws_room(room_id: str, ws: WebSocket):

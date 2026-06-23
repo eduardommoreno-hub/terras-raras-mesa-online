@@ -1,12 +1,14 @@
 @echo off
-title Terras Raras - Worker Local IA
-cd /d C:\terras_raras_local
-set TERRAS_RARAS_URL=https://web-production-0ce81.up.railway.app
-set LOCAL_AI_WORKER_TOKEN=terras-local-worker-eduardo-2026
-set OLLAMA_MODEL=llama3.1:8b
-echo Ligando Worker Local IA do Terras Raras...
-echo.
-python local_worker.py
-echo.
-echo Worker encerrado. Pressione qualquer tecla para fechar.
-pause >nul
+ title Terras Raras - Motor IA Local
+ cd /d "%~dp0"
+ set TERRAS_RARAS_URL=http://127.0.0.1:8000
+ set LOCAL_AI_WORKER_TOKEN=terras-local-worker-eduardo-2026
+ set OLLAMA_URL=http://127.0.0.1:11434
+ set OLLAMA_MODEL=llama3.1:8b
+ echo Ligando Motor da IA Local do Terras Raras...
+ echo.
+ echo Antes disso, o Ollama precisa estar aberto e o servidor do jogo precisa estar rodando.
+ echo.
+ python local_worker.py
+ echo.
+ pause
