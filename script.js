@@ -232,8 +232,32 @@ async function joinPublicRoom(code){
 async function loadPending(){
   try{
     const p=await api('/admin/pending');
-    const el=qs('pending'); if(el) el.innerHTML=p.length?p.map(u=>`<div class="pending"><b class="grow">${esc(u.username)}</b><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente.</p>';
-  }catch(e){}
+    const el=qs('pending');
+    if(el){
+      el.innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn small" onclick="loadPending()">Atualizar cadastros</button><button class="btn small ghost" onclick="approveByName()">Autorizar por nome</button></div>` +
+        (p.length?p.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">aguardando autorização${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente. Clique em “Atualizar cadastros” depois que a jogadora terminar o cadastro.</p>');
+    }
+    await loadAdminUsers();
+  }catch(e){
+    const el=qs('pending');
+    if(el) el.innerHTML=`<p class="err">Não consegui carregar cadastros pendentes: ${esc(e.message||e)}</p>`;
+  }
+}
+
+async function loadAdminUsers(){
+  const box=qs('adminUsersBox');
+  if(!box) return;
+  try{
+    const users=await api('/admin/users');
+    box.innerHTML=users.length?users.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">${u.is_admin?'admin':(u.approved?'autorizada':'pendente')}${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div>${(!u.approved&&!u.is_admin)?`<button class="btn small" onclick="approve(${u.id})">Autorizar</button>`:''}</div>`).join(''):'<p style="color:var(--muted)">Nenhum usuário encontrado.</p>';
+  }catch(e){ box.innerHTML=`<p class="err">Não consegui carregar usuários: ${esc(e.message||e)}</p>`; }
+}
+
+async function approveByName(){
+  const name=(prompt('Digite o nome de usuária exatamente como ela cadastrou:')||'').trim().toLowerCase();
+  if(!name) return;
+  try{ await api('/admin/approve-username/'+encodeURIComponent(name),{method:'POST'}); alert('Usuária autorizada: '+name); loadPending(); }
+  catch(e){ alert(e.message||e); }
 }
 
 async function loadSecurityLogs(){
