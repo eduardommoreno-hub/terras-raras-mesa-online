@@ -1,46 +1,49 @@
-# Terras Raras — v7 IA organizada
+# Terras Raras — v8 Mapas Interativos
 
-Versão baseada na v6, mantendo:
+Versão v8 do projeto Terras Raras. Mantém tudo da v7 e adiciona a primeira camada de mapa jogável.
 
-- Railway + PostgreSQL
-- login com admin por variáveis
-- cadastro com aprovação
-- sala com código
-- sair da sala
-- mapa com tokens arrastáveis
-- IA local zero API via Ollama + `local_worker.py`
+## O que há de novo
 
-## O que mudou na v7
+- Mapas com pontos clicáveis.
+- Caminhos visíveis entre locais.
+- Locais por zona: entrada, perigo, local oculto e portal.
+- Mestre pode selecionar um ponto e mover um token para lá.
+- Botão para gerar narração do ponto usando IA local/Ollama.
+- Botão para gerar prompt de imagem do ponto.
+- Botão para registrar o local no Diário da Mestre.
+- Mantém IA Local Zero API, login, sala, sair da sala, PostgreSQL e worker local.
 
-A resposta da IA local agora não entra automaticamente no chat.
-Ela aparece em uma área própria: **Respostas da IA**.
+## Arquivos
 
-A Mestre escolhe depois:
+- main.py — backend FastAPI/Railway.
+- index.html — frontend com mapas interativos.
+- local_worker.py — worker local para Ollama.
+- requirements.txt — dependências.
+- Procfile — comando de start no Railway.
+- railway.json — configuração Railway.
 
-- **Salvar no Diário**
-- **Enviar ao Chat**
+## Teste de versão
 
-Também foram aumentadas as fontes da área de narrativa/IA e o painel lateral ficou mais largo.
+Abra:
 
-## Variáveis necessárias no Railway
+```
+https://web-production-0ce81.up.railway.app/debug/admin-env
+```
 
-```txt
-ADMIN_USERNAME=eduardo
-ADMIN_PASSWORD=sua_senha
-JWT_SECRET=um_segredo_grande
-DATABASE_URL=postgresql://...
-LOCAL_AI_WORKER_TOKEN=terras-local-worker-eduardo-2026
+Deve retornar:
+
+```
+"version": "v8-mapas-interativos"
 ```
 
 ## Worker local
 
-No PowerShell, na pasta do projeto:
+No computador do Eduardo:
 
 ```powershell
+cd C:\terras_raras_local
 $env:TERRAS_RARAS_URL="https://web-production-0ce81.up.railway.app"
 $env:LOCAL_AI_WORKER_TOKEN="terras-local-worker-eduardo-2026"
 $env:OLLAMA_MODEL="llama3.1:8b"
 python local_worker.py
 ```
-
-Deixe essa janela aberta.

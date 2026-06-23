@@ -362,7 +362,7 @@ def home():
     return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
 
 @app.get("/health")
-def health(): return {"status":"ok", "service": APP_NAME, "version":"v7-ai-organizada"}
+def health(): return {"status":"ok", "service": APP_NAME, "version":"v8-mapas-interativos"}
 
 @app.get("/debug/admin-env")
 def debug_admin_env():
@@ -373,7 +373,7 @@ def debug_admin_env():
         "database_url_configured": bool(DATABASE_URL),
         "jwt_secret_configured": bool(SECRET),
         "local_ai_worker_token_configured": bool(LOCAL_AI_WORKER_TOKEN),
-        "version": "v7-ia-organizada"
+        "version": "v8-mapas-interativos"
     }
 
 @app.post("/auth/register")
@@ -654,4 +654,3 @@ async def ws_room(room_id: str, ws: WebSocket):
             await ws.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(room_id, ws)
-
