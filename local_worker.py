@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 
 RAILWAY_URL = os.getenv("TERRAS_RARAS_URL", "https://web-production-0ce81.up.railway.app").rstrip("/")
-WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker")
+WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker-eduardo-2026")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 POLL_SECONDS = int(os.getenv("POLL_SECONDS", "5"))
@@ -52,6 +52,8 @@ def main():
     print(f"Ollama:  {OLLAMA_URL}")
     print(f"Modelo:  {OLLAMA_MODEL}")
     print("Aguardando pedidos... Ctrl+C para encerrar.\n")
+    if not WORKER_TOKEN:
+        print("ATENÇÃO: LOCAL_AI_WORKER_TOKEN não configurado.")
 
     token_q = urllib.parse.urlencode({"token": WORKER_TOKEN})
     while True:
@@ -87,6 +89,8 @@ def main():
             break
         except Exception as e:
             print(f"Aguardando... erro temporário: {e}")
+            if "401" in str(e):
+                print("DICA: token inválido. Confira LOCAL_AI_WORKER_TOKEN no Railway e no PowerShell.")
             time.sleep(POLL_SECONDS)
 
 

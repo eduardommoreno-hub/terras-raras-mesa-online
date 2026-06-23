@@ -1,25 +1,73 @@
-# Terras Raras — v8.1 Polimento Visual
+# Terras Raras — v8.2 Estabilidade da IA Local
 
-Atualização focada em conforto para sessões longas:
+Versão de estabilização após a v8.1 visual.
 
-- Painel lateral reorganizado em abas: Mapa, Jogadoras, Personagem, Chat, Diário e IA.
-- Área de leitura mais confortável, com fonte maior e melhor espaçamento.
-- Mapa menos “vazio”, com trilhas curvas e textura visual mais natural.
-- Marcadores com aparência mais profissional: local, perigo, oculto e portal.
-- Floresta Negra ampliada com novos pontos: Poço das Vozes, Ninho de Espinhos e Cabana Vazia.
-- Mantém login, salas, PostgreSQL, tokens, IA local via Ollama e worker local.
+## O que mudou
 
-## Deploy
-Substitua no GitHub:
+- Mantém o visual melhorado da v8.1.
+- Impede criação de vários pedidos repetidos de IA quando já existe pedido pendente/processando.
+- Adiciona botão **Limpar pendentes** na aba IA.
+- Adiciona botão **Cancelar pedido** em cada pedido pendente/processando.
+- Jobs travados em `processing` por mais de 8 minutos voltam para `pending`.
+- Adiciona o arquivo `iniciar_worker.bat` para ligar o worker local com dois cliques no Windows.
+- Atualiza `/health` e `/debug/admin-env` para `v8.2-estabilidade-ia`.
 
-- main.py
-- index.html
-- requirements.txt
-- Procfile
-- railway.json
-- README.md
-- local_worker.py
+## Como aplicar no Railway
 
-Depois aguarde o Railway redeployar e confira:
+Envie estes arquivos para o GitHub:
 
-`/debug/admin-env` deve retornar `v8.1-polimento-visual`.
+- `main.py`
+- `index.html`
+- `requirements.txt`
+- `Procfile`
+- `railway.json`
+- `README.md`
+- `local_worker.py`
+- `iniciar_worker.bat`
+
+Depois aguarde o Railway redeployar. Teste:
+
+```txt
+https://web-production-0ce81.up.railway.app/debug/admin-env
+```
+
+Deve aparecer:
+
+```txt
+"version":"v8.2-estabilidade-ia"
+```
+
+## Como usar o worker local
+
+Copie também para `C:\terras_raras_local`:
+
+- `local_worker.py`
+- `iniciar_worker.bat`
+
+Depois basta dar dois cliques em:
+
+```txt
+iniciar_worker.bat
+```
+
+Ele já configura:
+
+- `TERRAS_RARAS_URL`
+- `LOCAL_AI_WORKER_TOKEN`
+- `OLLAMA_MODEL`
+
+e executa:
+
+```txt
+python local_worker.py
+```
+
+Se preferir pelo PowerShell:
+
+```powershell
+cd C:\terras_raras_local
+$env:TERRAS_RARAS_URL="https://web-production-0ce81.up.railway.app"
+$env:LOCAL_AI_WORKER_TOKEN="terras-local-worker-eduardo-2026"
+$env:OLLAMA_MODEL="llama3.1:8b"
+python local_worker.py
+```

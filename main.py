@@ -362,7 +362,7 @@ def home():
     return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
 
 @app.get("/health")
-def health(): return {"status":"ok", "service": APP_NAME, "version":"v8.1-polimento-visual"}
+def health(): return {"status":"ok", "service": APP_NAME, "version":"v8.2-estabilidade-ia"}
 
 @app.get("/debug/admin-env")
 def debug_admin_env():
@@ -373,7 +373,7 @@ def debug_admin_env():
         "database_url_configured": bool(DATABASE_URL),
         "jwt_secret_configured": bool(SECRET),
         "local_ai_worker_token_configured": bool(LOCAL_AI_WORKER_TOKEN),
-        "version": "v8.1-polimento-visual"
+        "version": "v8.2-estabilidade-ia"
     }
 
 @app.post("/auth/register")
@@ -574,6 +574,22 @@ async def notes(room_id: str, req: NoteReq, db: Session = Depends(db_dep), user:
 async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     require_master(db, room_id, user)
     job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary") else "narrative"
+
+    # v8.2: evita criar vários pedidos iguais se o worker estiver desligado.
+    existing = (
+        db.query(AIJob)
+        .filter(AIJob.room_id == room_id, AIJob.job_type == job_type, AIJob.status.in_(["pending", "processing"]))
+        .order_by(AIJob.id.desc())
+        .first()
+    )
+    if existing:
+        await manager.broadcast(room_id, {"type":"ai_job", "job": ai_job_dict(existing)})
+        return {
+            "ok": True,
+            "job": ai_job_dict(existing),
+            "message": "Já existe um pedido de IA desse tipo aguardando o worker local. Processe, cancele ou limpe pendentes antes de criar outro."
+        }
+
     prompt = build_ai_prompt(db, room_id, user, req.action.strip() or "Continue a cena.", job_type)
     job = AIJob(room_id=room_id, user_id=user.id, job_type=job_type, status="pending", prompt=prompt)
     db.add(job)
@@ -589,10 +605,54 @@ def list_room_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: User = 
     jobs = db.query(AIJob).filter_by(room_id=room_id).order_by(AIJob.id.desc()).limit(20).all()
     return [ai_job_dict(j) for j in jobs]
 
+
+@app.post("/rooms/{room_id}/ai/jobs/{job_id}/cancel")
+async def cancel_ai_job(room_id: str, job_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    job = db.get(AIJob, job_id)
+    if not job or job.room_id != room_id:
+        raise HTTPException(404, "Pedido de IA não encontrado")
+    if job.status not in ("pending", "processing"):
+        return {"ok": True, "job": ai_job_dict(job), "message": "Esse pedido já foi finalizado."}
+    job.status = "error"
+    job.error = "Pedido cancelado pela Mestre."
+    job.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="ai_cancel", text=f"Pedido de IA #{job.id} cancelado."))
+    db.commit(); db.refresh(job)
+    await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
+    await manager.broadcast(room_id, {"type":"ai_job", "job": ai_job_dict(job)})
+    return {"ok": True, "job": ai_job_dict(job)}
+
+
+@app.post("/rooms/{room_id}/ai/clear-pending")
+async def clear_pending_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    jobs = db.query(AIJob).filter(AIJob.room_id == room_id, AIJob.status.in_(["pending", "processing"])).all()
+    count = len(jobs)
+    for job in jobs:
+        job.status = "error"
+        job.error = "Pedido limpo pela Mestre antes de ser processado."
+        job.updated_at = datetime.utcnow()
+    if count:
+        db.add(EventLog(room_id=room_id, kind="ai_clear", text=f"{count} pedido(s) pendente(s) de IA foram limpos."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
+    return {"ok": True, "cleared": count}
+
 @app.get("/ai/jobs/next")
 def next_ai_job(token: str = "", db: Session = Depends(db_dep)):
     if not worker_ok(token):
         raise HTTPException(401, "Worker token inválido")
+
+    # v8.2: se o worker caiu durante um processamento, devolve jobs travados para a fila.
+    stale = datetime.utcnow() - timedelta(minutes=8)
+    stuck_jobs = db.query(AIJob).filter(AIJob.status == "processing", AIJob.updated_at < stale).all()
+    for stuck in stuck_jobs:
+        stuck.status = "pending"
+        stuck.updated_at = datetime.utcnow()
+    if stuck_jobs:
+        db.commit()
+
     job = db.query(AIJob).filter_by(status="pending").order_by(AIJob.id.asc()).first()
     if not job:
         return {"job": None}
