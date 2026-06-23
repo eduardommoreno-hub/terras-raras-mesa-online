@@ -1,49 +1,25 @@
-# Terras Raras — v8 Mapas Interativos
+# Terras Raras — v8.1 Polimento Visual
 
-Versão v8 do projeto Terras Raras. Mantém tudo da v7 e adiciona a primeira camada de mapa jogável.
+Atualização focada em conforto para sessões longas:
 
-## O que há de novo
+- Painel lateral reorganizado em abas: Mapa, Jogadoras, Personagem, Chat, Diário e IA.
+- Área de leitura mais confortável, com fonte maior e melhor espaçamento.
+- Mapa menos “vazio”, com trilhas curvas e textura visual mais natural.
+- Marcadores com aparência mais profissional: local, perigo, oculto e portal.
+- Floresta Negra ampliada com novos pontos: Poço das Vozes, Ninho de Espinhos e Cabana Vazia.
+- Mantém login, salas, PostgreSQL, tokens, IA local via Ollama e worker local.
 
-- Mapas com pontos clicáveis.
-- Caminhos visíveis entre locais.
-- Locais por zona: entrada, perigo, local oculto e portal.
-- Mestre pode selecionar um ponto e mover um token para lá.
-- Botão para gerar narração do ponto usando IA local/Ollama.
-- Botão para gerar prompt de imagem do ponto.
-- Botão para registrar o local no Diário da Mestre.
-- Mantém IA Local Zero API, login, sala, sair da sala, PostgreSQL e worker local.
+## Deploy
+Substitua no GitHub:
 
-## Arquivos
+- main.py
+- index.html
+- requirements.txt
+- Procfile
+- railway.json
+- README.md
+- local_worker.py
 
-- main.py — backend FastAPI/Railway.
-- index.html — frontend com mapas interativos.
-- local_worker.py — worker local para Ollama.
-- requirements.txt — dependências.
-- Procfile — comando de start no Railway.
-- railway.json — configuração Railway.
+Depois aguarde o Railway redeployar e confira:
 
-## Teste de versão
-
-Abra:
-
-```
-https://web-production-0ce81.up.railway.app/debug/admin-env
-```
-
-Deve retornar:
-
-```
-"version": "v8-mapas-interativos"
-```
-
-## Worker local
-
-No computador do Eduardo:
-
-```powershell
-cd C:\terras_raras_local
-$env:TERRAS_RARAS_URL="https://web-production-0ce81.up.railway.app"
-$env:LOCAL_AI_WORKER_TOKEN="terras-local-worker-eduardo-2026"
-$env:OLLAMA_MODEL="llama3.1:8b"
-python local_worker.py
-```
+`/debug/admin-env` deve retornar `v8.1-polimento-visual`.
