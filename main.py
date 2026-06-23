@@ -14,7 +14,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v9.7.4-responsivo-funcoes-iguais"
+APP_VERSION = "v17.3-auditoria-campanha-completa"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -126,6 +126,33 @@ class SessionNote(Base):
     room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(120), default="Nota da Mestre")
     text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class AdventureCard(Base):
+    __tablename__ = "adventure_cards"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    sender_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    kind = Column(String(30), default="pista")
+    title = Column(String(160), nullable=False)
+    text = Column(Text, nullable=False)
+    origin = Column(String(160), default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    seen_at = Column(DateTime, nullable=True)
+    saved_at = Column(DateTime, nullable=True)
+
+class MasterEvent(Base):
+    __tablename__ = "master_events"
+    id = Column(Integer, primary_key=True)
+    room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    sender_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    kind = Column(String(30), default="livre")
+    title = Column(String(160), nullable=False)
+    text = Column(Text, nullable=False)
+    sensory = Column(Text, default="")
+    choice = Column(Text, default="")
+    visibility = Column(String(20), default="public")  # public/private
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class EventLog(Base):
@@ -241,10 +268,60 @@ def svg_avatar(name, color):
 def svg_map(label, bg):
     palettes = {
         "forest": ("#06130b", "#14351f", "#2f6b38"), "candy": ("#241021", "#7b2b63", "#e0a0c4"),
-        "mountain": ("#15130e", "#443d32", "#9d8350"), "ice": ("#07131d", "#1b506b", "#bcecff"),
+        "mountain": ("#090b08", "#2f2a20", "#d7ecff"), "ice": ("#07131d", "#1b506b", "#bcecff"),
         "desert": ("#201407", "#7b5724", "#d0a24c"), "storm": ("#080912", "#222d69", "#d0d7ff"),
-        "demon": ("#110306", "#481018", "#d04444"), "void": ("#020202", "#121212", "#777777")
+        "demon": ("#110306", "#481018", "#d04444"), "race": ("#07101a", "#253a4e", "#f1cf78"), "void": ("#020202", "#121212", "#777777")
     }
+    if bg == "mountain":
+        return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none">
+<defs>
+  <radialGradient id="sky" cx="52%" cy="26%" r="70%"><stop offset="0" stop-color="#7f8d62" stop-opacity=".55"/><stop offset=".48" stop-color="#24291d"/><stop offset="1" stop-color="#070907"/></radialGradient>
+  <linearGradient id="peak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d6b57"/><stop offset="1" stop-color="#211d17"/></linearGradient>
+  <linearGradient id="snow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f0d3" stop-opacity=".86"/><stop offset="1" stop-color="#b8d7df" stop-opacity=".44"/></linearGradient>
+  <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .16"/></feComponentTransfer></filter>
+  <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#sky)"/>
+<rect width="1200" height="700" filter="url(#noise)" opacity=".65"/>
+<path d="M0 505 L120 360 L210 430 L350 250 L470 418 L590 210 L760 440 L880 300 L1020 460 L1200 335 L1200 700 L0 700Z" fill="#161a15" opacity=".92"/>
+<path d="M0 560 L150 400 L260 470 L420 280 L550 465 L690 265 L810 485 L960 360 L1200 505 L1200 700 L0 700Z" fill="url(#peak)" opacity=".95"/>
+<path d="M350 250 L401 318 L368 302 L338 338 L315 305Z M590 210 L645 300 L610 282 L575 330 L548 287Z M880 300 L923 366 L893 350 L863 390 L838 347Z M1200 335 L1145 405 L1172 392 L1192 435Z" fill="url(#snow)" opacity=".72"/>
+<path d="M0 612 C160 560 320 630 490 560 S810 505 1200 590 L1200 700 L0 700Z" fill="#25271d" opacity=".94"/>
+<path d="M0 640 C190 610 330 680 520 620 S885 565 1200 632 L1200 700 L0 700Z" fill="#181a12" opacity=".98"/>
+<path d="M95 475 C170 430 260 428 335 460" fill="none" stroke="#d7ecff" stroke-width="5" opacity=".20"/>
+<path d="M275 530 q35 -55 75 0 q-38 -18 -75 0Z" fill="#080908" stroke="#b8913a" stroke-width="4" opacity=".78"/>
+<circle cx="356" cy="506" r="7" fill="#77d7ff" opacity=".75" filter="url(#glow)"/><circle cx="388" cy="525" r="5" fill="#77d7ff" opacity=".65" filter="url(#glow)"/><circle cx="326" cy="522" r="5" fill="#77d7ff" opacity=".65" filter="url(#glow)"/>
+<path d="M755 526 l18 -42 l17 42 l-17 -10Z M802 506 l14 -34 l15 34 l-15 -8Z M717 504 l12 -30 l14 30 l-14 -7Z" fill="#9ddcff" opacity=".58" filter="url(#glow)"/>
+<path d="M510 431 c42 -18 76 -16 104 0 M535 410 c16 -10 33 -10 52 0" stroke="#d6b45b" stroke-width="5" fill="none" opacity=".42"/>
+<path d="M910 535 q35 -85 73 0" fill="none" stroke="#b8953e" stroke-width="10" opacity=".82" filter="url(#glow)"/><path d="M934 535 q13 -40 28 0" fill="none" stroke="#d7ecff" stroke-width="5" opacity=".55"/>
+<path d="M796 202 q35 -25 72 0 q-36 -10 -72 0Z M846 198 q28 -22 56 2" fill="none" stroke="#c9dfff" stroke-width="3" opacity=".45"/>
+<path d="M110 178 C270 72 380 252 520 112 S830 88 1045 202" fill="none" stroke="#d8c477" stroke-width="5" opacity=".20"/>
+<text x="60" y="92" fill="#e6bd58" font-size="48" font-family="serif" letter-spacing="8">{label}</text>
+<text x="63" y="125" fill="#d7ecff" font-size="15" font-family="serif" letter-spacing="5" opacity=".68">O RUGIDO DEBAIXO DA PEDRA</text>
+</svg>'''
+    if bg == "ice":
+        return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none">
+<defs>
+  <radialGradient id="iceSky" cx="50%" cy="18%" r="78%"><stop offset="0" stop-color="#d8fbff" stop-opacity=".42"/><stop offset=".42" stop-color="#235f7e" stop-opacity=".72"/><stop offset="1" stop-color="#06111b"/></radialGradient>
+  <linearGradient id="frost" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9fbff" stop-opacity=".82"/><stop offset="1" stop-color="#447f9a" stop-opacity=".18"/></linearGradient>
+  <linearGradient id="crystal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2ffff"/><stop offset=".45" stop-color="#8ce9ff"/><stop offset="1" stop-color="#245e89"/></linearGradient>
+  <filter id="iceNoise"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .13"/></feComponentTransfer></filter>
+  <filter id="iceGlow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1200" height="700" fill="url(#iceSky)"/>
+<rect width="1200" height="700" filter="url(#iceNoise)" opacity=".55"/>
+<path d="M0 545 C150 470 260 515 360 455 S570 385 705 470 S960 420 1200 490 L1200 700 L0 700Z" fill="#0e2b3d" opacity=".86"/>
+<path d="M0 610 C160 540 330 640 500 560 S820 520 1200 585 L1200 700 L0 700Z" fill="url(#frost)" opacity=".66"/>
+<path d="M120 525 l38 -125 l36 125 l-36 -22Z M210 560 l28 -88 l27 88 l-27 -16Z M820 500 l44 -142 l43 142 l-43 -26Z M905 550 l30 -96 l31 96 l-31 -18Z" fill="url(#crystal)" opacity=".70" filter="url(#iceGlow)"/>
+<path d="M360 520 q60 -95 130 0 q-62 -28 -130 0Z" fill="#07111a" stroke="#bcecff" stroke-width="4" opacity=".55"/>
+<path d="M595 395 C640 370 700 372 748 397" fill="none" stroke="#e8ffff" stroke-width="5" opacity=".46"/>
+<path d="M610 385 C650 360 710 362 765 390" fill="none" stroke="#8ee7ff" stroke-width="2" opacity=".55"/>
+<circle cx="635" cy="410" r="7" fill="#e8ffff" opacity=".85" filter="url(#iceGlow)"/><circle cx="700" cy="405" r="6" fill="#bcecff" opacity=".72" filter="url(#iceGlow)"/>
+<path d="M942 505 q36 -70 76 0" fill="none" stroke="#bcecff" stroke-width="10" opacity=".75" filter="url(#iceGlow)"/><path d="M964 505 q17 -38 35 0" fill="none" stroke="#ffffff" stroke-width="4" opacity=".8"/>
+<path d="M120 175 C250 80 385 225 530 105 S845 90 1050 195" fill="none" stroke="#d8fbff" stroke-width="5" opacity=".20"/>
+<text x="60" y="92" fill="#e9fbff" font-size="48" font-family="serif" letter-spacing="8">{label}</text>
+<text x="63" y="125" fill="#bcecff" font-size="15" font-family="serif" letter-spacing="5" opacity=".78">A CANÇÃO PRESA NO CRISTAL</text>
+</svg>'''
     a,b,c = palettes.get(bg, palettes["forest"])
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none"><defs><radialGradient id="r"><stop offset="0" stop-color="{c}" stop-opacity=".36"/><stop offset="1" stop-color="{a}"/></radialGradient><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .18"/></feComponentTransfer></filter></defs><rect width="1200" height="700" fill="url(#r)"/><rect width="1200" height="700" filter="url(#noise)" opacity=".55"/><path d="M0 540 C180 420 260 610 390 480 S660 390 780 520 S1010 360 1200 480 L1200 700 L0 700Z" fill="{b}" opacity=".8"/><path d="M120 170 C250 70 420 230 560 120 S860 90 1040 190" fill="none" stroke="{c}" stroke-width="5" opacity=".25"/><text x="60" y="92" fill="#e6bd58" font-size="48" font-family="serif" letter-spacing="8">{label}</text></svg>'''
 
@@ -298,19 +375,22 @@ def seed(db: Session):
             db.add(Character(id=cid,name=n,role=r,zone=z,description=d,ability=a,color=col,avatar_svg=svg_avatar(n,col)))
     maps = [
         ("floresta_negra",1,"Floresta Negra","Uma floresta viva, antiga e consciente. Trilhas mudam, vozes enganam, pistas surgem em lugares errados e o Portal da Próxima Zona observa quem se aproxima.","forest"),
-        ("fabrica_doces",2,"Fábrica dos Doces Pesadelos","Uma fábrica alucinante onde o cheiro cria ilusões.","candy"),
-        ("montanhas_arcaicas",3,"Montanhas Arcaicas","Pterodáctilos, cavernas e monstros que farejam medo.","mountain"),
-        ("gelo_eterno",4,"Gelo Eterno","Frio tão intenso que congela escolhas.","ice"),
-        ("alexandria",5,"Alexandria","Biblioteca perdida no deserto, onde saber é poder.","desert"),
-        ("tempestade_deuses",6,"Tempestade dos Deuses","Zeus e Poseidon em guerra sob chuva, raios e lama.","storm"),
-        ("correr_ou_morrer",7,"Correr ou Morrer","Duas casinhas, demônios noturnos e uma fuga cruel.","demon"),
-        ("o_vazio",8,"O Vazio","Escuridão, baixa luz e solidão como inimiga.","void"),
+        ("fabrica_doces",2,"Fábrica dos Doces Pesadelos","Uma fábrica colorida, automática e viva. Máquinas trabalham sozinhas, doces guardam sentimentos e a Mentira Amarga revela que a Confeiteira não é vilã: ela esqueceu como a alegria verdadeira funciona.","candy"),
+        ("cidade_relogios",3,"Cidade dos Relógios Parados","Uma cidade antiga onde todos os relógios pararam no mesmo minuto. Janelas acendem sozinhas, ruas repetem ecos e o Minuto Perdido precisa ser libertado para abrir o Portal do Amanhã.","clock"),
+        ("montanhas_arcaicas",4,"Montanhas Arcaicas","Cavernas antigas, fósseis luminosos, pterodáctilos azuis e uma guardiã arcaica que não precisa ser derrotada: precisa ser compreendida para despertar o Coração de Pedra.","mountain"),
+        ("gelo_eterno",5,"Gelo Eterno","Um reino congelado onde vozes antigas ficaram presas dentro de cristais. Para abrir o Portal da Aurora, as jogadoras precisam libertar a Canção Congelada com coragem, amizade e cuidado.","ice"),
+        ("alexandria",6,"Alexandria","Cidade dourada entre areia, mar e estrelas. Livros vivos, mapas impossíveis e o Farol das Perguntas Perdidas guardam a Pergunta Perdida que abre o Portal das Estrelas Escritas.","desert"),
+        ("tempestade_deuses",7,"Tempestade dos Deuses","Um mundo acima das nuvens, com ilhas flutuantes, trovões que falam como tambores e forças antigas do céu buscando equilíbrio. Para abrir o Portal da Corrida Celeste, as jogadoras precisam despertar o Raio Calmo.","storm"),
+        ("correr_ou_morrer",8,"Correr ou Morrer","Uma estrada impossível onde pontes aparecem e desaparecem, atalhos tentam separar o grupo e o caminho só continua quando todas correm juntas. Para abrir o Portal da Última Luz, as jogadoras precisam chegar ao fim sem deixar ninguém para trás.","race"),
+        ("o_vazio",9,"O Vazio","A zona final das Terras Raras: um espaço de estrelas apagadas, ecos das aventuras anteriores e uma pequena Última Luz que precisa ser reacendida com memória, união e imaginação.","void"),
     ]
     for mid,num,n,d,bg in maps:
         existing_map = db.get(GameMap, mid)
         if not existing_map:
             db.add(GameMap(id=mid, name=n, zone_number=num, description=d, background=bg, image_svg=svg_map(n,bg)))
-        elif mid == "floresta_negra":
+        else:
+            existing_map.name = n
+            existing_map.zone_number = num
             existing_map.description = d
             existing_map.background = bg
             existing_map.image_svg = svg_map(n,bg)
@@ -334,6 +414,10 @@ class JoinReq(BaseModel):
 class ChooseCharReq(BaseModel): room_id: str; character_id: str
 class MoveReq(BaseModel): player_id: int; x: float; y: float
 class StatsReq(BaseModel): player_id: int; hp: Optional[int]=None; energy: Optional[int]=None; weakness: Optional[str]=None; notes: Optional[str]=None; inventory: Optional[str]=None
+class InventoryItemReq(BaseModel):
+    player_id: int
+    item: Optional[str] = None
+    index: Optional[int] = None
 class MapReq(BaseModel): map_id: str
 class ChatReq(BaseModel): text: str
 class RoomRoleReq(BaseModel): role: str="participante"
@@ -362,6 +446,22 @@ class ProgressFlagReq(BaseModel):
     value: bool=True
     label: str=""
 
+class AdventureCardSendReq(BaseModel):
+    kind: str="pista"
+    title: str
+    text: str
+    origin: str=""
+    target: str="all"
+    target_user_id: Optional[int]=None
+
+class MasterEventReq(BaseModel):
+    kind: str="livre"
+    title: str
+    text: str
+    sensory: str=""
+    choice: str=""
+    visibility: str="public"
+
 # ---------- websocket manager ----------
 class WSManager:
     def __init__(self): self.rooms: Dict[str, List[WebSocket]] = {}
@@ -389,6 +489,41 @@ def char_dict(c: Optional[Character]):
 def map_dict(m: Optional[GameMap]):
     if not m: return None
     return {"id":m.id,"name":m.name,"zone_number":m.zone_number,"description":m.description,"background":m.background,"image_svg":m.image_svg}
+
+def adventure_card_dict(db: Session, c: AdventureCard):
+    sender = db.get(User, c.sender_user_id)
+    recipient = db.get(User, c.recipient_user_id)
+    return {
+        "id": c.id,
+        "room_id": c.room_id,
+        "kind": c.kind,
+        "title": c.title,
+        "text": c.text,
+        "origin": c.origin,
+        "sender_user_id": c.sender_user_id,
+        "sender_username": sender.username if sender else "?",
+        "recipient_user_id": c.recipient_user_id,
+        "recipient_username": recipient.username if recipient else "?",
+        "created_at": c.created_at.isoformat() if c.created_at else None,
+        "seen_at": c.seen_at.isoformat() if c.seen_at else None,
+        "saved_at": c.saved_at.isoformat() if c.saved_at else None,
+    }
+
+def master_event_dict(db: Session, e: MasterEvent):
+    sender = db.get(User, e.sender_user_id)
+    return {
+        "id": e.id,
+        "room_id": e.room_id,
+        "kind": e.kind,
+        "title": e.title,
+        "text": e.text,
+        "sensory": e.sensory,
+        "choice": e.choice,
+        "visibility": e.visibility,
+        "sender_user_id": e.sender_user_id,
+        "sender_username": sender.username if sender else "?",
+        "created_at": e.created_at.isoformat() if e.created_at else None,
+    }
 
 def room_state(db: Session, room_id: str):
     r = db.get(Room, room_id)
@@ -622,6 +757,27 @@ def require_staff(db: Session, room_id: str, user: User):
         raise HTTPException(403, "Apenas Mestre, Ajudante ou admin pode fazer isso")
     return rp
 
+def ensure_room_member(db: Session, room_id: str, user: User):
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    if not rp and not user.is_admin:
+        raise HTTPException(403, "Você não está nesta sala")
+    return rp
+
+
+
+def _inventory_lines(value: Optional[str]) -> list[str]:
+    return [x.strip() for x in (value or "").splitlines() if x.strip()]
+
+def _save_inventory_lines(player: RoomPlayer, lines: list[str]):
+    cleaned = []
+    seen = set()
+    for line in lines:
+        item = str(line or "").strip()
+        if item and item not in seen:
+            cleaned.append(item)
+            seen.add(item)
+    player.inventory = "\n".join(cleaned)
+    player.updated_at = datetime.utcnow()
 
 def worker_ok(token: Optional[str]) -> bool:
     return bool(token) and secrets.compare_digest(token, LOCAL_AI_WORKER_TOKEN)
@@ -744,6 +900,42 @@ def script_js():
 
 @app.get("/health")
 def health(): return {"status":"ok", "service": APP_NAME, "version": APP_VERSION}
+
+@app.get("/campaign/audit")
+def campaign_audit():
+    return {
+        "status": "ok",
+        "version": APP_VERSION,
+        "campaign": "Terras Raras — Campanha principal",
+        "zones_total": 9,
+        "zones_complete": 9,
+        "zones": [
+            {"zone": 1, "id": "floresta_negra", "name": "Floresta Negra", "episode": "Episódio I — A trilha que observa de volta"},
+            {"zone": 2, "id": "fabrica_doces", "name": "Fábrica dos Doces Pesadelos", "episode": "Episódio II — O segredo da Mentira Amarga"},
+            {"zone": 3, "id": "cidade_relogios", "name": "Cidade dos Relógios Parados", "episode": "Episódio III — O Minuto Perdido"},
+            {"zone": 4, "id": "montanhas_arcaicas", "name": "Montanhas Arcaicas", "episode": "Episódio IV — O Rugido Debaixo da Pedra"},
+            {"zone": 5, "id": "gelo_eterno", "name": "Gelo Eterno", "episode": "Episódio V — A Canção Presa no Cristal"},
+            {"zone": 6, "id": "alexandria", "name": "Alexandria", "episode": "Episódio VI — O Farol das Perguntas Perdidas"},
+            {"zone": 7, "id": "tempestade_deuses", "name": "Tempestade dos Deuses", "episode": "Episódio VII — O Céu que Esqueceu a Calma"},
+            {"zone": 8, "id": "correr_ou_morrer", "name": "Correr ou Morrer", "episode": "Episódio VIII — A Corrida Contra o Fim do Caminho"},
+            {"zone": 9, "id": "o_vazio", "name": "O Vazio", "episode": "Episódio IX — A Última Luz das Terras Raras"},
+        ],
+        "core_systems": {
+            "child_safety": True,
+            "local_ai": True,
+            "journey": True,
+            "cards": True,
+            "missions": True,
+            "master_events": True,
+            "visual_inventory": True,
+            "visual_diary": True,
+            "master_central": True,
+            "master_library": True,
+            "kick_route": True,
+            "atomic_inventory": True
+        },
+        "next_phase": "v18.0 — versão demonstrável, visual e onboarding"
+    }
 
 @app.get("/debug/admin-env")
 def debug_admin_env(user: User = Depends(admin_user)):
@@ -1064,6 +1256,90 @@ async def leave_room(room_id: str, db: Session = Depends(db_dep), user: User = D
     db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True, "deleted": False, "message": "Você saiu da sala."}
+
+
+@app.post("/rooms/{room_id}/players/{player_id}/kick")
+async def kick_room_player(room_id: str, player_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    actor = require_master(db, room_id, user)
+    room = db.get(Room, room_id)
+    if not room:
+        raise HTTPException(404, "Sala não encontrada")
+    target = db.get(RoomPlayer, player_id)
+    if not target or target.room_id != room_id:
+        raise HTTPException(404, "Jogadora não encontrada nesta sala")
+    if target.id == actor.id and not user.is_admin:
+        raise HTTPException(400, "A Mestre deve usar o botão de sair da sala para sair voluntariamente.")
+    if target.role == "mestre" and not user.is_admin:
+        raise HTTPException(403, "Apenas admin pode remover a Mestre da sala.")
+
+    target_user = db.get(User, target.user_id)
+    target_name = target_user.username if target_user else "Jogadora"
+    was_master = (target.role == "mestre")
+    db.delete(target)
+    db.flush()
+
+    remaining = db.query(RoomPlayer).filter_by(room_id=room_id).all()
+    if not remaining:
+        db.delete(room)
+        db.commit()
+        await manager.broadcast(room_id, {"type":"room_deleted"})
+        return {"ok": True, "deleted": True, "message": f"{target_name} foi removida e a sala foi encerrada por ficar vazia."}
+
+    if was_master:
+        remaining[0].role = "mestre"
+        room.owner_id = remaining[0].user_id
+    room.updated_at = datetime.utcnow()
+    db.add(EventLog(room_id=room_id, kind="kick", text=f"{target_name} foi removida da sala pela Mestre/admin."))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id), "toast": f"{target_name} foi removida da sala."})
+    return {"ok": True, "deleted": False, "message": f"{target_name} foi removida da sala."}
+
+@app.post("/rooms/{room_id}/inventory/add")
+async def inventory_add(room_id: str, req: InventoryItemReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    player = db.get(RoomPlayer, req.player_id)
+    if not player or player.room_id != room_id:
+        raise HTTPException(404, "Jogadora não encontrada")
+    item = (req.item or "").strip()
+    if not item:
+        raise HTTPException(400, "Informe o item a ser entregue")
+    enforce_safe_message(db, room_id, user, request, item, "inventory")
+    lines = _inventory_lines(player.inventory)
+    if item not in lines:
+        lines.append(item)
+    _save_inventory_lines(player, lines)
+    db.add(EventLog(room_id=room_id, kind="inventory", text=f"Item entregue: {item}"))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "inventory": player.inventory}
+
+@app.post("/rooms/{room_id}/inventory/remove")
+async def inventory_remove(room_id: str, req: InventoryItemReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    player = db.get(RoomPlayer, req.player_id)
+    if not player or player.room_id != room_id:
+        raise HTTPException(404, "Jogadora não encontrada")
+    lines = _inventory_lines(player.inventory)
+    removed = None
+    if req.index is not None:
+        if req.index < 0 or req.index >= len(lines):
+            raise HTTPException(400, "Índice de item inválido")
+        removed = lines.pop(req.index)
+    else:
+        item = (req.item or "").strip()
+        if not item:
+            raise HTTPException(400, "Informe o item a remover")
+        for i, current in enumerate(lines):
+            if current == item:
+                removed = lines.pop(i)
+                break
+        if removed is None:
+            raise HTTPException(404, "Item não encontrado no inventário")
+    _save_inventory_lines(player, lines)
+    db.add(EventLog(room_id=room_id, kind="inventory", text=f"Item removido: {removed}"))
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "inventory": player.inventory, "removed": removed}
 
 @app.get("/rooms/{room_id}")
 def get_room(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
@@ -1443,6 +1719,265 @@ async def clear_done_ai_jobs(room_id: str, db: Session = Depends(db_dep), user: 
     db.commit()
     await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
     return {"ok": True, "cleared": count}
+
+@app.get("/rooms/{room_id}/cards/all")
+def get_all_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    cards = db.query(AdventureCard).filter(AdventureCard.room_id == room_id).order_by(AdventureCard.id.desc()).limit(160).all()
+    return [adventure_card_dict(db, c) for c in cards]
+
+@app.get("/rooms/{room_id}/cards/my")
+def get_my_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    ensure_room_member(db, room_id, user)
+    cards = db.query(AdventureCard).filter(AdventureCard.room_id == room_id, AdventureCard.recipient_user_id == user.id).order_by(AdventureCard.id.desc()).limit(80).all()
+    return [adventure_card_dict(db, c) for c in cards]
+
+@app.get("/rooms/{room_id}/cards/sent")
+def get_sent_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    cards = db.query(AdventureCard).filter(AdventureCard.room_id == room_id, AdventureCard.sender_user_id == user.id).order_by(AdventureCard.id.desc()).limit(80).all()
+    return [adventure_card_dict(db, c) for c in cards]
+
+@app.post("/rooms/{room_id}/cards/send")
+async def send_adventure_card(room_id: str, req: AdventureCardSendReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_master(db, room_id, user)
+    title = enforce_safe_message(db, room_id, user, request, req.title or "", source="adventure_card_title").strip()[:160]
+    body = enforce_safe_message(db, room_id, user, request, req.text or "", source="adventure_card_text").strip()[:4000]
+    origin = enforce_safe_message(db, room_id, user, request, req.origin or "", source="adventure_card_origin").strip()[:160]
+    if not title or not body:
+        raise HTTPException(400, "Título e texto da carta são obrigatórios")
+    kind = (req.kind or "pista").strip().lower()
+    if kind not in ("pista", "item", "missao", "mensagem", "recompensa"):
+        kind = "pista"
+    target = (req.target or "all").strip().lower()
+    recipients = []
+    if target == "one":
+        if not req.target_user_id:
+            raise HTTPException(400, "Escolha uma jogadora para enviar a carta")
+        rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=req.target_user_id).first()
+        if not rp:
+            raise HTTPException(404, "Jogadora alvo não encontrada na sala")
+        recipients = [req.target_user_id]
+    else:
+        recipients = [rp.user_id for rp in db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.user_id != user.id).all()]
+    if not recipients:
+        raise HTTPException(400, "Não há jogadoras disponíveis para receber a carta")
+    created = []
+    for recipient_user_id in recipients:
+        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=recipient_user_id, kind=kind, title=title, text=body, origin=origin)
+        db.add(card)
+        created.append(card)
+    db.add(EventLog(room_id=room_id, kind="adventure_card", text=f"{user.username} enviou {len(recipients)} carta(s) da aventura."))
+    db.commit()
+    await manager.broadcast(room_id, {"type": "cards_updated"})
+    return {"ok": True, "count": len(recipients), "cards": [adventure_card_dict(db, c) for c in created]}
+
+@app.post("/rooms/{room_id}/cards/{card_id}/seen")
+async def see_adventure_card(room_id: str, card_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    ensure_room_member(db, room_id, user)
+    card = db.get(AdventureCard, card_id)
+    if not card or card.room_id != room_id or card.recipient_user_id != user.id:
+        raise HTTPException(404, "Carta não encontrada")
+    if not card.seen_at:
+        card.seen_at = datetime.utcnow()
+        db.commit()
+        await manager.broadcast(room_id, {"type": "cards_updated"})
+    return adventure_card_dict(db, card)
+
+@app.post("/rooms/{room_id}/cards/{card_id}/save")
+async def save_adventure_card(room_id: str, card_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    ensure_room_member(db, room_id, user)
+    card = db.get(AdventureCard, card_id)
+    if not card or card.room_id != room_id or card.recipient_user_id != user.id:
+        raise HTTPException(404, "Carta não encontrada")
+    now = datetime.utcnow()
+    if not card.seen_at:
+        card.seen_at = now
+    card.saved_at = now
+    db.commit()
+    await manager.broadcast(room_id, {"type": "cards_updated"})
+    return adventure_card_dict(db, card)
+
+@app.get("/rooms/{room_id}/master-events")
+def get_master_events(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = ensure_room_member(db, room_id, user)
+    q = db.query(MasterEvent).filter(MasterEvent.room_id == room_id)
+    if not user.is_admin and (not rp or rp.role not in ("mestre", "ajudante")):
+        q = q.filter(MasterEvent.visibility == "public")
+    events = q.order_by(MasterEvent.id.desc()).limit(40).all()
+    return [master_event_dict(db, e) for e in events]
+
+@app.post("/rooms/{room_id}/master-events")
+async def create_master_event(room_id: str, req: MasterEventReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    kind = (req.kind or "livre").strip().lower()
+    if kind not in ("susto", "descoberta", "consequencia", "ambiente", "npc", "portal", "item", "perigo", "escolha", "livre"):
+        kind = "livre"
+    visibility = (req.visibility or "public").strip().lower()
+    if visibility not in ("public", "private"):
+        visibility = "public"
+    title = enforce_safe_message(db, room_id, user, request, req.title or "", source="master_event_title").strip()[:160]
+    text = enforce_safe_message(db, room_id, user, request, req.text or "", source="master_event_text").strip()[:4000]
+    sensory = enforce_safe_message(db, room_id, user, request, req.sensory or "", source="master_event_sensory").strip()[:2000]
+    choice = enforce_safe_message(db, room_id, user, request, req.choice or "", source="master_event_choice").strip()[:2000]
+    if not title or not text:
+        raise HTTPException(400, "Título e texto do evento são obrigatórios")
+    ev = MasterEvent(room_id=room_id, sender_user_id=user.id, kind=kind, title=title, text=text, sensory=sensory, choice=choice, visibility=visibility)
+    db.add(ev)
+    db.add(EventLog(room_id=room_id, kind="master_event", text=f"{user.username} criou evento da Mestre: {title}." if visibility == "private" else f"{user.username} disparou evento da Mestre: {title}."))
+    db.commit()
+    if visibility == "public":
+        await manager.broadcast(room_id, {"type": "master_events_updated"})
+    return {"ok": True, "event": master_event_dict(db, ev)}
+
+
+@app.get("/rooms/{room_id}/diary/timeline")
+def get_adventure_diary_timeline(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    rp = ensure_room_member(db, room_id, user)
+    is_staff_user = bool(user.is_admin or (rp and rp.role in ("mestre", "ajudante")))
+    entries = []
+
+    room = db.get(Room, room_id)
+    game_map = db.get(GameMap, room.active_map_id) if room else None
+    if room:
+        entries.append({
+            "id": f"room-{room.id}",
+            "kind": "session",
+            "title": "Sessão criada",
+            "text": f"Mesa: {room.name}. Mapa atual: {game_map.name if game_map else 'Mapa não definido'}.",
+            "actor": "",
+            "created_at": room.created_at.isoformat() if room.created_at else None
+        })
+
+    event_q = db.query(MasterEvent).filter(MasterEvent.room_id == room_id)
+    if not is_staff_user:
+        event_q = event_q.filter(MasterEvent.visibility == "public")
+    for ev in event_q.order_by(MasterEvent.created_at.asc()).all():
+        details = ev.text
+        if ev.sensory:
+            details += f"\nComo foi percebido: {ev.sensory}"
+        if ev.choice:
+            details += f"\nEscolha aberta: {ev.choice}"
+        entries.append({
+            "id": f"event-{ev.id}",
+            "kind": "master_event",
+            "subkind": ev.kind,
+            "title": ev.title,
+            "text": details,
+            "actor": db.get(User, ev.sender_user_id).username if db.get(User, ev.sender_user_id) else "Mestre",
+            "created_at": ev.created_at.isoformat() if ev.created_at else None
+        })
+
+    card_q = db.query(AdventureCard).filter(AdventureCard.room_id == room_id)
+    if not is_staff_user:
+        card_q = card_q.filter(AdventureCard.recipient_user_id == user.id)
+    for c in card_q.order_by(AdventureCard.created_at.asc()).all():
+        recipient = db.get(User, c.recipient_user_id)
+        entries.append({
+            "id": f"card-{c.id}",
+            "kind": "card",
+            "subkind": c.kind,
+            "title": c.title,
+            "text": f"Recebida por {recipient.username if recipient else 'jogadora'}" + (f" em {c.origin}." if c.origin else "."),
+            "actor": db.get(User, c.sender_user_id).username if db.get(User, c.sender_user_id) else "Mestre",
+            "created_at": c.created_at.isoformat() if c.created_at else None
+        })
+        if c.saved_at:
+            entries.append({
+                "id": f"card-saved-{c.id}",
+                "kind": "saved_card",
+                "subkind": c.kind,
+                "title": f"Carta guardada: {c.title}",
+                "text": f"{recipient.username if recipient else 'Jogadora'} guardou esta carta no inventário de cartas.",
+                "actor": recipient.username if recipient else "",
+                "created_at": c.saved_at.isoformat()
+            })
+
+    for n in db.query(SessionNote).filter(SessionNote.room_id == room_id).order_by(SessionNote.created_at.asc()).all():
+        entries.append({
+            "id": f"note-{n.id}",
+            "kind": "note",
+            "title": n.title,
+            "text": n.text,
+            "actor": "Mestre",
+            "created_at": n.created_at.isoformat() if n.created_at else None
+        })
+
+    for f in db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id, RoomProgressFlag.value == True).order_by(RoomProgressFlag.updated_at.asc()).all():
+        entries.append({
+            "id": f"mission-{f.id}",
+            "kind": "mission",
+            "title": f.label or f.key,
+            "text": f"Objetivo marcado como concluído no mapa {f.map_id}.",
+            "actor": "",
+            "created_at": f.updated_at.isoformat() if f.updated_at else None
+        })
+
+    if is_staff_user:
+        for p in db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id).all():
+            u = db.get(User, p.user_id)
+            ch = db.get(Character, p.character_id) if p.character_id else None
+            items = [x.strip() for x in (p.inventory or "").splitlines() if x.strip()]
+            for item in items:
+                entries.append({
+                    "id": f"inventory-{p.id}-{abs(hash(item))}",
+                    "kind": "inventory",
+                    "title": item,
+                    "text": f"No inventário de {ch.name if ch else (u.username if u else 'jogadora')}.",
+                    "actor": u.username if u else "",
+                    "created_at": p.updated_at.isoformat() if p.updated_at else None
+                })
+
+    entries.sort(key=lambda e: e.get("created_at") or "")
+    return {"entries": entries[-120:]}
+
+@app.get("/rooms/{room_id}/diary/summary-draft")
+def get_adventure_diary_summary_draft(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    room = db.get(Room, room_id)
+    game_map = db.get(GameMap, room.active_map_id) if room else None
+
+    events = db.query(MasterEvent).filter(MasterEvent.room_id == room_id).order_by(MasterEvent.created_at.asc()).limit(30).all()
+    notes = db.query(SessionNote).filter(SessionNote.room_id == room_id).order_by(SessionNote.created_at.asc()).limit(20).all()
+    cards = db.query(AdventureCard).filter(AdventureCard.room_id == room_id).order_by(AdventureCard.created_at.asc()).limit(40).all()
+    missions = db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id, RoomProgressFlag.value == True).order_by(RoomProgressFlag.updated_at.asc()).limit(30).all()
+    chats = db.query(ChatMessage).filter(ChatMessage.room_id == room_id).order_by(ChatMessage.created_at.desc()).limit(20).all()[::-1]
+
+    lines = []
+    lines.append(f"Resumo da sessão — {room.name if room else room_id}")
+    lines.append(f"Mapa atual: {game_map.name if game_map else 'Mapa não definido'}")
+    lines.append("")
+    if events:
+        lines.append("Acontecimentos principais:")
+        for e in events[-8:]:
+            lines.append(f"- {e.title}: {e.text[:220]}")
+        lines.append("")
+    if cards:
+        lines.append("Cartas e pistas importantes:")
+        for c in cards[-8:]:
+            recipient = db.get(User, c.recipient_user_id)
+            suffix = " guardada" if c.saved_at else ""
+            lines.append(f"- {c.title} para {recipient.username if recipient else 'jogadora'}{suffix}.")
+        lines.append("")
+    if missions:
+        lines.append("Objetivos concluídos:")
+        for m in missions[-8:]:
+            lines.append(f"- {m.label or m.key}")
+        lines.append("")
+    if notes:
+        lines.append("Notas da Mestre:")
+        for n in notes[-6:]:
+            lines.append(f"- {n.title}: {n.text[:260]}")
+        lines.append("")
+    if chats:
+        lines.append("Momentos do chat:")
+        for c in chats[-8:]:
+            u = db.get(User, c.user_id)
+            lines.append(f"- {u.username if u else '?'}: {c.text[:180]}")
+        lines.append("")
+    lines.append("Recapitulação para a próxima sessão:")
+    lines.append("Na próxima sessão, a Mestre pode começar lembrando o mapa atual, as pistas já reveladas, os itens guardados e a escolha mais importante que ficou em aberto.")
+    return {"title": "Resumo da sessão", "text": "\n".join(lines).strip()}
 
 @app.websocket("/ws/{room_id}")
 async def ws_room(room_id: str, ws: WebSocket):
