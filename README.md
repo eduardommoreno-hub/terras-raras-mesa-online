@@ -1,4 +1,4 @@
-# Terras Raras — v8.2 Estabilidade da IA Local
+# Terras Raras — v8.3 Estabilidade da IA Local
 
 Versão de estabilização após a v8.1 visual.
 
@@ -10,7 +10,7 @@ Versão de estabilização após a v8.1 visual.
 - Adiciona botão **Cancelar pedido** em cada pedido pendente/processando.
 - Jobs travados em `processing` por mais de 8 minutos voltam para `pending`.
 - Adiciona o arquivo `iniciar_worker.bat` para ligar o worker local com dois cliques no Windows.
-- Atualiza `/health` e `/debug/admin-env` para `v8.2-estabilidade-ia`.
+- Atualiza `/health` e `/debug/admin-env` para `v8.3-estabilidade-ia`.
 
 ## Como aplicar no Railway
 
@@ -34,7 +34,7 @@ https://web-production-0ce81.up.railway.app/debug/admin-env
 Deve aparecer:
 
 ```txt
-"version":"v8.2-estabilidade-ia"
+"version":"v8.3-estabilidade-ia"
 ```
 
 ## Como usar o worker local
