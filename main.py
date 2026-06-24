@@ -6,7 +6,6 @@ from typing import Optional, Dict, List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -15,7 +14,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v18.0.1-assets-staticfiles-hotfix"
+APP_VERSION = "v17.3.1-cadastro-pendente-visivel"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -44,10 +43,6 @@ security = HTTPBearer()
 
 app = FastAPI(title=APP_NAME)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-# v18.0.1 — serve imagens e demais recursos visuais do remaster no Railway/local.
-if os.path.isdir("assets"):
-    app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 class User(Base):
     __tablename__ = "users"
@@ -961,7 +956,7 @@ def register(req: RegisterReq, db: Session = Depends(db_dep)):
     if db.query(User).filter_by(username=username).first(): raise HTTPException(400, "Nome já cadastrado")
     user = User(username=username, password_hash=hash_password(req.password), approved=False, is_admin=False)
     db.add(user); db.commit()
-    return {"ok": True, "message":"Cadastro enviado. Aguarde autorização do Eduardo."}
+    return {"ok": True, "username": username, "message":"Cadastro enviado. Agora peça para Eduardo abrir o Painel e autorizar seu nome."}
 
 @app.post("/auth/login")
 def login(req: LoginReq, db: Session = Depends(db_dep)):
@@ -1003,13 +998,58 @@ def me(user: User = Depends(current_user)):
 
 @app.get("/admin/pending")
 def pending(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
-    return [{"id":u.id,"username":u.username,"created_at":u.created_at.isoformat()} for u in db.query(User).filter_by(approved=False).all()]
+    users = (
+        db.query(User)
+        .filter(User.approved == False)
+        .order_by(User.id.desc())
+        .all()
+    )
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "approved": bool(u.approved),
+            "is_admin": bool(u.is_admin),
+        }
+        for u in users
+    ]
+
+@app.get("/admin/users")
+def admin_users(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    users = db.query(User).order_by(User.id.desc()).limit(80).all()
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "approved": bool(u.approved),
+            "is_admin": bool(u.is_admin),
+        }
+        for u in users
+    ]
 
 @app.post("/admin/approve/{user_id}")
 def approve(user_id: int, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
     u = db.get(User, user_id)
     if not u: raise HTTPException(404, "Usuário não encontrado")
+    if u.is_admin:
+        raise HTTPException(400, "Usuário administrador não precisa de autorização")
     u.approved=True; db.commit(); return {"ok": True}
+
+@app.post("/admin/approve-username/{username}")
+def approve_username(username: str, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    clean = (username or "").strip().lower()
+    if not clean:
+        raise HTTPException(400, "Informe o nome da usuária")
+    u = db.query(User).filter_by(username=clean).first()
+    if not u:
+        raise HTTPException(404, "Usuária não encontrada")
+    if u.is_admin:
+        raise HTTPException(400, "Usuário administrador não precisa de autorização")
+    u.approved = True
+    db.commit()
+    return {"ok": True, "id": u.id, "username": u.username}
 
 
 @app.get("/admin/security/logs")

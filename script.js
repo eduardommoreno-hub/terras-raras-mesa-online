@@ -232,8 +232,32 @@ async function joinPublicRoom(code){
 async function loadPending(){
   try{
     const p=await api('/admin/pending');
-    const el=qs('pending'); if(el) el.innerHTML=p.length?p.map(u=>`<div class="pending"><b class="grow">${esc(u.username)}</b><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente.</p>';
-  }catch(e){}
+    const el=qs('pending');
+    if(el){
+      el.innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn small" onclick="loadPending()">Atualizar cadastros</button><button class="btn small ghost" onclick="approveByName()">Autorizar por nome</button></div>` +
+        (p.length?p.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">aguardando autorização${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente. Clique em “Atualizar cadastros” depois que a jogadora terminar o cadastro.</p>');
+    }
+    await loadAdminUsers();
+  }catch(e){
+    const el=qs('pending');
+    if(el) el.innerHTML=`<p class="err">Não consegui carregar cadastros pendentes: ${esc(e.message||e)}</p>`;
+  }
+}
+
+async function loadAdminUsers(){
+  const box=qs('adminUsersBox');
+  if(!box) return;
+  try{
+    const users=await api('/admin/users');
+    box.innerHTML=users.length?users.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">${u.is_admin?'admin':(u.approved?'autorizada':'pendente')}${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div>${(!u.approved&&!u.is_admin)?`<button class="btn small" onclick="approve(${u.id})">Autorizar</button>`:''}</div>`).join(''):'<p style="color:var(--muted)">Nenhum usuário encontrado.</p>';
+  }catch(e){ box.innerHTML=`<p class="err">Não consegui carregar usuários: ${esc(e.message||e)}</p>`; }
+}
+
+async function approveByName(){
+  const name=(prompt('Digite o nome de usuária exatamente como ela cadastrou:')||'').trim().toLowerCase();
+  if(!name) return;
+  try{ await api('/admin/approve-username/'+encodeURIComponent(name),{method:'POST'}); alert('Usuária autorizada: '+name); loadPending(); }
+  catch(e){ alert(e.message||e); }
 }
 
 async function loadSecurityLogs(){
@@ -927,79 +951,16 @@ function ensureGameScaffold(){
   }
 }
 
-
-/* ===== v18.0 — helpers do remaster visual da Floresta Negra ===== */
-function isVisualForestMap(map){
-  const id=String(map?.id||'');
-  const name=String(map?.name||'').toLowerCase();
-  return id==='floresta_negra' || name.includes('floresta negra');
-}
-function openPanelByLabel(label){
-  const target=String(label||'').toLowerCase();
-  const buttons=[...document.querySelectorAll('.panelTabs button')];
-  let idx=buttons.findIndex(b=>b.textContent.trim().toLowerCase()===target);
-  if(idx<0) idx=buttons.findIndex(b=>b.textContent.trim().toLowerCase().includes(target));
-  if(idx>=0){ openPanelTab(idx); const side=qs('side'); side?.classList.remove('closed'); document.querySelector('.game')?.classList.remove('panelClosed'); }
-}
-function openVisualMap(){
-  const side=qs('side');
-  const game=document.querySelector('.game');
-  if(side && window.innerWidth<1100){ side.classList.add('closed'); game?.classList.add('panelClosed'); }
-}
-function ensureVisualForestUI(){
-  const mapArea=qs('mapArea'); if(!mapArea)return;
-  if(!qs('visualHint')){
-    const hint=document.createElement('div');
-    hint.id='visualHint';
-    hint.className='visualHint';
-    hint.innerHTML='<b>Floresta Negra · remaster visual</b><br>Clique nos pontos do mapa ou use os atalhos para Inventário, Cartas, Missões e Diário.';
-    mapArea.appendChild(hint);
-  }
-  if(!qs('visualQuickNav')){
-    const nav=document.createElement('div');
-    nav.id='visualQuickNav';
-    nav.className='visualQuickNav';
-    nav.innerHTML=`
-      <button onclick="openPanelByLabel('Inventário')">Inventário</button>
-      <button onclick="openPanelByLabel('Cartas')">Cartas</button>
-      <button class="on" onclick="openVisualMap()">Mapa</button>
-      <button onclick="openPanelByLabel('Missões')">Missões</button>
-      <button onclick="openPanelByLabel('Diário Visual')">Diário</button>`;
-    mapArea.appendChild(nav);
-  }
-}
-function cleanupVisualForestUI(){
-  qs('visualHint')?.remove();
-  qs('visualQuickNav')?.remove();
-}
-function enhanceVisualSideForForest(){
-  const loc=qs('locationBox');
-  if(loc && !qs('visualSideCTA')){
-    const div=document.createElement('div');
-    div.id='visualSideCTA';
-    div.className='visualSideCTA';
-    div.innerHTML=`<button class="btn small ghost" onclick="openPanelByLabel('Cartas')">Ver cartas</button><button class="btn small ghost" onclick="openPanelByLabel('Missões')">Ver missão</button><button class="btn small ghost" onclick="openPanelByLabel('Diário Visual')">Diário</button><button class="btn small ghost" onclick="openPanelByLabel('Jornada')">Jornada</button>`;
-    loc.appendChild(div);
-  }
-}
-
 function renderGame(){
   ensureGameScaffold();
   ensureSidePanels();
   if(!state)return;
   const r=state.room, m=state.map;
   const area=qs('mapArea');
-  const gameShell=document.querySelector('.game');
-  const visualForest=isVisualForestMap(m);
-  if(area){
-    area.classList.toggle('iceMap',isIceMap(m)); area.classList.toggle('mountainMap',isMountainMap(m)); area.classList.toggle('alexandriaMap',isAlexandriaMap(m)); area.classList.toggle('stormMap',isStormMap(m)); area.classList.toggle('raceMap',isRaceMap(m)); area.classList.toggle('voidMap',isVoidMap(m));
-    area.classList.toggle('visualForest',visualForest);
-  }
-  gameShell?.classList.toggle('visualForestShell',visualForest);
-  if(visualForest) ensureVisualForestUI(); else cleanupVisualForestUI();
+  if(area){ area.classList.toggle('iceMap',isIceMap(m)); area.classList.toggle('mountainMap',isMountainMap(m)); area.classList.toggle('alexandriaMap',isAlexandriaMap(m)); area.classList.toggle('stormMap',isStormMap(m)); area.classList.toggle('raceMap',isRaceMap(m)); area.classList.toggle('voidMap',isVoidMap(m)); }
   qs('gameTitle').textContent=r.name;
   qs('roomCode').textContent=r.code;
-  if(qs('mapSvg')) qs('mapSvg').innerHTML=visualForest?'<img class="visualMapImg" src="/assets/visual/floresta_negra_v18.png" alt="Floresta Negra — remaster visual">':(m.image_svg||'');
+  qs('mapSvg').innerHTML=m.image_svg||'';
   qs('mapName').textContent=m.name;
   qs('mapDesc').textContent=m.description||'';
   qs('masterMapControls')?.classList.toggle('hidden',!isMasterRole());
@@ -1032,7 +993,6 @@ function renderGame(){
   safeRender('central da mestre', renderMasterCentral);
   safeRender('biblioteca da mestre', renderMasterLibrary);
   safeRender('jornada', renderJourney);
-  if(isVisualForestMap(m)) safeRender('atalhos visuais da Floresta', enhanceVisualSideForForest);
   safeRender('respostas da IA', renderAIJobs);
   safeRender('chat de bastidores', renderStaffChat);
   safeRender('status do worker', renderWorkerStatus);
