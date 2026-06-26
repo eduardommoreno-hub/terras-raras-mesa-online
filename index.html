@@ -1339,6 +1339,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 <style id="cinematic-auth-hub-overrides">
 #login{position:relative;overflow:hidden;background:
@@ -1550,6 +1561,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 
@@ -1755,6 +1777,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 <style id="v196116-auth-layer-fix">
@@ -1878,6 +1911,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 <style id="v196117-hub-function-hotfix">
@@ -1998,6 +2042,17 @@ input:focus,textarea:focus,select:focus{
     padding:7px 8px!important;
   }
 }
+
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
 
 </style>
 
@@ -2191,6 +2246,17 @@ input:focus,textarea:focus,select:focus{
     padding:7px 8px!important;
   }
 }
+
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
 
 </style>
 
@@ -2680,6 +2746,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 
@@ -2882,6 +2959,17 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 
@@ -3065,10 +3153,52 @@ input:focus,textarea:focus,select:focus{
   }
 }
 
+
+/* v19.6.11.21 — Modal cinematográfico de Pedido de Entrada */
+.trRegModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.trRegModal.hidden{display:none!important}
+.trRegBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.trRegPanel{position:relative;z-index:2;width:min(94vw,560px);border-radius:22px;padding:26px 22px;color:#f3dfb0;background:radial-gradient(circle at top,rgba(78,52,14,.42),rgba(0,0,0,.92) 62%),linear-gradient(180deg,#130d07,#070403);border:1px solid rgba(214,170,72,.48);box-shadow:0 24px 80px rgba(0,0,0,.72),0 0 46px rgba(225,167,61,.11)}
+.trRegPanel:before{content:"";position:absolute;inset:10px;border:1px solid rgba(240,199,117,.20);border-radius:16px;pointer-events:none}
+.trRegClose{position:absolute;top:12px;right:14px;z-index:3;background:transparent;border:0;color:#f1cf78;font-size:22px;cursor:pointer}
+.trRegTitle{margin:0 0 8px;text-align:center;color:#f1cf78;font-size:30px;letter-spacing:.04em}.trRegText{text-align:center;color:#d8c39a;line-height:1.5;margin:0 0 18px}.trRegIcon{text-align:center;font-size:54px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(241,207,120,.22))}.trRegForm{position:relative;z-index:2;display:grid;gap:10px}.trRegForm label{margin:6px 0 0;color:#d8c39a}.trRegForm input{height:46px;border-radius:12px;border:1px solid rgba(214,170,72,.38);background:rgba(8,5,3,.94);color:#f5e7c6;padding:0 13px}.trRegForm input:focus{border-color:rgba(241,207,120,.75);box-shadow:0 0 0 3px rgba(241,207,120,.08)}.trRegActions{display:flex;justify-content:center;gap:12px;margin-top:16px;position:relative;z-index:2}.trRegBtn{min-height:46px;border-radius:14px;border:1px solid rgba(221,173,87,.64);background:linear-gradient(180deg,#3d2a12,#180f07);color:#f7d78f;padding:0 18px;letter-spacing:.08em;text-transform:uppercase}.trRegBtn:hover{filter:brightness(1.1)}.trRegBtn.ghost{background:rgba(0,0,0,.15);border-color:rgba(214,170,72,.28);color:#ccb68b}.trRegMsg{min-height:20px;text-align:center;color:#f1cf78}.trRegMsg.err{color:#ff8c7b}.trRegStatusSubtle{text-align:center;color:#bfa984;font-size:14px;margin-top:10px}.trRegGlow{animation:trRegPulse 1.8s ease-in-out infinite}@keyframes trRegPulse{0%,100%{opacity:.72;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@media(max-width:640px){.trRegPanel{width:94vw;padding:22px 18px}.trRegTitle{font-size:25px}.trRegText{font-size:15px}.trRegActions{flex-direction:column}.trRegBtn{width:100%}}
+
 </style>
 
 </head><body><div class="app">
-<section id="login" class="screen on"><div class="center"><div class="landingStageV196118"><img src="assets/ui/landing_oficial_v196118.png?v=19.6.11.9" alt="Terras Raras" class="landingArtV196118" draggable="false"><div id="authBody" class="landingInlineAuthV196119"><label>Usuário</label><input id="u" autocomplete="username" placeholder="Digite seu usuário"><label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div><div id="authMsg" class="msg"></div></div><button id="loginBtn" class="landingHotspotV196118 landingEnterHotspotV196118" aria-label="Entrar" title="Entrar" onclick="doLogin()"></button><button id="registerBtn" class="landingHotspotV196118 landingRegisterHotspotV196118" aria-label="Solicitar cadastro" title="Solicitar cadastro" onclick="doRegister()"></button></div></div></section>
+<section id="login" class="screen on"><div class="center"><div class="landingStageV196118"><img src="assets/ui/landing_oficial_v196118.png?v=19.6.11.9" alt="Terras Raras" class="landingArtV196118" draggable="false"><div id="authBody" class="landingInlineAuthV196119"><label>Usuário</label><input id="u" autocomplete="username" placeholder="Digite seu usuário"><label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div><div id="authMsg" class="msg"></div></div><button id="loginBtn" class="landingHotspotV196118 landingEnterHotspotV196118" aria-label="Entrar" title="Entrar" onclick="doLogin()"></button><button id="registerBtn" class="landingHotspotV196118 landingRegisterHotspotV196118" aria-label="Pedir entrada" title="Pedir entrada" onclick="doRegister()"></button></div></div></section>
+
+<div id="trRegisterModal" class="trRegModal hidden" aria-hidden="true">
+  <div class="trRegBackdrop" onclick="trCloseRegisterModal()"></div>
+  <div class="trRegPanel" role="dialog" aria-modal="true" aria-labelledby="trRegisterTitle">
+    <button type="button" class="trRegClose" onclick="trCloseRegisterModal()" aria-label="Fechar">×</button>
+    <div class="trRegIcon">📜</div>
+    <h2 id="trRegisterTitle" class="trRegTitle">Pedido de Entrada</h2>
+    <p class="trRegText">Preencha seus dados para solicitar autorização do Mestre e atravessar os portões das Terras Raras.</p>
+    <form id="trRegisterForm" class="trRegForm">
+      <label for="trRegUsername">Nome do aventureiro</label>
+      <input id="trRegUsername" autocomplete="username" placeholder="Ex.: edmilson" required>
+      <label for="trRegPassword">Senha</label>
+      <div class="passwordWrap"><input id="trRegPassword" type="password" autocomplete="new-password" placeholder="Crie uma senha" required><button type="button" class="eyeBtn" onclick="trToggleRegPassword()">Ver</button></div>
+      <label for="trRegPassword2">Confirmar senha</label>
+      <input id="trRegPassword2" type="password" autocomplete="new-password" placeholder="Repita a senha" required>
+      <div id="trRegMsg" class="trRegMsg"></div>
+      <div class="trRegActions">
+        <button type="submit" class="trRegBtn">Enviar pedido ao Mestre</button>
+        <button type="button" class="trRegBtn ghost" onclick="trCloseRegisterModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="trRegisterStatusModal" class="trRegModal hidden" aria-hidden="true">
+  <div class="trRegBackdrop"></div>
+  <div class="trRegPanel" role="dialog" aria-modal="true">
+    <div id="trRegisterStatusContent"></div>
+  </div>
+</div>
+
 <section id="hub" class="screen">
   <div class="hubLivingPage">
     <div class="hubLivingFrame" aria-hidden="true"></div>

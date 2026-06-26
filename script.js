@@ -139,16 +139,102 @@ async function doLogin(){
   }catch(e){ localStorage.removeItem('tr_token'); token=''; me=null; msg('Login inválido ou erro: '+e.message,true); }
   finally{ if(b){b.disabled=false;b.textContent='Entrar'} }
 }
-async function doRegister(){
-  const u=qs('u')?.value.trim()||'', p=qs('p')?.value||'', b=qs('registerBtn');
-  if(!u||!p){ msg('Preencha nome e senha.', true); return; }
-  try{
-    if(b){b.disabled=true;b.textContent='Enviando...'}
-    const d=await api('/auth/register',{method:'POST',body:JSON.stringify({username:u,password:p})});
-    msg(d.message || 'Cadastro enviado.');
-  }catch(e){ msg(e.message,true); }
-  finally{ if(b){b.disabled=false;b.textContent='Pedir autorização'} }
+let trPendingRegisterUsername = null;
+let trPendingRegisterTimer = null;
+
+function trModal(id){ return document.getElementById(id); }
+function trOpenRegisterModal(){
+  const m=trModal('trRegisterModal');
+  const oldUser=qs('u')?.value.trim()||'';
+  const oldPass=qs('p')?.value||'';
+  if(m){
+    m.classList.remove('hidden');
+    m.setAttribute('aria-hidden','false');
+    setTimeout(()=>{
+      const u=qs('trRegUsername'); if(u){u.value=oldUser; u.focus();}
+      const p=qs('trRegPassword'); if(p && oldPass){p.value=oldPass;}
+    },40);
+  }
+  const msgEl=qs('trRegMsg'); if(msgEl){msgEl.textContent=''; msgEl.classList.remove('err');}
 }
+function trCloseRegisterModal(){ const m=trModal('trRegisterModal'); if(m){m.classList.add('hidden');m.setAttribute('aria-hidden','true');} }
+function trCloseRegisterStatus(){ const m=trModal('trRegisterStatusModal'); if(m){m.classList.add('hidden');m.setAttribute('aria-hidden','true');} }
+function doRegister(){ trOpenRegisterModal(); }
+function trToggleRegPassword(){ const p=qs('trRegPassword'); if(!p)return; p.type=p.type==='password'?'text':'password'; }
+function trRegMessage(text,isErr=false){ const el=qs('trRegMsg'); if(!el)return; el.textContent=text||''; el.classList.toggle('err',!!isErr); }
+function trOpenStatus(html){
+  const c=qs('trRegisterStatusContent'), m=trModal('trRegisterStatusModal');
+  if(c)c.innerHTML=html;
+  if(m){m.classList.remove('hidden');m.setAttribute('aria-hidden','false');}
+}
+function trRenderPendingApproval(){
+  trOpenStatus(`
+    <div class="trRegIcon trRegGlow">🦉</div>
+    <h2 class="trRegTitle">A Coruja Mensageira partiu...</h2>
+    <p class="trRegText">Sua solicitação está voando até o Mestre.<br>Quando ele autorizar sua entrada, você será chamado para a aventura.</p>
+    <div class="trRegStatusSubtle">Pedido enviado. Aguardando autorização...</div>
+    <div class="trRegActions"><button type="button" class="trRegBtn ghost" onclick="trCloseRegisterStatus()">Entendido</button></div>
+  `);
+}
+function trRenderApproved(){
+  trOpenStatus(`
+    <div class="trRegIcon trRegGlow">✨</div>
+    <h2 class="trRegTitle">Você foi aceito!</h2>
+    <p class="trRegText">As portas das Terras Raras se abriram para você.<br>Digite sua senha e entre na campanha.</p>
+    <div class="trRegActions"><button type="button" class="trRegBtn" onclick="trUseApprovedLogin()">Entrar agora</button></div>
+  `);
+}
+function trUseApprovedLogin(){
+  trCloseRegisterStatus();
+  const u=qs('u'); if(u && trPendingRegisterUsername) u.value=trPendingRegisterUsername;
+  const p=qs('p'); if(p) p.focus();
+  msg('Cadastro autorizado. Digite sua senha e clique em Entrar.');
+}
+function trStartApprovalPolling(username){
+  trPendingRegisterUsername=username;
+  if(trPendingRegisterTimer) clearInterval(trPendingRegisterTimer);
+  trPendingRegisterTimer=setInterval(async()=>{
+    if(!trPendingRegisterUsername) return;
+    try{
+      const d=await api('/auth/register-status/'+encodeURIComponent(trPendingRegisterUsername),{auth:false});
+      if(d.status==='approved'){
+        clearInterval(trPendingRegisterTimer); trPendingRegisterTimer=null;
+        trRenderApproved();
+      }
+    }catch(e){ /* silencioso: continua aguardando */ }
+  },2500);
+}
+async function trSubmitRegister(e){
+  if(e)e.preventDefault();
+  const username=qs('trRegUsername')?.value.trim()||'';
+  const password=qs('trRegPassword')?.value||'';
+  const password2=qs('trRegPassword2')?.value||'';
+  if(username.length<2){ trRegMessage('Digite um nome com pelo menos 2 letras.', true); return; }
+  if(password.length<4){ trRegMessage('A senha precisa ter pelo menos 4 caracteres.', true); return; }
+  if(password!==password2){ trRegMessage('As senhas não coincidem.', true); return; }
+  const btn=document.querySelector('#trRegisterForm button[type="submit"]');
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+    trRegMessage('Enviando pedido ao Mestre...');
+    const d=await api('/auth/register',{method:'POST',body:JSON.stringify({username,password}),auth:false});
+    const loginU=qs('u'), loginP=qs('p'); if(loginU)loginU.value=username; if(loginP)loginP.value=password;
+    trCloseRegisterModal();
+    trRenderPendingApproval();
+    trStartApprovalPolling(username);
+  }catch(e){
+    const text=String(e.message||'Erro ao cadastrar.');
+    if(text.toLowerCase().includes('já cadastrado')){
+      trRegMessage('Este nome já existe. Se o Mestre acabou de autorizar, tente entrar com sua senha.', true);
+    }else{
+      trRegMessage(text, true);
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Enviar pedido ao Mestre';}
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const f=qs('trRegisterForm'); if(f && !f.dataset.bound){f.dataset.bound='1'; f.addEventListener('submit',trSubmitRegister);}
+});
 const login=doLogin, register=doRegister;
 function logout(){ localStorage.removeItem('tr_token'); token=''; me=null; currentRoom=null; if(ws)try{ws.close()}catch(e){}; show('login'); drawAuth(); }
 

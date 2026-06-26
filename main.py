@@ -1138,7 +1138,18 @@ def register(req: RegisterReq, db: Session = Depends(db_dep)):
     if db.query(User).filter_by(username=username).first(): raise HTTPException(400, "Nome já cadastrado")
     user = User(username=username, password_hash=hash_password(req.password), approved=False, is_admin=False)
     db.add(user); db.commit()
-    return {"ok": True, "message":"Cadastro enviado. Aguarde autorização do Eduardo."}
+    return {"ok": True, "message":"A Coruja Mensageira partiu. Seu pedido foi enviado ao Mestre."}
+
+
+@app.get("/auth/register-status/{username}")
+def register_status(username: str, db: Session = Depends(db_dep)):
+    key = (username or "").strip().lower()
+    if not key:
+        raise HTTPException(400, "Usuário inválido")
+    user = db.query(User).filter_by(username=key).first()
+    if not user:
+        return {"ok": True, "status": "not_found"}
+    return {"ok": True, "status": "approved" if user.approved else "pending"}
 
 @app.post("/auth/login")
 def login(req: LoginReq, db: Session = Depends(db_dep)):
