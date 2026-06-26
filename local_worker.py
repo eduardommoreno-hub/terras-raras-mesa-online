@@ -80,12 +80,45 @@ def ping_worker(token_q: str):
         pass
 
 
+def preflight():
+    print("\nDiagnóstico inicial:")
+    if RAILWAY_URL.startswith("http://127.0.0.1") or RAILWAY_URL.startswith("http://localhost"):
+        print("  MODO LOCAL: o worker vai atender somente o servidor local.")
+        print("  Para atender o Railway, defina TERRAS_RARAS_URL=https://SEU-APP.up.railway.app")
+    else:
+        print("  MODO ONLINE: o worker vai buscar pedidos no Railway.")
+    try:
+        status = request_json("GET", f"{RAILWAY_URL}/health", timeout=10)
+        print(f"  Servidor OK: {status.get('version')}")
+    except Exception as e:
+        print(f"  Servidor não respondeu em {RAILWAY_URL}: {e}")
+    try:
+        token_q = urllib.parse.urlencode({"token": WORKER_TOKEN})
+        ping_worker(token_q)
+        status = request_json("GET", f"{RAILWAY_URL}/ai/worker/status", timeout=10)
+        print(f"  Worker reconhecido pelo servidor: online={status.get('online')} modelo={status.get('model')}")
+    except Exception as e:
+        print(f"  Ping do worker falhou. Verifique LOCAL_AI_WORKER_TOKEN: {e}")
+    try:
+        request_json("POST", f"{OLLAMA_URL}/api/generate", {
+            "model": OLLAMA_MODEL,
+            "prompt": "Responda apenas: ok",
+            "stream": False,
+            "options": {"num_predict": 4}
+        }, timeout=30)
+        print("  Ollama respondeu.")
+    except Exception as e:
+        print(f"  Ollama não respondeu em {OLLAMA_URL}. Abra o Ollama e confira o modelo {OLLAMA_MODEL}: {e}")
+    print("")
+
+
 def main():
     print("Terras Raras — Worker Local IA")
     print(f"Railway: {RAILWAY_URL}")
     print(f"Ollama:  {OLLAMA_URL}")
     print(f"Modelo:  {OLLAMA_MODEL}")
     print("Aguardando pedidos... Ctrl+C para encerrar.\n")
+    preflight()
     if not WORKER_TOKEN:
         print("ATENÇÃO: LOCAL_AI_WORKER_TOKEN não configurado.")
 

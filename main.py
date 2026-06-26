@@ -15,7 +15,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v19.6.11.14-admin-compacto"
+APP_VERSION = "v19.6.11.16-diagnostico-online"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -45,9 +45,12 @@ security = HTTPBearer()
 app = FastAPI(title=APP_NAME)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# v18.0.1 — serve imagens e demais recursos visuais do remaster no Railway/local.
-if os.path.isdir("assets"):
-    app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+# v19.6.11.15 — serve assets pelo caminho absoluto do arquivo.
+# Isso evita quebra no Railway quando o processo inicia em um diretório diferente.
+BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = BASE_DIR / "assets"
+if ASSETS_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
 class User(Base):
     __tablename__ = "users"
@@ -2258,3 +2261,57 @@ async def ws_room(room_id: str, ws: WebSocket):
             await ws.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(room_id, ws)
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "ok": True,
+        "app": APP_NAME,
+        "version": APP_VERSION,
+        "base_dir": str(BASE_DIR),
+        "assets_dir": str(ASSETS_DIR),
+        "assets_exists": ASSETS_DIR.is_dir(),
+    }
+
+@app.get("/debug/assets")
+def debug_assets():
+    required = [
+        "ui/landing_oficial_v196118.png",
+        "visual/hub_background_living_v1961112.png",
+        "characters/hub_cards/katrina_card_hub.webp",
+        "characters/hub_cards/lina_card_hub.webp",
+        "characters/hub_cards/mira_card_hub.webp",
+        "characters/hub_cards/theo_card_hub.webp",
+        "characters/hub_cards/naya_card_hub.webp",
+        "characters/hub_cards/cael_card_hub.webp",
+        "characters/hub_cards/selene_card_hub.webp",
+        "characters/hub_cards/lyra_card_hub.webp",
+        "characters/hub_cards/dorian_card_hub.webp",
+        "characters/hub_cards/silas_card_hub.webp",
+        "characters/hub_cards/orion_card_hub.webp",
+        "characters/hub_cards/riven_card_hub.webp",
+    ]
+    files = []
+    for rel in required:
+        p = ASSETS_DIR / rel
+        files.append({
+            "path": "/assets/" + rel,
+            "exists": p.is_file(),
+            "size": p.stat().st_size if p.is_file() else 0,
+        })
+    return {
+        "ok": True,
+        "version": APP_VERSION,
+        "base_dir": str(BASE_DIR),
+        "assets_dir": str(ASSETS_DIR),
+        "assets_exists": ASSETS_DIR.is_dir(),
+        "files": files,
+        "missing": [f["path"] for f in files if not f["exists"]],
+    }
+
+@app.get("/debug/worker")
+def debug_worker():
+    status = ai_worker_status()
+    status["hint"] = "Para a IA online funcionar, rode local_worker.py no seu computador com TERRAS_RARAS_URL apontando para o Railway e LOCAL_AI_WORKER_TOKEN igual ao do Railway."
+    return status
