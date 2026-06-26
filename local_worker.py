@@ -133,6 +133,8 @@ def main():
                 continue
 
             print(f"Processando job #{job['id']} ({job['job_type']})...")
+            preview = (job.get("prompt") or "").replace("\n", " ")[:700]
+            print(f"Prompt enviado ao Ollama (prévia): {preview}...")
             try:
                 result = ollama_generate(job["prompt"], job.get("job_type", "narrative"))
                 if not result:

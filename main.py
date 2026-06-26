@@ -561,7 +561,7 @@ class NoteReq(BaseModel): title: str="Nota da Mestre"; text: str
 class AIRequestReq(BaseModel):
     action: str
     job_type: str="narrative"
-    response_mode: str="short"
+    response_mode: str="normal"
 class AICompleteReq(BaseModel): result: str=""; error: str=""; status: str="done"
 class AIPublishReq(BaseModel):
     target: str="chat"
@@ -998,25 +998,26 @@ def build_ai_prompt(db: Session, room_id: str, user: User, action: str, job_type
     history = "\n".join([f"{db.get(User,c.user_id).username if db.get(User,c.user_id) else '?'}: {c.text}" for c in chats]) or "Sem histórico ainda."
     progress_flags = db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id, RoomProgressFlag.value == True).all()
     progress = "\n".join([f"- {f.label or f.key}" for f in progress_flags]) or "Sem progresso marcado ainda."
-    # Para perguntas em modo rápido, o prompt é propositalmente curto para acelerar PCs fracos.
-    if job_type == "question" and response_mode == "short":
-        return f"""[[TR_RESPONSE_MODE=short]]
-Você é copilota da Mestre no RPG TERRAS RARAS. Responda em português brasileiro, natural, sem linguagem formal ou jurídica.
-Ajude a Mestre/Ajudante com uma resposta prática para jogo ao vivo.
-Contexto: mesa {r.name if r else room_id}; zona atual: {m.name if m else 'Mapa desconhecido'}.
-{mode_instruction(response_mode, job_type)}
-Pedido: {action}
-"""
-
+    lore_zones = "Floresta Negra; Fábrica dos Doces Pesadelos; Cidade dos Relógios Parados; Picos Arcaicos; Gelo Eterno; Alexandria; Tempestade dos Deuses; Correr ou Morrer; O Vazio."
+    lore_characters = "Katrina, Lina, Mira, Theo, Naya, Cael, Selene, Lyra, Dorian, Silas, Orion e Riven."
     base = f"""[[TR_RESPONSE_MODE={response_mode}]]
-Você é a Narradora Local do jogo TERRAS RARAS, um RPG de sobrevivência para crianças/adolescentes, com tom cinematográfico, sombrio porém seguro.
+Você é o NARRADOR OFICIAL DE TERRAS RARAS.
+Terras Raras é um RPG de mesa online cinematográfico para crianças/adolescentes de 10 a 14 anos. Você não é chatbot, não é assistente genérico e não recebe as jogadoras com texto padrão. Você escreve como um livro vivo, sempre preservando o controle da Mestre.
 
-REGRAS IMPORTANTES:
-- Escreva em português brasileiro.
-- Não mencione IA, modelo, API ou sistema.
+IDENTIDADE NARRATIVA OBRIGATÓRIA:
+- Escreva em português brasileiro, com tom de fantasia cinematográfica, misteriosa, emocional e segura.
+- Nunca diga “Bem-vindos ao Terras Raras” como abertura genérica.
+- Nunca dê XP, níveis, dano, recompensas ou regras genéricas se a Mestre não pediu.
+- Nunca mencione IA, modelo, API, sistema, backend, prompt ou Ollama.
+- Nunca use linguagem jurídica, burocrática ou de manual.
 - Não use violência gráfica, sexualização, drogas ou terror excessivo.
-- Preserve o controle da Mestre: gere sugestão publicável, mas clara e curta.
-- Máximo de 3 parágrafos para narrativa.
+- O mundo deve parecer vivo: luz, som, cheiro, textura, silêncio, movimento e escolha.
+- Se o pedido for pergunta de bastidor, responda como assistente da Mestre, mas dentro do universo e com sugestões práticas de mesa.
+
+LORE OFICIAL RESUMIDO:
+Zonas: {lore_zones}
+Personagens oficiais: {lore_characters}
+Mestre e Ajudante não têm personagem. Somente jogadoras têm personagem.
 
 FORMATO DA RESPOSTA:
 {mode_instruction(response_mode, job_type)}
