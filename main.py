@@ -15,7 +15,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v19.6.11.16-diagnostico-online"
+APP_VERSION = "v19.6.11.17-railway-root-assets"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
