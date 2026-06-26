@@ -13,9 +13,10 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, UniqueConstraint, or_, and_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
+import zipfile
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v19.6.11.17-railway-root-assets"
+APP_VERSION = "v19.6.11.18-assets-bundle"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -45,10 +46,47 @@ security = HTTPBearer()
 app = FastAPI(title=APP_NAME)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# v19.6.11.15 — serve assets pelo caminho absoluto do arquivo.
-# Isso evita quebra no Railway quando o processo inicia em um diretório diferente.
+# v19.6.11.18 — resolve assets no Railway mesmo quando a pasta assets não é extraída na raiz.
+# Estratégia:
+# 1) tenta /app/assets;
+# 2) tenta assets em pasta interna;
+# 3) se não existir, extrai assets_bundle.zip para /tmp e serve dali.
 BASE_DIR = Path(__file__).resolve().parent
-ASSETS_DIR = BASE_DIR / "assets"
+ASSETS_BUNDLE = BASE_DIR / "assets_bundle.zip"
+ASSETS_EXTRACT_DIR = Path(os.getenv("TERRAS_ASSETS_EXTRACT_DIR", "/tmp/terras_raras_assets"))
+
+def _valid_assets_dir(p: Path) -> bool:
+    return (p / "ui" / "landing_oficial_v196118.png").is_file() and (p / "characters" / "hub_cards" / "katrina_card_hub.webp").is_file()
+
+def resolve_assets_dir() -> Path:
+    candidates = [
+        BASE_DIR / "assets",
+        BASE_DIR / "tr_v19610_1" / "assets",
+        BASE_DIR.parent / "assets",
+    ]
+    for c in candidates:
+        if _valid_assets_dir(c):
+            return c
+
+    try:
+        for c in BASE_DIR.rglob("assets"):
+            if _valid_assets_dir(c):
+                return c
+    except Exception:
+        pass
+
+    if ASSETS_BUNDLE.is_file():
+        target_assets = ASSETS_EXTRACT_DIR / "assets"
+        if not _valid_assets_dir(target_assets):
+            ASSETS_EXTRACT_DIR.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(ASSETS_BUNDLE) as z:
+                z.extractall(ASSETS_EXTRACT_DIR)
+        if _valid_assets_dir(target_assets):
+            return target_assets
+
+    return BASE_DIR / "assets"
+
+ASSETS_DIR = resolve_assets_dir()
 if ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
@@ -2272,6 +2310,7 @@ def health_check():
         "base_dir": str(BASE_DIR),
         "assets_dir": str(ASSETS_DIR),
         "assets_exists": ASSETS_DIR.is_dir(),
+        "assets_bundle_exists": ASSETS_BUNDLE.is_file(),
     }
 
 @app.get("/debug/assets")
@@ -2306,6 +2345,9 @@ def debug_assets():
         "base_dir": str(BASE_DIR),
         "assets_dir": str(ASSETS_DIR),
         "assets_exists": ASSETS_DIR.is_dir(),
+        "assets_bundle_exists": ASSETS_BUNDLE.is_file(),
+        "assets_bundle_size": ASSETS_BUNDLE.stat().st_size if ASSETS_BUNDLE.is_file() else 0,
+        "extract_dir": str(ASSETS_EXTRACT_DIR),
         "files": files,
         "missing": [f["path"] for f in files if not f["exists"]],
     }

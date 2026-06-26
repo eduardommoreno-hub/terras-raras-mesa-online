@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Terras Raras — Mesa Online v19.6.11.17</title><style>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Terras Raras — Mesa Online v19.6.11.18</title><style>
 :root{--bg:#080502;--panel:#15100b;--panel2:#21190f;--ai:#0f1820;--ai2:#172638;--gold:#d0a94a;--gold2:#f1cf78;--muted:#a99874;--txt:#f1e6d2;--red:#d24e3a;--green:#58b36a;--blue:#5c8fe8;--line:#3b2c18}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#21140a,#050301 65%);color:var(--txt);font-family:Georgia,'Times New Roman',serif;min-height:100vh}button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app{min-height:100vh}.screen{display:none;min-height:100vh}.screen.on{display:block}.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}.card{width:min(480px,100%);background:rgba(18,12,7,.92);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 80px #000;padding:28px}.logo{font-size:54px;line-height:.9;letter-spacing:.12em;color:var(--gold);font-weight:bold}.tag{color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-size:13px;margin:14px 0 24px}.tabs{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px}.tabs button{flex:1;padding:12px;background:#0c0805;color:var(--muted);border:0}.tabs button.on{background:var(--panel2);color:var(--gold)}label{display:block;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:12px 0 6px}input,textarea,select{width:100%;background:#0c0805;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:12px;outline:none}textarea{min-height:92px;resize:vertical}.passwordWrap{display:flex;gap:8px;align-items:stretch}.passwordWrap input{flex:1}.eyeBtn{width:auto;min-width:68px;border:1px solid var(--line);background:#140d07;color:var(--gold2);border-radius:10px;padding:0 12px;letter-spacing:.06em;text-transform:uppercase;font-size:12px}.eyeBtn:hover{border-color:var(--gold);background:#21160c}.btn{border:1px solid var(--gold);background:linear-gradient(135deg,#5f4516,#9b7629);color:#ffe6a0;border-radius:10px;padding:12px 14px;letter-spacing:.1em;text-transform:uppercase;font-size:12px}.btn.small{padding:8px 10px;font-size:11px}.btn.ghost{background:transparent;border-color:var(--line);color:var(--muted)}.btn.danger{border-color:var(--red);color:#ffc7bd}.msg{margin-top:12px;color:var(--gold2);font-size:14px}.err{color:#ff8c7b}.top{height:64px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(14,10,6,.95);position:sticky;top:0;z-index:5}.brand{font-weight:bold;color:var(--gold);letter-spacing:.16em}.grow{flex:1}.pill{border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:13px}.hub{padding:22px;display:grid;grid-template-columns:1fr 360px;gap:18px}.box{background:rgba(18,12,7,.88);border:1px solid var(--line);border-radius:16px;padding:18px}.title{color:var(--gold);font-size:20px;letter-spacing:.08em;margin:0 0 12px}.rooms{display:grid;gap:10px}.room{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px}.room:hover{border-color:var(--gold)}.room b{color:var(--gold2)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.char{border:1px solid var(--line);background:var(--panel);border-radius:14px;overflow:hidden}.char .art{height:110px;display:flex;align-items:center;justify-content:center;background:#070403}.char svg{width:100%;height:100%}.char .pad{padding:12px}.char b{color:var(--gold2)}.game{height:calc(100vh - 64px);display:grid;grid-template-columns:1fr 430px;overflow:hidden}.mapArea{position:relative;background:#030201;overflow:hidden}.mapSvg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mapShade{position:absolute;inset:0;background:radial-gradient(circle at center,transparent 25%,rgba(0,0,0,.28) 80%);pointer-events:none}.token{position:absolute;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;border:3px solid var(--gold);box-shadow:0 0 18px #000,0 0 18px rgba(208,169,74,.55);background:#111;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}.token svg{width:100%;height:100%;border-radius:50%}.tokenName{position:absolute;top:61px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:12px;white-space:nowrap;color:#fff}.side{background:rgba(13,9,5,.97);border-left:1px solid var(--line);overflow:auto}.sideSection{padding:14px;border-bottom:1px solid var(--line)}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.players{display:grid;gap:8px}.player{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px}.meter{height:8px;background:#090604;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:4px}.fill{height:100%;background:var(--green)}.fill.energy{background:var(--blue)}.chat{display:flex;flex-direction:column;gap:8px;max-height:160px;overflow:auto}.bubble{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:15px;line-height:1.45}.bubble b{color:var(--gold2)}.notes{display:grid;gap:8px;max-height:220px;overflow:auto}.note{background:#100b07;border-left:3px solid var(--gold);padding:10px;border-radius:8px;font-size:14px;line-height:1.45}.adminList{display:grid;gap:8px}.pending{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel)}.aiJobs{display:grid;gap:10px;margin-top:12px;max-height:340px;overflow:auto}.aiJob{background:linear-gradient(180deg,var(--ai2),var(--ai));border:1px solid #2e4d6b;border-radius:14px;padding:12px;box-shadow:0 10px 28px rgba(0,0,0,.25)}.aiJobTop{display:flex;gap:8px;align-items:center;margin-bottom:8px}.aiBadge{border:1px solid #557da2;border-radius:999px;padding:3px 8px;color:#b8d8ff;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.aiResult{white-space:pre-wrap;font-family:Georgia,serif;font-size:16px;line-height:1.58;color:#f5e7cf;background:rgba(0,0,0,.22);border-radius:10px;padding:10px;margin-top:8px}.aiPending{color:#dbc48d;font-size:14px}.aiActions{display:flex;gap:8px;margin-top:10px}.aiActions .btn{flex:1}.sideSection h3.title{font-size:21px}.sideSection{font-size:15px}
 .pathLayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}.pathLine{stroke:rgba(241,207,120,.38);stroke-width:4;stroke-linecap:round;stroke-dasharray:12 10;filter:drop-shadow(0 0 6px #000)}.pathLine.locked{stroke:rgba(210,78,58,.45);stroke-dasharray:4 8}.mapNodes{position:absolute;inset:0;z-index:2;pointer-events:none}.mapNode{position:absolute;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);background:radial-gradient(circle,#f6d77c 0 18%,#4b3514 21% 58%,rgba(0,0,0,.92) 60%);box-shadow:0 0 0 5px rgba(208,169,74,.10),0 0 24px #000;pointer-events:auto;cursor:pointer}.mapNode:hover{transform:translate(-50%,-50%) scale(1.16);box-shadow:0 0 0 8px rgba(208,169,74,.16),0 0 26px rgba(241,207,120,.5)}.mapNode.hiddenNode{border-color:#70552d;opacity:.55}.mapNode.danger{border-color:#d24e3a;background:radial-gradient(circle,#ffb188 0 17%,#612015 20% 58%,rgba(0,0,0,.94) 60%)}.mapNode.portal{border-color:#76d1ff;background:radial-gradient(circle,#dff6ff 0 16%,#194255 20% 58%,rgba(0,0,0,.94) 60%)}.mapNodeLabel{position:absolute;left:50%;top:39px;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,.78);border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:#ffe6a0;font-size:12px;letter-spacing:.03em}.token{z-index:4}.locationBox{background:linear-gradient(180deg,#1c1309,#0b0704);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}.locationBox b{color:var(--gold2)}.locationMeta{color:var(--muted);font-size:13px;line-height:1.35;margin-top:6px}.locationActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:12px}.legend span{border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:#0b0704}.mapHint{position:absolute;left:22px;bottom:20px;z-index:3;background:rgba(8,5,2,.72);border:1px solid var(--line);border-radius:14px;padding:10px 12px;color:#dbc48d;font-size:13px;max-width:360px;backdrop-filter:blur(4px)}
 @media(max-width:900px){.hub{grid-template-columns:1fr}.game{grid-template-columns:1fr}.side{position:fixed;right:0;top:64px;bottom:0;width:min(92vw,380px);z-index:10}.side.closed{display:none}.token{width:48px;height:48px}.logo{font-size:42px}}
@@ -1338,7 +1338,7 @@ input:focus,textarea:focus,select:focus{
 
 
 <style id="cinematic-identical-final">
-/* v19.6.11.17 — UI por camadas, sem imagens inventadas de personagens */
+/* v19.6.11.18 — UI por camadas, sem imagens inventadas de personagens */
 #publicRoomsBox{display:none!important}
 
 /* =========================
@@ -1457,7 +1457,7 @@ input:focus,textarea:focus,select:focus{
 </style>
 
 <style id="landing-oficial-v196118">
-/* v19.6.11.17 — Tela inicial oficial intacta + campos funcionais dentro do painel */
+/* v19.6.11.18 — Tela inicial oficial intacta + campos funcionais dentro do painel */
 #login.screen{min-height:100vh!important;background:#000!important;overflow:hidden!important;position:relative!important}
 #login.screen.on{display:block!important}
 #login .center{min-height:100vh!important;width:100vw!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;background:#000!important}
@@ -1542,7 +1542,7 @@ input:focus,textarea:focus,select:focus{
 
 
 <style id="hub-living-v1961112">
-/* v19.6.11.17 — Segunda tela viva: fundo fixo + painéis HTML/CSS elásticos + conteúdo dinâmico */
+/* v19.6.11.18 — Segunda tela viva: fundo fixo + painéis HTML/CSS elásticos + conteúdo dinâmico */
 #hub.screen{
   min-height:100vh!important;
   background:#000!important;
@@ -1567,7 +1567,7 @@ input:focus,textarea:focus,select:focus{
   padding:clamp(14px,1.2vw,24px) clamp(18px,1.6vw,34px) clamp(22px,1.6vw,36px);
   background:
     linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,.18) 34%,rgba(0,0,0,.54)),
-    url("assets/visual/hub_background_living_v1961112.png?v=19.6.11.17") center center/cover no-repeat;
+    url("assets/visual/hub_background_living_v1961112.png?v=19.6.11.18") center center/cover no-repeat;
   box-shadow:inset 0 0 0 1px rgba(207,154,55,.18);
 }
 .hubLivingFrame{
@@ -1921,7 +1921,7 @@ input:focus,textarea:focus,select:focus{
 
 
 <style id="hub-compact-lateral-v1961113">
-/* v19.6.11.17 — ajuste fino: coluna lateral compacta e sem blocos administrativos no Hub */
+/* v19.6.11.18 — ajuste fino: coluna lateral compacta e sem blocos administrativos no Hub */
 .hubLivingMain{
   grid-template-columns:minmax(0,1fr) minmax(285px,340px)!important;
   gap:clamp(14px,1.15vw,22px)!important;
@@ -2014,7 +2014,7 @@ input:focus,textarea:focus,select:focus{
 
 
 <style id="hub-admin-compact-v1961114">
-/* v19.6.11.17 — Admin volta a aparecer, mas só para admin e de forma compacta */
+/* v19.6.11.18 — Admin volta a aparecer, mas só para admin e de forma compacta */
 #hub #adminBox.hidden,
 #hub #securityAdminBox.hidden{
   display:none!important;
@@ -2120,7 +2120,7 @@ input:focus,textarea:focus,select:focus{
 
           <div class="statusBadge">
             <div class="icon">✦</div>
-            <div><b>v19.6.11.17</b> · Papéis reais de RPG: Mestre/Ajudante sem personagem e só equipe move tokens.</div>
+            <div><b>v19.6.11.18</b> · Papéis reais de RPG: Mestre/Ajudante sem personagem e só equipe move tokens.</div>
           </div>
 
           <label>Nome da campanha</label>
