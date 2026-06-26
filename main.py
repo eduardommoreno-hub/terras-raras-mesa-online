@@ -1,3 +1,4 @@
+from fastapi.responses import FileResponse
 import os, json, random, string, hashlib, secrets, re
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -3171,3 +3172,35 @@ def get_floresta_negra_card(card_id=None):
         if card.get("id") == card_id or card.get("catalog_id") == card_id:
             return card
     return None
+
+
+# TR_FABRICA_WIDESCREEN_ROUTE_V32
+@app.get("/tr-assets/fabrica-map")
+def tr_assets_fabrica_map_v32():
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "assets", "visual", "fabrica_doces_widescreen.png"),
+        os.path.join(os.path.dirname(__file__), "assets", "maps", "fabrica_doces_widescreen.png"),
+        os.path.join(os.path.dirname(__file__), "static", "fabrica_doces_widescreen.png"),
+        os.path.join(os.getcwd(), "assets", "visual", "fabrica_doces_widescreen.png"),
+        os.path.join(os.getcwd(), "assets", "maps", "fabrica_doces_widescreen.png"),
+        os.path.join(os.getcwd(), "static", "fabrica_doces_widescreen.png"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return FileResponse(path, media_type="image/png")
+    return {"error": "Mapa panorâmico da Fábrica não encontrado", "checked": candidates}
+
+@app.get("/tr-assets/fabrica-map.webp")
+def tr_assets_fabrica_map_webp_v32():
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "assets", "visual", "fabrica_doces_widescreen.webp"),
+        os.path.join(os.path.dirname(__file__), "assets", "maps", "fabrica_doces_widescreen.webp"),
+        os.path.join(os.path.dirname(__file__), "static", "fabrica_doces_widescreen.webp"),
+        os.path.join(os.getcwd(), "assets", "visual", "fabrica_doces_widescreen.webp"),
+        os.path.join(os.getcwd(), "assets", "maps", "fabrica_doces_widescreen.webp"),
+        os.path.join(os.getcwd(), "static", "fabrica_doces_widescreen.webp"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return FileResponse(path, media_type="image/webp")
+    return {"error": "Mapa panorâmico WEBP da Fábrica não encontrado", "checked": candidates}

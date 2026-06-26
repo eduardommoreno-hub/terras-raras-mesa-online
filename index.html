@@ -3199,6 +3199,151 @@ input:focus,textarea:focus,select:focus{
 @media(max-width:640px){.trCineToastStack{right:10px;left:10px;bottom:10px;max-width:none}.trCineModalTitle{font-size:26px}.trCineModalText{font-size:15px}.trAiThinkingOrb{bottom:10px;border-radius:18px;align-items:flex-start}.trCineToast{padding-left:56px}}
 </style>
 
+
+<style id="tr-v19-6-11-32-fabrica-wide-panel-fix">
+/* v19.6.11.32 — Fábrica widescreen + painel funcionando */
+
+/* O menu visual precisa aceitar duas linhas como na Floresta expandida. */
+.visualQuickNav,
+.visualForestPremium #visualQuickNav.mesaBottomNav{
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  align-content:center!important;
+  gap:7px 9px!important;
+}
+
+/* Botões iguais ao padrão da Floresta. */
+.visualForestPremium #visualQuickNav.mesaBottomNav button{
+  flex:0 1 auto!important;
+  min-width:82px!important;
+  max-width:132px!important;
+  height:32px!important;
+  padding:6px 10px!important;
+  font-size:9.5px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+
+/* Mapa da Fábrica usa a mesma superfície visual da Floresta, agora sem margem lateral causada por arte quadrada. */
+.fabricaWideStageV32{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  overflow:hidden!important;
+  background:#050704!important;
+}
+
+.fabricaWideStageV32 .premiumForestMap{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  z-index:1!important;
+  display:block!important;
+}
+
+/* Hotspots invisíveis, mas clicáveis. */
+.fabricaWideStageV32 .premiumHotspots{
+  position:absolute!important;
+  inset:0!important;
+  z-index:4!important;
+  pointer-events:none!important;
+}
+
+.fabricaWideStageV32 .premiumHotspot{
+  position:absolute!important;
+  transform:translate(-50%,-50%)!important;
+  width:9.5%!important;
+  height:8.8%!important;
+  min-width:70px!important;
+  min-height:46px!important;
+  max-width:150px!important;
+  max-height:108px!important;
+  border:0!important;
+  border-radius:18px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  opacity:.012!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+
+.fabricaWideStageV32 .premiumHotspot span{
+  display:none!important;
+}
+
+.fabricaWideStageV32 .premiumHotspot:hover,
+.fabricaWideStageV32 .premiumHotspot.active{
+  opacity:1!important;
+  background:radial-gradient(circle,rgba(241,207,120,.20),rgba(0,0,0,0) 70%)!important;
+  border:1px solid rgba(241,207,120,.52)!important;
+  box-shadow:0 0 22px rgba(241,207,120,.38)!important;
+}
+
+/* Quando não estiver no cartão visual da personagem/mapa, o painel de personagem não deve tapar Diário/Chat/Missões. */
+.visualForestShell .side:not(.showVisualCard) #visualRightPanel{
+  display:none!important;
+}
+
+.visualForestShell .side.showVisualCard #visualRightPanel{
+  display:flex!important;
+}
+
+.visualForestShell .side .tabPane.on{
+  display:block!important;
+}
+
+@media(max-width:1100px){
+  .fabricaWideStageV32 .premiumHotspot{
+    min-width:46px!important;
+    min-height:34px!important;
+  }
+}
+</style>
+
+
+<style id="tr-v19-6-11-33-staff-sem-personagem">
+/* v19.6.11.33 — Mestre/Ajudante sem personagem */
+.staffConductorCard{
+  text-align:left!important;
+  align-items:stretch!important;
+}
+.staffConductorBadge{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:86px;
+  height:86px;
+  margin:10px auto 12px;
+  border-radius:50%;
+  border:1px solid rgba(241,207,120,.45);
+  background:
+    radial-gradient(circle at 50% 35%,rgba(241,207,120,.28),rgba(0,0,0,.1) 42%),
+    linear-gradient(180deg,rgba(46,31,12,.82),rgba(5,3,1,.86));
+  box-shadow:0 0 24px rgba(241,207,120,.16), inset 0 0 22px rgba(0,0,0,.45);
+  color:#f8dea0;
+  font-size:34px;
+}
+.staffConductorText{
+  color:var(--muted);
+  line-height:1.45;
+  margin:8px 0 10px;
+  text-align:center;
+}
+.staffConductorActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.staffHiddenNoCharacter{
+  display:none!important;
+}
+</style>
+
 </head><body><div class="app">
 <section id="login" class="screen on"><div class="center"><div class="landingStageV196118"><img src="assets/ui/landing_oficial_v196118.png?v=19.6.11.9" alt="Terras Raras" class="landingArtV196118" draggable="false"><div id="authBody" class="landingInlineAuthV196119"><label>Usuário</label><input id="u" autocomplete="username" placeholder="Digite seu usuário"><label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div><div id="authMsg" class="msg"></div></div><button id="loginBtn" class="landingHotspotV196118 landingEnterHotspotV196118" aria-label="Entrar" title="Entrar" onclick="doLogin()"></button><button id="registerBtn" class="landingHotspotV196118 landingRegisterHotspotV196118" aria-label="Pedir entrada" title="Pedir entrada" onclick="doRegister()"></button></div></div></section>
 

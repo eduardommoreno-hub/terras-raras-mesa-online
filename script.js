@@ -5175,3 +5175,445 @@ window.getFlorestaNegraCardsByLocation = window.getFlorestaNegraCardsByLocation 
   if (!deck || !Array.isArray(deck.cards)) return [];
   return deck.cards.filter(card => Number(card.location_n) === Number(locationN));
 };
+
+
+
+/* TR_V19_6_11_32_FABRICA_WIDESCREEN_PANEL_FIX */
+(function(){
+  const trOrigIsVisualForestMapV32 = window.isVisualForestMap || isVisualForestMap;
+  const trOrigEnsureVisualForestUIV32 = window.ensureVisualForestUI || ensureVisualForestUI;
+  const trOrigRenderVisualForestMapV32 = window.renderVisualForestMap || renderVisualForestMap;
+  const trOrigVisualNodeByIdV32 = window.visualNodeById || visualNodeById;
+  const trOrigVisualTokenAnchorV32 = window.visualTokenAnchor || visualTokenAnchor;
+  const trOrigSelectVisualNodeV32 = window.selectVisualNode || selectVisualNode;
+  const trOrigOpenPanelByLabelV32 = window.openPanelByLabel || openPanelByLabel;
+
+  function normV32(s){
+    return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+
+  function isFabricaV32(map){
+    const id = normV32(map?.id);
+    const name = normV32(map?.name);
+    return id.includes("fabrica") || name.includes("fabrica dos doces") || name.includes("doces pesadelos");
+  }
+
+  window.trIsFabricaV32 = isFabricaV32;
+
+  window.isVisualForestMap = isVisualForestMap = function(map){
+    return trOrigIsVisualForestMapV32(map) || isFabricaV32(map);
+  };
+
+  const FABRICA_V32 = {
+    image:"/tr-assets/fabrica-map?v=19.6.11.32",
+    nodes:[
+      {id:"portao_do_confeiteiro", name:"Portão do Confeiteiro", x:13.5, y:31.0, type:"normal", icon:"1", desc:"Entrada da Fábrica. Nenhum doce vem de graça."},
+      {id:"esteira_dos_doces_vivos", name:"Esteira dos Doces Vivos", x:15.0, y:49.0, type:"normal", icon:"2", desc:"Doces vivos caminham pela esteira e observam quem chegou."},
+      {id:"tunel_das_bolhas_de_goma", name:"Túnel das Bolhas de Goma", x:35.0, y:40.0, type:"secret", icon:"3", desc:"Cada bolha guarda uma risada perdida."},
+      {id:"sala_do_acucar_amargo", name:"Sala do Açúcar Amargo", x:57.0, y:43.5, type:"danger", icon:"4", desc:"A doçura perfeita esconde um gosto de verdade ferida."},
+      {id:"caldeirao_da_ilusao", name:"Caldeirão da Ilusão", x:85.0, y:35.5, type:"danger", icon:"5", desc:"O vapor mostra desejos diferentes para cada jogadora."},
+      {id:"oficina_das_maos_mecanicas", name:"Oficina das Mãos Mecânicas", x:84.0, y:58.5, type:"normal", icon:"6", desc:"Braços de bronze continuam trabalhando, mas ninguém sabe mais por quê."},
+      {id:"deposito_dos_brinquedos_quebrados", name:"Depósito dos Brinquedos Quebrados", x:84.0, y:76.5, type:"normal", icon:"7", desc:"Brinquedos esquecidos guardam ecos de antigas comemorações."},
+      {id:"capela_dos_aniversarios_esquecidos", name:"Capela dos Aniversários Esquecidos", x:68.0, y:76.0, type:"secret", icon:"8", desc:"Cem bolos sob redomas, cem velas apagadas."},
+      {id:"torre_da_receita_proibida", name:"Torre da Receita Proibida", x:49.0, y:67.0, type:"secret", icon:"9", desc:"Algumas receitas não foram feitas para alimentar ninguém."},
+      {id:"ponte_de_caramelo_derretido", name:"Ponte de Caramelo Derretido", x:8.5, y:66.0, type:"danger", icon:"10", desc:"O caminho se desfaz atrás de quem hesita."},
+      {id:"quarto_da_confeiteira", name:"Quarto da Confeiteira", x:28.5, y:84.5, type:"secret", icon:"11", desc:"Onde alguém amou, antes de esquecer como se ama."},
+      {id:"coracao_da_fabrica", name:"Coração da Fábrica", x:50.5, y:88.5, type:"portal", icon:"12", desc:"Só quem lembra do amor liberta o coração."}
+    ]
+  };
+
+  const TOKEN_ANCHORS_V32 = {};
+  FABRICA_V32.nodes.forEach(n => TOKEN_ANCHORS_V32[n.id] = {x:n.x, y:n.y});
+
+  function activeVisualNodesV32(){
+    return isFabricaV32(state?.map) ? FABRICA_V32.nodes : FOREST_V19_VISUAL.nodes;
+  }
+
+  window.visualNodeById = visualNodeById = function(id){
+    if(isFabricaV32(state?.map)){
+      return FABRICA_V32.nodes.find(n => n.id === id) || trOrigVisualNodeByIdV32(id);
+    }
+    return trOrigVisualNodeByIdV32(id);
+  };
+
+  window.visualTokenAnchor = visualTokenAnchor = function(nodeId){
+    if(isFabricaV32(state?.map)){
+      const n = TOKEN_ANCHORS_V32[nodeId] || visualNodeById(nodeId) || FABRICA_V32.nodes[0];
+      return {x:n.x, y:n.y};
+    }
+    return trOrigVisualTokenAnchorV32(nodeId);
+  };
+
+  function fullNavV32(){
+    const items = typeof dynamicNavItemsV196 === "function"
+      ? dynamicNavItemsV196()
+      : [['Mapa','🧭','mapa'],['Chat','💬','chat'],['Cartas','🃏','cartas'],['Inventário','🎒','inventario'],['Diário','📖','diario'],['Missões','📜','missoes'],['Jogadoras','👥','jogadoras'],['IA','🤖','ia']];
+    return items.map(([label,icon,key]) => `<button data-nav="${key}" onclick="openMesaTool('${esc(label)}')">${icon} ${esc(label)}</button>`).join("");
+  }
+
+  window.ensureVisualForestUI = ensureVisualForestUI = function(){
+    trOrigEnsureVisualForestUIV32();
+    const nav = qs("visualQuickNav");
+    if(nav){
+      nav.classList.add("mesaBottomNav");
+      nav.innerHTML = fullNavV32();
+    }
+    const hint = qs("visualHint");
+    if(hint && isFabricaV32(state?.map)){
+      hint.innerHTML = `<button class="visualHintTab" onclick="toggleVisualHint()" title="Ajuda do mapa">?</button><div class="visualHintBody"><button class="visualHintClose" onclick="toggleVisualHint(false)" title="Fechar">×</button><b>Fábrica dos Doces Pesadelos</b><br>Clique nos locais do mapa para abrir o painel, mover totens e narrar cenas.</div>`;
+    }
+  };
+
+  window.renderVisualForestMap = renderVisualForestMap = function(){
+    if(!isFabricaV32(state?.map)){
+      return trOrigRenderVisualForestMapV32();
+    }
+    const container = qs("mapSvg");
+    if(!container || premiumDraggingPlayer) return;
+    const selected = selectedNode?.id || state?.map?.selected_node;
+
+    const hotspots = FABRICA_V32.nodes.map(n => `<button class="premiumHotspot ${selected===n.id?'active':''} ${esc(n.type||'normal')}" data-id="${esc(n.id)}" title="${esc(n.name)}" style="left:${n.x}%;top:${n.y}%" onclick="selectVisualNode('${esc(n.id)}')"><span>${esc(n.icon||'')}</span></button>`).join("");
+
+    let tokens = "";
+    visiblePlayersForVisualForest().forEach(p=>{
+      const pos = premiumTokenPositionForPlayer(p);
+      const ch = p.character;
+      const name = ch?.name || p.username || "Jogadora";
+      const sprite = characterSpritePosition(ch?.id);
+      const movable = canMovePremiumToken(p) ? " mine" : "";
+      const pointerDown = canMovePremiumToken(p) ? ` onpointerdown="startPremiumTokenDrag(event,${p.id})"` : "";
+      tokens += `<button class="premiumPlayerToken${movable}" data-player="${esc(p.id||'')}" title="${esc(name)}" style="left:${pos.x}%;top:${pos.y}%;--sprite-pos:${sprite};--token-color:${ch?.color||'#c8a84b'}" onclick="handlePremiumTokenClick(event,${p.id})"${pointerDown}><span class="tokenPortrait"></span></button>`;
+    });
+
+    container.innerHTML = `<div class="premiumForestStage fabricaWideStageV32">
+      <img class="premiumForestMap" src="${FABRICA_V32.image}" alt="Fábrica dos Doces Pesadelos" onerror="if(!this.dataset.webpFallback){this.dataset.webpFallback='1';this.src='/tr-assets/fabrica-map.webp?v=19.6.11.32';}">
+      <div class="premiumHotspots">${hotspots}</div>
+      <div class="premiumTokens">${tokens}</div>
+    </div>`;
+  };
+
+  function openMapPaneHardV32(){
+    const side = qs("side");
+    if(!side) return;
+    side.classList.remove("closed");
+    document.querySelector(".game")?.classList.remove("panelClosed");
+    const panes = [...side.querySelectorAll(".tabPane")];
+    let idx = panes.findIndex(p => p.querySelector && p.querySelector("#locationBox"));
+    if(idx < 0) idx = panes.findIndex(p => (p.dataset.navLabel||"").toLowerCase().includes("mapa"));
+    if(idx >= 0){
+      openPanelTab(idx);
+      side.classList.add("showVisualCard");
+      updateVisualNavActive("Mapa");
+    }
+  }
+
+  function selectFabricaNodeV32(nodeId){
+    const node = FABRICA_V32.nodes.find(n => n.id === nodeId);
+    if(!node) return;
+
+    selectedNode = (graph().nodes||[]).find(n => n.id === nodeId) || {id:node.id,name:node.name,desc:node.desc||""};
+    try { if(state && state.map) state.map.selected_node = node.id; } catch(e){}
+
+    renderVisualForestMap();
+    openMapPaneHardV32();
+
+    const box = qs("locationBox");
+    if(!box) return;
+
+    const staff = isStaff();
+    const tokenOptions = participantPlayersWithCharacter().map(p => `<option value="${p.id}">${esc(p.character?.name||p.username)} · ${esc(p.username)}</option>`).join("");
+    const moveControls = staff
+      ? `<label>Mover token para cá</label><select id="visualTargetPlayer">${tokenOptions||'<option value="">Nenhuma jogadora com personagem</option>'}</select><div class="locActions"><button class="btn small" onclick="moveVisualSelectedToNode('${nodeId}')" ${tokenOptions?'':'disabled'}>Mover token</button><button class="btn small ghost" onclick="requestAIAndShow('narrative')">Narrar com IA</button></div>`
+      : `<div class="permissionHint">${esc(tokenMovementNotice())}</div>`;
+
+    box.innerHTML = `<div class="locTitle">${esc(node.name)}</div>
+      <div class="locIcon" style="font-size:32px;margin:8px 0">${esc(node.icon||'')}</div>
+      <div class="locationMeta">${esc(node.desc||'Local da Fábrica dos Doces Pesadelos.')}</div>
+      ${moveControls}
+      <div id="visualSideCTA" class="visualSideCTA">
+        <button class="btn small ghost" onclick="openPanelByLabel('Cartas')">Ver cartas</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('Missões')">Ver missão</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('Diário')">Diário</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('Jornada')">Jornada</button>
+      </div>`;
+  }
+
+  window.selectVisualNode = selectVisualNode = function(nodeId){
+    if(isFabricaV32(state?.map)) return selectFabricaNodeV32(nodeId);
+    return trOrigSelectVisualNodeV32(nodeId);
+  };
+
+  function openPanelHardV32(label){
+    const side = qs("side");
+    if(!side) return;
+    trCloseWideOverlay?.();
+    side.classList.remove("closed");
+    document.querySelector(".game")?.classList.remove("panelClosed");
+
+    const n = normalizeLabelV196(label);
+    if(n === "mapa") return openMapPaneHardV32();
+    if(n === "ia"){
+      trEnsureAISubsectionsV1965?.();
+      qs("localAIBox")?.classList.remove("hidden");
+    }
+    if(n === "configuracoes"){
+      renderRolePanel?.();
+    }
+
+    let panes = [...side.querySelectorAll(".tabPane")];
+    let idx = panes.findIndex(p => sectionMatchesV196(label,p));
+    if(idx < 0 && n === "diario") idx = panes.findIndex(p => sectionMatchesV196("Diário Visual",p) || sectionMatchesV196("Anotações da Mesa",p));
+    if(idx < 0 && n === "missoes") idx = panes.findIndex(p => p.id === "missionsBox");
+    if(idx < 0 && n === "jogadoras") idx = panes.findIndex(p => p.id === "players" || (p.querySelector && p.querySelector("#players")));
+    if(idx < 0 && n === "inventario") idx = panes.findIndex(p => p.id === "inventoryBox");
+    if(idx < 0 && n === "cartas") idx = panes.findIndex(p => p.id === "adventureCardsBox");
+    if(idx < 0 && n === "chat") idx = panes.findIndex(p => p.querySelector && p.querySelector("#chat"));
+    if(idx < 0 && n === "jornada") idx = panes.findIndex(p => p.id === "journeyBox");
+    if(idx < 0 && n === "ia") idx = panes.findIndex(p => p.id === "localAIBox");
+    if(idx < 0 && n === "configuracoes") idx = panes.findIndex(p => p.id === "rolePanel");
+
+    if(idx < 0){
+      let fallback = qs("toolFallbackV32");
+      if(!fallback){
+        fallback = document.createElement("div");
+        fallback.id = "toolFallbackV32";
+        fallback.className = "sideSection tabPane";
+        side.appendChild(fallback);
+        initPanelTabs?.();
+      }
+      fallback.dataset.navLabel = label;
+      fallback.innerHTML = `<h3 class="title">${esc(label)}</h3><p style="color:var(--muted)">Painel aberto. Esta área será expandida na próxima versão.</p><div class="row"><button class="btn small ghost" onclick="openPanelByLabel('IA')">Pedir ajuda da IA</button><button class="btn small ghost" onclick="openPanelByLabel('Mapa')">Voltar ao mapa</button></div>`;
+      panes = [...side.querySelectorAll(".tabPane")];
+      idx = panes.indexOf(fallback);
+    }
+
+    if(idx >= 0){
+      panes[idx].classList.remove("hidden");
+      openPanelTab(idx);
+      side.classList.toggle("showVisualCard", n === "personagem");
+      updateVisualNavActive(label);
+      setTimeout(() => { try { panes[idx].scrollIntoView({block:"start",behavior:"smooth"}); } catch(e){} }, 40);
+    }
+  }
+
+  window.openPanelByLabel = openPanelByLabel = function(label){
+    return openPanelHardV32(label);
+  };
+
+  window.openMesaTool = openMesaTool = function(label){
+    const n = normalizeLabelV196(label);
+    if(n === "mapa") return openMapPaneHardV32();
+    if(n === "cartas") return trIsStaffV1966?.() ? trOpenWideCards() : openPanelHardV32("Cartas");
+    if(n === "eventos") return trIsStaffV1966?.() ? trOpenWideEventsV1966() : openPanelHardV32("Eventos");
+    if(n === "biblioteca") return trIsStaffV1966?.() ? trOpenWideLibrary("Biblioteca") : openPanelHardV32("Biblioteca");
+    if(n === "narrar"){
+      if(typeof hasNarrationPermission === "function" && !hasNarrationPermission()){ alert("A narração oficial é exclusiva da Mestre."); return; }
+      openPanelHardV32("IA");
+      if(qs("aiAction")) qs("aiAction").value = `${trCurrentLocationTextV1966?.()||""}\n\nNarre a cena para as jogadoras com tom cinematográfico, infantil/familiar, sem terror pesado, terminando com uma escolha clara.`;
+      setTimeout(() => requestAIAndShow?.("narrative"), 80);
+      return;
+    }
+    openPanelHardV32(label);
+  };
+
+  const originalRenderGameV32 = window.renderGame || renderGame;
+  window.renderGame = renderGame = function(){
+    const ret = originalRenderGameV32.apply(this, arguments);
+    if(isFabricaV32(state?.map)){
+      ensureVisualForestUI();
+      renderVisualForestMap();
+      renderVisualRightPanel?.();
+    }
+    return ret;
+  };
+})();
+
+
+
+
+/* TR_V19_6_11_33_MESTRE_AJUDANTE_SEM_PERSONAGEM */
+(function(){
+  function normV33(s){
+    try { return normalizeLabelV196(s); }
+    catch(e){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,""); }
+  }
+
+  function staffNoCharacterV33(){
+    return !!(typeof isStaff === "function" && isStaff());
+  }
+
+  function isCharacterToolV33(labelOrKey){
+    const n = normV33(labelOrKey);
+    return n === "personagem" || n === "jornada" || n === "escolher_personagem";
+  }
+
+  function filterStaffNavV33(items){
+    if(!staffNoCharacterV33()) return items || [];
+    return (items || []).filter(item => {
+      const label = item?.[0] || "";
+      const key = item?.[2] || label;
+      return !isCharacterToolV33(label) && !isCharacterToolV33(key);
+    });
+  }
+
+  const oldDynamicNavV33 = window.dynamicNavItemsV196 || dynamicNavItemsV196;
+  window.dynamicNavItemsV196 = dynamicNavItemsV196 = function(){
+    return filterStaffNavV33(oldDynamicNavV33.apply(this, arguments));
+  };
+
+  function enforceStaffNoCharacterUIV33(){
+    if(!staffNoCharacterV33()) return;
+
+    // Nunca mostrar escolha de personagem para Mestre/Ajudante.
+    qs("chooseCharSection")?.classList.add("hidden");
+
+    // Remover botões Personagem/Jornada da barra inferior, mesmo se algum render anterior os recriar.
+    document.querySelectorAll("#visualQuickNav button, .visualQuickNav button, #trFabricaBottomNav button").forEach(btn => {
+      const key = btn.dataset?.nav || btn.textContent || "";
+      if(isCharacterToolV33(key)) btn.remove();
+    });
+
+    // Ocultar painéis de Personagem/Jornada para staff, sem destruir conteúdo para jogadoras.
+    const side = qs("side");
+    if(side){
+      [...side.querySelectorAll(".tabPane,.sideSection")].forEach(p => {
+        const label = p.dataset?.navLabel || "";
+        const text = (p.querySelector(".title")?.textContent || p.querySelector("h3")?.textContent || "");
+        if(isCharacterToolV33(label) || isCharacterToolV33(text)){
+          p.classList.add("staffHiddenNoCharacter");
+        }
+      });
+    }
+  }
+
+  const oldRenderRolePanelV33 = window.renderRolePanel || renderRolePanel;
+  window.renderRolePanel = renderRolePanel = function(){
+    const ret = oldRenderRolePanelV33.apply(this, arguments);
+    if(staffNoCharacterV33()){
+      const box = qs("rolePanel");
+      if(box){
+        const r = state?.me?.role || myRoomPlayer()?.role || "";
+        const title = r === "ajudante" ? "Ajudante da Mestre" : "Mestre";
+        const msg = r === "ajudante"
+          ? "Você auxilia a Mestre. Não possui personagem, ficha ou token próprio."
+          : "Você conduz o mundo. Não possui personagem, ficha ou token próprio.";
+        const marker = `<div class="forestCard staffNoCharacterNotice"><b>${esc(title)} sem personagem</b><br>${esc(msg)}<br><span style="color:var(--muted)">Apenas jogadoras recebem personagem e token no mapa.</span></div>`;
+        if(!box.innerHTML.includes("staffNoCharacterNotice")){
+          box.innerHTML = box.innerHTML.replace("</h3>", "</h3>" + marker);
+        }
+      }
+    }
+    enforceStaffNoCharacterUIV33();
+    return ret;
+  };
+
+  const oldRenderVisualRightPanelV33 = window.renderVisualRightPanel || renderVisualRightPanel;
+  window.renderVisualRightPanel = renderVisualRightPanel = function(){
+    if(!staffNoCharacterV33()){
+      const ret = oldRenderVisualRightPanelV33.apply(this, arguments);
+      enforceStaffNoCharacterUIV33();
+      return ret;
+    }
+
+    const side = qs("side");
+    if(!side || !(typeof isVisualForestMap === "function" && isVisualForestMap(state?.map))) return;
+
+    let panel = qs("visualRightPanel");
+    if(!panel){
+      panel = document.createElement("div");
+      panel.id = "visualRightPanel";
+      side.insertBefore(panel, side.firstChild);
+    }
+
+    const role = state?.me?.role || myRoomPlayer()?.role || "mestre";
+    const roleLabel = role === "ajudante" ? "Ajudante da Mestre" : "Mestre";
+    const room = state?.room || {};
+    const players = (typeof participantPlayersWithCharacter === "function" ? participantPlayersWithCharacter() : []).length;
+    const total = (typeof participantPlayers === "function" ? participantPlayers() : []).length;
+
+    panel.innerHTML = `<div class="visualTokenCard staffConductorCard">
+      <button class="visualGear" onclick="toggleForestAdminPanel?.()">⚙</button>
+      <div class="vtcName">${esc(roleLabel)}</div>
+      <div class="staffConductorBadge">${role === "ajudante" ? "🛠️" : "🎲"}</div>
+      <div class="staffConductorText">
+        ${role === "ajudante"
+          ? "Você ajuda a conduzir a mesa, movimenta tokens das jogadoras e apoia a Mestre."
+          : "Você conduz o mundo, controla cenas, movimenta tokens das jogadoras e libera eventos."}
+        <br><b>Sem personagem, sem ficha e sem token próprio.</b>
+      </div>
+      <div class="vtcStats">
+        <span>👥 ${players}/${total} jogadoras com personagem</span>
+        <span>🎟 ${esc(room.player_code || room.code || "-")}</span>
+      </div>
+      <div class="staffConductorActions">
+        <button class="btn small ghost" onclick="openPanelByLabel('Jogadoras')">👥 Jogadoras</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('IA')">🤖 IA</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('Eventos')">⚡ Eventos</button>
+        <button class="btn small ghost" onclick="openPanelByLabel('Biblioteca')">📚 Biblioteca</button>
+      </div>
+    </div>
+    <div class="vtcCardsSection">
+      <div class="vtcCardsSectionTitle">CONDUÇÃO DA MESA</div>
+      <div class="vtcNoCards locked">Mestre e Ajudante não recebem cartas privadas de personagem.<br>Cartas e pistas devem ser enviadas às jogadoras.</div>
+    </div>`;
+
+    try { prioritizeVisualForestSide(); } catch(e){}
+    enforceStaffNoCharacterUIV33();
+  };
+
+  const oldOpenPanelByLabelV33 = window.openPanelByLabel || openPanelByLabel;
+  window.openPanelByLabel = openPanelByLabel = function(label){
+    if(staffNoCharacterV33() && isCharacterToolV33(label)){
+      const redirect = normV33(label) === "jornada" ? "Missões" : "Jogadoras";
+      return oldOpenPanelByLabelV33.call(this, redirect);
+    }
+    return oldOpenPanelByLabelV33.apply(this, arguments);
+  };
+
+  const oldOpenMesaToolV33 = window.openMesaTool || openMesaTool;
+  window.openMesaTool = openMesaTool = function(label){
+    if(staffNoCharacterV33() && isCharacterToolV33(label)){
+      const redirect = normV33(label) === "jornada" ? "Missões" : "Jogadoras";
+      return window.openPanelByLabel(redirect);
+    }
+    return oldOpenMesaToolV33.apply(this, arguments);
+  };
+
+  const oldChooseCharV33 = window.chooseChar || chooseChar;
+  window.chooseChar = chooseChar = async function(){
+    if(staffNoCharacterV33()){
+      alert("Mestre e Ajudante entram sem personagem. Apenas Jogadoras escolhem personagem.");
+      return;
+    }
+    return oldChooseCharV33.apply(this, arguments);
+  };
+
+  const oldRenderPlayersV33 = window.renderPlayers || renderPlayers;
+  window.renderPlayers = renderPlayers = function(){
+    const ret = oldRenderPlayersV33.apply(this, arguments);
+    // Garantia visual: se algum card de Mestre/Ajudante herdou texto de personagem, reforçar aviso.
+    document.querySelectorAll(".playerCard,.player,.playerRow").forEach(card => {
+      const txt = card.textContent || "";
+      if((txt.includes("Mestre") || txt.includes("Ajudante")) && !txt.includes("sem personagem")){
+        const div = document.createElement("div");
+        div.className = "permissionHint staffNoCharacterTiny";
+        div.textContent = "Sem personagem/token próprio.";
+        card.appendChild(div);
+      }
+    });
+    return ret;
+  };
+
+  const oldRenderGameV33 = window.renderGame || renderGame;
+  window.renderGame = renderGame = function(){
+    const ret = oldRenderGameV33.apply(this, arguments);
+    enforceStaffNoCharacterUIV33();
+    if(staffNoCharacterV33() && typeof isVisualForestMap === "function" && isVisualForestMap(state?.map)){
+      try { renderVisualRightPanel(); } catch(e){}
+    }
+    return ret;
+  };
+
+  window.enforceStaffNoCharacterUIV33 = enforceStaffNoCharacterUIV33;
+})();
+
