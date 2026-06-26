@@ -6,15 +6,16 @@ from typing import Optional, Dict, List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, UniqueConstraint, or_, and_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.pool import StaticPool
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v17.3.1-cadastro-pendente-visivel"
+APP_VERSION = "v19.6.11.14-admin-compacto"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -43,6 +44,10 @@ security = HTTPBearer()
 
 app = FastAPI(title=APP_NAME)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# v18.0.1 — serve imagens e demais recursos visuais do remaster no Railway/local.
+if os.path.isdir("assets"):
+    app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 class User(Base):
     __tablename__ = "users"
@@ -76,7 +81,8 @@ class GameMap(Base):
 class Room(Base):
     __tablename__ = "rooms"
     id = Column(String(24), primary_key=True)
-    code = Column(String(12), unique=True, nullable=False, index=True)
+    code = Column(String(16), unique=True, nullable=False, index=True)  # código das jogadoras (JOG-XXXX)
+    helper_code = Column(String(16), unique=True, nullable=True, index=True)  # código da Ajudante (AJU-XXXX)
     name = Column(String(120), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     active_map_id = Column(String(40), ForeignKey("maps.id"), default="floresta_negra")
@@ -91,10 +97,13 @@ class RoomPlayer(Base):
     id = Column(Integer, primary_key=True)
     room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    role = Column(String(20), default="participante") # mestre/participante
+    role = Column(String(20), default="participante") # mestre/ajudante/participante
     character_id = Column(String(40), ForeignKey("characters.id"), nullable=True)
     hp = Column(Integer, default=100)
     energy = Column(Integer, default=80)
+    strength = Column(Integer, default=5)
+    skill = Column(Integer, default=7)
+    current_node = Column(String(64), default="entrada")
     token_x = Column(Float, default=50.0)
     token_y = Column(Float, default=50.0)
     weakness = Column(Text, default="")
@@ -133,11 +142,20 @@ class AdventureCard(Base):
     id = Column(Integer, primary_key=True)
     room_id = Column(String(24), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
     sender_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    recipient_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     kind = Column(String(30), default="pista")
     title = Column(String(160), nullable=False)
     text = Column(Text, nullable=False)
     origin = Column(String(160), default="")
+    catalog_id = Column(String(120), default="")
+    rarity = Column(String(30), default="common")
+    image_path = Column(String(260), default="")
+    target_scope = Column(String(30), default="all")
+    used_at = Column(DateTime, nullable=True)
+    used_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    revoked_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    revoked_reason = Column(String(220), default="")
     created_at = Column(DateTime, default=datetime.utcnow)
     seen_at = Column(DateTime, nullable=True)
     saved_at = Column(DateTime, nullable=True)
@@ -259,7 +277,18 @@ def admin_user(user: User = Depends(current_user)) -> User:
     return user
 
 def rid(): return "rm_" + "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-def code(): return "SALA-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+def code(prefix: str = "JOG"):
+    prefix = (prefix or "JOG").strip().upper()[:4]
+    return prefix + "-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+
+def unique_room_code(db: Session, prefix: str, field: str = "code") -> str:
+    """Gera código único por papel: JOG-XXXX para jogadoras, AJU-XXXX para ajudante."""
+    for _ in range(60):
+        value = code(prefix)
+        col = Room.helper_code if field == "helper_code" else Room.code
+        if not db.query(Room).filter(col == value).first():
+            return value
+    raise HTTPException(500, "Não foi possível gerar código único da sala")
 
 def svg_avatar(name, color):
     initial = name[:1].upper()
@@ -339,15 +368,58 @@ def ensure_schema_columns():
                 conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN scheduled_start DATETIME")
             if "session_status" not in cols:
                 conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN session_status VARCHAR(20) DEFAULT 'waiting'")
+            if "helper_code" not in cols:
+                conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN helper_code VARCHAR(16)")
+            conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_rooms_helper_code ON rooms(helper_code)")
             rp_rows = conn.exec_driver_sql("PRAGMA table_info(room_players)").fetchall()
             rp_cols = {r[1] for r in rp_rows}
             if "muted_until" not in rp_cols:
                 conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN muted_until DATETIME")
+            if "strength" not in rp_cols:
+                conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN strength INTEGER DEFAULT 5")
+            if "skill" not in rp_cols:
+                conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN skill INTEGER DEFAULT 7")
+            if "current_node" not in rp_cols:
+                conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN current_node VARCHAR(64) DEFAULT 'entrada'")
+            ac_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(adventure_cards)").fetchall()} if "adventure_cards" in {r[0] for r in conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table'").fetchall()} else set()
+            if ac_cols:
+                if "catalog_id" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN catalog_id VARCHAR(120) DEFAULT ''")
+                if "rarity" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN rarity VARCHAR(30) DEFAULT 'common'")
+                if "image_path" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN image_path VARCHAR(260) DEFAULT ''")
+                if "target_scope" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN target_scope VARCHAR(30) DEFAULT 'all'")
+                if "used_at" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN used_at DATETIME")
+                if "used_by_user_id" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN used_by_user_id INTEGER")
+                if "revoked_at" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN revoked_at DATETIME")
+                if "revoked_by_user_id" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN revoked_by_user_id INTEGER")
+                if "revoked_reason" not in ac_cols:
+                    conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN revoked_reason VARCHAR(220) DEFAULT ''")
         else:
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE")
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP")
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS session_status VARCHAR(20) DEFAULT 'waiting'")
+            conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS helper_code VARCHAR(16)")
+            conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_rooms_helper_code ON rooms(helper_code)")
             conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN IF NOT EXISTS muted_until TIMESTAMP")
+            conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN IF NOT EXISTS strength INTEGER DEFAULT 5")
+            conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN IF NOT EXISTS skill INTEGER DEFAULT 7")
+            conn.exec_driver_sql("ALTER TABLE room_players ADD COLUMN IF NOT EXISTS current_node VARCHAR(64) DEFAULT 'entrada'")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS catalog_id VARCHAR(120) DEFAULT ''")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS rarity VARCHAR(30) DEFAULT 'common'")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS image_path VARCHAR(260) DEFAULT ''")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS target_scope VARCHAR(30) DEFAULT 'all'")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS used_at TIMESTAMP")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS used_by_user_id INTEGER")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMP")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS revoked_by_user_id INTEGER")
+            conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN IF NOT EXISTS revoked_reason VARCHAR(220) DEFAULT ''")
 
 
 def seed(db: Session):
@@ -363,16 +435,25 @@ def seed(db: Session):
         admin.approved = True
         admin.is_admin = True
     chars = [
-        ("katrina","Katrina","Guerreira","Zona Diamante","Fria como aço. Sobreviveu onde todos caíram.","Fúria de Aço", "#c84030"),
-        ("sarah","Sarah","Estrategista","Zona Áurea","Mente brilhante. Usa lógica como lâmina.","Visão Tática", "#3878c8"),
-        ("mira","Mira","Caçadora","Picos Arcaicos","Arqueira silenciosa das montanhas.","Olho de Águia", "#3a8a50"),
-        ("vex","Vex","Sombra","Enclave Sombrio","Aparece onde a luz falha.","Passo Silencioso", "#7a4bc8"),
-        ("nina","Nina","Curandeira","Alexandria","Guarda livros e segredos antigos.","Mãos de Luz", "#c8a038"),
-        ("thais","Thais","Exploradora","Gelo Eterno","Conhece trilhas que ninguém vê.","Rastro Impossível", "#76d1ff"),
+        ("katrina","Katrina","Guerreira","Zona Diamante","Fria como aço. Sobreviveu onde todos caíram.","Fúria de Aço", "#4ccad6"),
+        ("lina","Lina","Estrategista","Zona Áurea","Mente brilhante. Usa lógica como lâmina.","Visão Tática", "#c89a44"),
+        ("mira","Mira","Caçadora","Picos Arcaicos","Arqueira silenciosa das montanhas.","Olho de Águia", "#9d63c8"),
+        ("theo","Theo","Sábio","Zona Esmeralda","Guarda livros e segredos antigos.","Engrenagem Sábia", "#7fb36a"),
+        ("naya","Naya","Curandeira","Alexandria","Aparece onde a luz falha.","Cura da Raiz", "#c86d4a"),
+        ("cael","Cael","Explorador","Gelo Eterno","Conhece trilhas que ninguém vê.","Rastro do Gelo", "#5aa9e6"),
+        ("selene","Selene","Cronista","Cidade dos Relógios Parados","Lê o tempo nos detalhes esquecidos.","Pêndulo da Memória", "#b7a3d8"),
+        ("lyra","Lyra","Oraculista","O Vazio","Escuta ecos do que ainda não aconteceu.","Olho do Vazio", "#8c55cc"),
+        ("dorian","Dorian","Inventor","Cidade dos Relógios Parados","Conserta mecanismos e encontra saídas impossíveis.","Engrenagem Mestra", "#b98135"),
+        ("silas","Silas","Alquimista","Fábrica dos Doces Pesadelos","Transforma venenos e doces em vantagem.","Doce Ruptura", "#c65a42"),
+        ("orion","Orion","Guardião","Tempestade dos Deuses","Enfrenta o caos sem recuar.","Escudo da Tempestade", "#4d9be6"),
+        ("riven","Riven","Corredor","Correr ou Morrer","Vence o perigo no último segundo.","Sprint do Último Caminho", "#e1972f"),
     ]
     for cid,n,r,z,d,a,col in chars:
-        if not db.get(Character, cid):
+        ch = db.get(Character, cid)
+        if not ch:
             db.add(Character(id=cid,name=n,role=r,zone=z,description=d,ability=a,color=col,avatar_svg=svg_avatar(n,col)))
+        else:
+            ch.name=n; ch.role=r; ch.zone=z; ch.description=d; ch.ability=a; ch.color=col; ch.avatar_svg=svg_avatar(n,col)
     maps = [
         ("floresta_negra",1,"Floresta Negra","Uma floresta viva, antiga e consciente. Trilhas mudam, vozes enganam, pistas surgem em lugares errados e o Portal da Próxima Zona observa quem se aproxima.","forest"),
         ("fabrica_doces",2,"Fábrica dos Doces Pesadelos","Uma fábrica colorida, automática e viva. Máquinas trabalham sozinhas, doces guardam sentimentos e a Mentira Amarga revela que a Confeiteira não é vilã: ela esqueceu como a alegria verdadeira funciona.","candy"),
@@ -413,7 +494,18 @@ class JoinReq(BaseModel):
     role: str="participante"
 class ChooseCharReq(BaseModel): room_id: str; character_id: str
 class MoveReq(BaseModel): player_id: int; x: float; y: float
-class StatsReq(BaseModel): player_id: int; hp: Optional[int]=None; energy: Optional[int]=None; weakness: Optional[str]=None; notes: Optional[str]=None; inventory: Optional[str]=None
+class StatsReq(BaseModel):
+    player_id: int
+    hp: Optional[int] = None
+    energy: Optional[int] = None
+    strength: Optional[int] = None
+    skill: Optional[int] = None
+    current_node: Optional[str] = None
+    x: Optional[float] = None
+    y: Optional[float] = None
+    weakness: Optional[str] = None
+    notes: Optional[str] = None
+    inventory: Optional[str] = None
 class InventoryItemReq(BaseModel):
     player_id: int
     item: Optional[str] = None
@@ -453,6 +545,9 @@ class AdventureCardSendReq(BaseModel):
     origin: str=""
     target: str="all"
     target_user_id: Optional[int]=None
+    catalog_id: str=""
+    rarity: str="common"
+    image_path: str=""
 
 class MasterEventReq(BaseModel):
     kind: str="livre"
@@ -478,13 +573,39 @@ class WSManager:
 manager = WSManager()
 
 # ---------- serializers ----------
+def player_can_have_character(p: RoomPlayer) -> bool:
+    return (p.role or "participante") == "participante"
+
+def player_has_token(p: RoomPlayer) -> bool:
+    return player_can_have_character(p) and bool(p.character_id)
+
 def player_dict(db: Session, p: RoomPlayer):
-    u = db.get(User, p.user_id); ch = db.get(Character, p.character_id) if p.character_id else None
-    return {"id":p.id,"username":u.username if u else "?","role":p.role,"character": char_dict(ch) if ch else None,"hp":p.hp,"energy":p.energy,"x":p.token_x,"y":p.token_y,"weakness":p.weakness,"notes":p.notes,"inventory":p.inventory,"muted_until":p.muted_until.isoformat() if p.muted_until else None}
+    u = db.get(User, p.user_id)
+    # Mestre e Ajudante são condução/espectadores: nunca exibem personagem/token,
+    # mesmo se houver lixo legado no banco.
+    ch = db.get(Character, p.character_id) if (p.character_id and player_can_have_character(p)) else None
+    return {
+        "id": p.id,
+        "user_id": p.user_id,
+        "username": u.username if u else "?",
+        "role": p.role,
+        "character": char_dict(ch) if ch else None,
+        "hp": p.hp,
+        "energy": p.energy,
+        "strength": p.strength if p.strength is not None else 5,
+        "skill": p.skill if p.skill is not None else 7,
+        "current_node": p.current_node or "entrada",
+        "x": p.token_x,
+        "y": p.token_y,
+        "weakness": p.weakness,
+        "notes": p.notes,
+        "inventory": p.inventory,
+        "muted_until": p.muted_until.isoformat() if p.muted_until else None,
+    }
 
 def char_dict(c: Optional[Character]):
     if not c: return None
-    return {"id":c.id,"name":c.name,"role":c.role,"zone":c.zone,"description":c.description,"ability":c.ability,"color":c.color,"avatar_svg":c.avatar_svg}
+    return {"id":c.id,"name":c.name,"role":c.role,"zone":c.zone,"description":c.description,"ability":c.ability,"color":c.color,"avatar_svg":c.avatar_svg,"card_url":character_card_url(c.id)}
 
 def map_dict(m: Optional[GameMap]):
     if not m: return None
@@ -492,7 +613,7 @@ def map_dict(m: Optional[GameMap]):
 
 def adventure_card_dict(db: Session, c: AdventureCard):
     sender = db.get(User, c.sender_user_id)
-    recipient = db.get(User, c.recipient_user_id)
+    recipient = db.get(User, c.recipient_user_id) if c.recipient_user_id else None
     return {
         "id": c.id,
         "room_id": c.room_id,
@@ -500,10 +621,19 @@ def adventure_card_dict(db: Session, c: AdventureCard):
         "title": c.title,
         "text": c.text,
         "origin": c.origin,
+        "catalog_id": getattr(c, "catalog_id", "") or "",
+        "rarity": getattr(c, "rarity", "common") or "common",
+        "image_path": getattr(c, "image_path", "") or "",
+        "target_scope": getattr(c, "target_scope", "all") or "all",
+        "used_at": c.used_at.isoformat() if getattr(c, "used_at", None) else None,
+        "used_by_user_id": getattr(c, "used_by_user_id", None),
+        "revoked_at": c.revoked_at.isoformat() if getattr(c, "revoked_at", None) else None,
+        "revoked_by_user_id": getattr(c, "revoked_by_user_id", None),
+        "revoked_reason": getattr(c, "revoked_reason", "") or "",
         "sender_user_id": c.sender_user_id,
         "sender_username": sender.username if sender else "?",
         "recipient_user_id": c.recipient_user_id,
-        "recipient_username": recipient.username if recipient else "?",
+        "recipient_username": recipient.username if recipient else "Todas",
         "created_at": c.created_at.isoformat() if c.created_at else None,
         "seen_at": c.seen_at.isoformat() if c.seen_at else None,
         "saved_at": c.saved_at.isoformat() if c.saved_at else None,
@@ -536,7 +666,7 @@ def room_state(db: Session, room_id: str):
     loc_descs = db.query(RoomLocationDescription).filter(RoomLocationDescription.room_id == room_id).all()
     progress_flags = db.query(RoomProgressFlag).filter(RoomProgressFlag.room_id == room_id).all()
     return {
-        "room":{"id":r.id,"code":r.code,"name":r.name,"active_map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, room_id),"tokens_used":room_players_count(db, room_id),"tokens_available":max(0, room_token_capacity(db, room_id)-room_players_count(db, room_id))},
+        "room":{"id":r.id,"code":r.code,"player_code":r.code,"helper_code":r.helper_code,"name":r.name,"active_map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_control_mode":"staff_only","token_capacity":room_token_capacity(db, room_id),"tokens_used":room_players_count(db, room_id),"tokens_available":max(0, room_token_capacity(db, room_id)-room_players_count(db, room_id))},
         "map": map_dict(db.get(GameMap, r.active_map_id)),
         "maps":[map_dict(x) for x in maps],
         "players":[player_dict(db,p) for p in players],
@@ -556,6 +686,16 @@ def normalize_room_role(role: str) -> str:
 def role_label(role: str) -> str:
     return {"mestre":"Mestre", "ajudante":"Ajudante da Mestre", "participante":"Jogadora"}.get(role, role)
 
+CANONICAL_CHARACTER_IDS = ["katrina", "lina", "mira", "theo", "naya", "cael", "selene", "lyra", "dorian", "silas", "orion", "riven"]
+
+def canonical_characters_query(db: Session):
+    chars = db.query(Character).filter(Character.id.in_(CANONICAL_CHARACTER_IDS)).all()
+    by_id = {c.id: c for c in chars}
+    return [by_id[cid] for cid in CANONICAL_CHARACTER_IDS if cid in by_id]
+
+def character_card_url(character_id: str) -> str:
+    return f"/assets/characters/{character_id}_card.webp" if character_id in CANONICAL_CHARACTER_IDS else ""
+
 
 def eligible_room_characters(db: Session, room_id: Optional[str]=None):
     """
@@ -568,17 +708,17 @@ def eligible_room_characters(db: Session, room_id: Optional[str]=None):
     - pacote de personagens da sala;
     - personagens liberados pela Mestre.
     """
-    q = db.query(Character).order_by(Character.id.asc())
-    return q.all()
+    return canonical_characters_query(db)
 
 def room_token_capacity(db: Session, room_id: Optional[str]=None) -> int:
     return len(eligible_room_characters(db, room_id))
 
 def room_players_count(db: Session, room_id: str) -> int:
-    return db.query(RoomPlayer).filter_by(room_id=room_id).count()
+    # Conta apenas jogadoras/participantes. Mestre e Ajudante não ocupam personagem/token.
+    return db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.role == "participante").count()
 
 def used_character_ids(db: Session, room_id: str, except_player_id: Optional[int]=None):
-    q = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.character_id.isnot(None))
+    q = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.role == "participante", RoomPlayer.character_id.isnot(None))
     if except_player_id is not None:
         q = q.filter(RoomPlayer.id != except_player_id)
     return {p.character_id for p in q.all() if p.character_id}
@@ -956,7 +1096,7 @@ def register(req: RegisterReq, db: Session = Depends(db_dep)):
     if db.query(User).filter_by(username=username).first(): raise HTTPException(400, "Nome já cadastrado")
     user = User(username=username, password_hash=hash_password(req.password), approved=False, is_admin=False)
     db.add(user); db.commit()
-    return {"ok": True, "username": username, "message":"Cadastro enviado. Agora peça para Eduardo abrir o Painel e autorizar seu nome."}
+    return {"ok": True, "message":"Cadastro enviado. Aguarde autorização do Eduardo."}
 
 @app.post("/auth/login")
 def login(req: LoginReq, db: Session = Depends(db_dep)):
@@ -998,58 +1138,13 @@ def me(user: User = Depends(current_user)):
 
 @app.get("/admin/pending")
 def pending(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
-    users = (
-        db.query(User)
-        .filter(User.approved == False)
-        .order_by(User.id.desc())
-        .all()
-    )
-    return [
-        {
-            "id": u.id,
-            "username": u.username,
-            "created_at": u.created_at.isoformat() if u.created_at else None,
-            "approved": bool(u.approved),
-            "is_admin": bool(u.is_admin),
-        }
-        for u in users
-    ]
-
-@app.get("/admin/users")
-def admin_users(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
-    users = db.query(User).order_by(User.id.desc()).limit(80).all()
-    return [
-        {
-            "id": u.id,
-            "username": u.username,
-            "created_at": u.created_at.isoformat() if u.created_at else None,
-            "approved": bool(u.approved),
-            "is_admin": bool(u.is_admin),
-        }
-        for u in users
-    ]
+    return [{"id":u.id,"username":u.username,"created_at":u.created_at.isoformat()} for u in db.query(User).filter_by(approved=False).all()]
 
 @app.post("/admin/approve/{user_id}")
 def approve(user_id: int, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
     u = db.get(User, user_id)
     if not u: raise HTTPException(404, "Usuário não encontrado")
-    if u.is_admin:
-        raise HTTPException(400, "Usuário administrador não precisa de autorização")
     u.approved=True; db.commit(); return {"ok": True}
-
-@app.post("/admin/approve-username/{username}")
-def approve_username(username: str, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
-    clean = (username or "").strip().lower()
-    if not clean:
-        raise HTTPException(400, "Informe o nome da usuária")
-    u = db.query(User).filter_by(username=clean).first()
-    if not u:
-        raise HTTPException(404, "Usuária não encontrada")
-    if u.is_admin:
-        raise HTTPException(400, "Usuário administrador não precisa de autorização")
-    u.approved = True
-    db.commit()
-    return {"ok": True, "id": u.id, "username": u.username}
 
 
 @app.get("/admin/security/logs")
@@ -1140,7 +1235,7 @@ async def admin_security_block_user(log_id: int, admin: User = Depends(admin_use
 
 @app.get("/characters")
 def characters(db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    return [char_dict(c) for c in db.query(Character).all()]
+    return [char_dict(c) for c in canonical_characters_query(db)]
 
 @app.get("/maps")
 def maps(db: Session = Depends(db_dep), user: User = Depends(current_user)):
@@ -1148,46 +1243,62 @@ def maps(db: Session = Depends(db_dep), user: User = Depends(current_user)):
 
 @app.post("/rooms/create")
 def create_room(req: CreateRoomReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    chosen_role = normalize_room_role(req.role)
-    r = Room(id=rid(), code=code(), name=req.name.strip() or "Mesa Terras Raras", owner_id=user.id, is_public=bool(req.is_public), scheduled_start=req.scheduled_start if req.is_public else None, session_status="waiting")
+    # v19.6.11: quem cria a sala é sempre Mestre, sem personagem e sem token próprio.
+    chosen_role = "mestre"
+    r = Room(
+        id=rid(),
+        code=unique_room_code(db, "JOG", "code"),
+        helper_code=unique_room_code(db, "AJU", "helper_code"),
+        name=req.name.strip() or "Mesa Terras Raras",
+        owner_id=user.id,
+        is_public=bool(req.is_public),
+        scheduled_start=req.scheduled_start if req.is_public else None,
+        session_status="waiting",
+    )
     db.add(r); db.flush()
-    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=first_available_character_id(db, r.id), token_x=50, token_y=50))
-    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa como {role_label(chosen_role)}." + (" Sala pública." if r.is_public else " Sala fechada.")))
-    db.commit(); return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"tokens_used":room_players_count(db, r.id),"tokens_available":max(0, room_token_capacity(db, r.id)-room_players_count(db, r.id))}
+    db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=None, token_x=50, token_y=50))
+    db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} criou a mesa como Mestre. Mestre entra sem personagem e sem token." + (" Sala pública." if r.is_public else " Sala fechada.")))
+    db.commit()
+    return {"id":r.id,"code":r.code,"player_code":r.code,"helper_code":r.helper_code,"name":r.name,"role":chosen_role,"character":None,"token_control_mode":"staff_only","is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"tokens_used":room_players_count(db, r.id),"tokens_available":max(0, room_token_capacity(db, r.id)-room_players_count(db, r.id))}
 
 @app.post("/rooms/join")
 def join_room(req: JoinReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    r = db.query(Room).filter(Room.code == req.code.strip().upper()).first()
+    raw_code = (req.code or "").strip().upper()
+    if not raw_code:
+        raise HTTPException(400, "Informe o código de convite")
+    r = db.query(Room).filter(or_(Room.code == raw_code, Room.helper_code == raw_code)).first()
     if not r: raise HTTPException(404, "Código de sala não encontrado")
     existing_player = db.query(RoomPlayer).filter_by(room_id=r.id, user_id=user.id).first()
     if (r.session_status or "waiting") == "ended" and not existing_player:
         raise HTTPException(400, "Esta sessão já foi encerrada.")
-    chosen_role = normalize_room_role(req.role)
-    master_exists = db.query(RoomPlayer).filter_by(room_id=r.id, role="mestre").first()
+
+    # O papel vem exclusivamente do código. O frontend não escolhe mais papel.
+    chosen_role = "ajudante" if raw_code == (r.helper_code or "").upper() else "participante"
     rp = existing_player
-    if chosen_role == "mestre" and master_exists and (not rp or rp.role != "mestre") and not user.is_admin:
-        raise HTTPException(400, "Esta sala já tem Mestre. Entre como Ajudante da Mestre ou Jogadora.")
     if not rp:
-        ensure_room_has_token_capacity(db, r.id)
-        available_char = first_available_character_id(db, r.id)
-        if not available_char:
-            raise HTTPException(400, "Esta sala já está cheia. Não há totens/personagens disponíveis.")
-        db.add(RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=available_char, token_x=random.randint(35,65), token_y=random.randint(35,65)))
-        db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou na mesa como {role_label(chosen_role)}."))
+        if chosen_role == "participante":
+            ensure_room_has_token_capacity(db, r.id)
+        rp = RoomPlayer(room_id=r.id, user_id=user.id, role=chosen_role, character_id=None, token_x=random.randint(35,65), token_y=random.randint(35,65))
+        db.add(rp)
+        db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou na mesa como {role_label(chosen_role)}." + (" Sem personagem/token próprio." if chosen_role == "ajudante" else "")))
         db.commit()
     else:
-        if rp.role == "participante" and chosen_role in ("ajudante", "mestre"):
+        # Em salas novas, o código de convite também corrige papel legado quando a pessoa reentra.
+        if rp.role != chosen_role and rp.role != "mestre":
             rp.role = chosen_role
-            db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} mudou função para {role_label(chosen_role)}."))
+            if chosen_role == "ajudante":
+                rp.character_id = None
+            rp.updated_at = datetime.utcnow()
+            db.add(EventLog(room_id=r.id, kind="system", text=f"{user.username} entrou novamente como {role_label(chosen_role)}."))
             db.commit()
-    return {"id":r.id,"code":r.code,"name":r.name,"role":chosen_role}
+    return {"id":r.id,"code":r.code,"player_code":r.code,"helper_code":r.helper_code,"name":r.name,"role":rp.role if rp else chosen_role,"character":None}
 
 @app.get("/rooms/mine")
 def mine(db: Session = Depends(db_dep), user: User = Depends(current_user)):
     rows = db.query(RoomPlayer).filter_by(user_id=user.id).all()
     out=[]
     for rp in rows:
-        r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"name":r.name,"role":rp.role,"map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"players_count":room_players_count(db, r.id)})
+        r=db.get(Room, rp.room_id); out.append({"id":r.id,"code":r.code,"player_code":r.code,"helper_code":r.helper_code,"name":r.name,"role":rp.role,"map_id":r.active_map_id,"is_public":bool(r.is_public),"scheduled_start":r.scheduled_start.isoformat() if r.scheduled_start else None,"session_status":r.session_status or "waiting","token_capacity":room_token_capacity(db, r.id),"players_count":room_players_count(db, r.id)})
     return out
 
 
@@ -1218,24 +1329,8 @@ def public_rooms(db: Session = Depends(db_dep), user: User = Depends(current_use
 
 @app.post("/rooms/{room_id}/role")
 async def set_room_role(room_id: str, req: RoomRoleReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    r = db.get(Room, room_id)
-    if not r:
-        raise HTTPException(404, "Sala não encontrada")
-    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
-    if not rp:
-        raise HTTPException(403, "Você não está nesta sala")
-    chosen_role = normalize_room_role(req.role)
-    if chosen_role == "mestre":
-        master = db.query(RoomPlayer).filter_by(room_id=room_id, role="mestre").first()
-        if master and master.user_id != user.id and not user.is_admin:
-            raise HTTPException(400, "Esta sala já tem Mestre principal")
-        r.owner_id = user.id
-    rp.role = chosen_role
-    rp.updated_at = datetime.utcnow()
-    db.add(EventLog(room_id=room_id, kind="role", text=f"{user.username} agora é {role_label(chosen_role)}."))
-    db.commit()
-    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
-    return {"ok": True, "role": chosen_role}
+    # v19.6.11: o papel é definido pelo código de convite. Não há troca manual de papel.
+    raise HTTPException(403, "O papel na mesa é definido pelo código de convite: AJU-XXXX para Ajudante e JOG-XXXX para Jogadora.")
 
 
 
@@ -1278,6 +1373,9 @@ async def leave_room(room_id: str, db: Session = Depends(db_dep), user: User = D
     rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
     if not rp:
         return {"ok": True, "message": "Você já não está nesta sala."}
+
+    if rp.role == "mestre" and not user.is_admin:
+        return {"ok": True, "deleted": False, "message": "A sala permanece no Hub da Mestre. Use Voltar ao Hub para sair da tela sem abandonar a sala."}
 
     was_master = (rp.role == "mestre")
     db.delete(rp)
@@ -1399,6 +1497,8 @@ async def choose_character(room_id: str, req: ChooseCharReq, db: Session = Depen
     if req.room_id != room_id: raise HTTPException(400, "Sala divergente")
     rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
     if not rp: raise HTTPException(403, "Você não está nesta sala")
+    if rp.role != "participante":
+        raise HTTPException(403, "Mestre e Ajudante entram sem personagem. Apenas Jogadoras escolhem personagem.")
     if not db.get(Character, req.character_id): raise HTTPException(404, "Personagem não encontrado")
     duplicate = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.character_id == req.character_id, RoomPlayer.id != rp.id).first()
     if duplicate:
@@ -1407,29 +1507,76 @@ async def choose_character(room_id: str, req: ChooseCharReq, db: Session = Depen
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
+@app.post("/rooms/{room_id}/assign-character")
+async def assign_character_to_player(room_id: str, req: dict, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    try:
+        player_id = int(req.get("player_id"))
+    except Exception:
+        raise HTTPException(400, "Jogadora inválida")
+    character_id = str(req.get("character_id") or "").strip()
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, id=player_id).first()
+    if not rp:
+        raise HTTPException(404, "Jogadora não encontrada na sala")
+    if rp.role != "participante":
+        raise HTTPException(403, "Mestre/Ajudante não podem receber personagem. Atribua personagem apenas às jogadoras.")
+    if not db.get(Character, character_id):
+        raise HTTPException(404, "Personagem não encontrado")
+    duplicate = db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.character_id == character_id, RoomPlayer.id != rp.id).first()
+    if duplicate:
+        raise HTTPException(400, "Este personagem já está em uso nesta sala.")
+    rp.character_id = character_id
+    rp.updated_at = datetime.utcnow()
+    db.commit()
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True}
+
 @app.post("/rooms/{room_id}/move-token")
 async def move_token(room_id: str, req: MoveReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     target = db.get(RoomPlayer, req.player_id)
     if not target or target.room_id != room_id: raise HTTPException(404, "Token não encontrado")
     mine = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
-    if not mine: raise HTTPException(403, "Você não está nesta sala")
-    if mine.role != "mestre" and target.user_id != user.id and not user.is_admin:
-        raise HTTPException(403, "Você só pode mover seu próprio token")
+    if not mine and not user.is_admin: raise HTTPException(403, "Você não está nesta sala")
+    if not (user.is_admin or (mine and mine.role in ("mestre", "ajudante"))):
+        raise HTTPException(403, "Apenas a Mestre ou a Ajudante podem mover os tokens nesta mesa.")
+    if target.role != "participante" or not target.character_id:
+        raise HTTPException(400, "Só jogadoras com personagem têm token no mapa.")
     target.token_x=max(0,min(100,req.x)); target.token_y=max(0,min(100,req.y)); target.updated_at=datetime.utcnow(); db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
 @app.post("/rooms/{room_id}/stats")
 async def stats(room_id: str, req: StatsReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    rp_me = ensure_room_member(db, room_id, user)
     p = db.get(RoomPlayer, req.player_id)
-    if not p or p.room_id != room_id: raise HTTPException(404, "Jogadora não encontrada")
-    if req.hp is not None: p.hp=max(0,min(100,req.hp))
-    if req.energy is not None: p.energy=max(0,min(100,req.energy))
-    if req.weakness is not None: p.weakness=req.weakness
-    if req.notes is not None: p.notes=req.notes
-    if req.inventory is not None: p.inventory=req.inventory
-    p.updated_at=datetime.utcnow(); db.commit()
+    if not p or p.room_id != room_id:
+        raise HTTPException(404, "Jogadora não encontrada")
+
+    movement_only = (
+        req.current_node is not None
+        and req.hp is None and req.energy is None and req.strength is None and req.skill is None
+        and req.weakness is None and req.notes is None and req.inventory is None
+    )
+    if not movement_only:
+        require_staff(db, room_id, user)
+    else:
+        if not (user.is_admin or (rp_me and rp_me.role in ("mestre", "ajudante"))):
+            raise HTTPException(403, "Apenas a Mestre ou a Ajudante podem mover os tokens nesta mesa.")
+        if p.role != "participante" or not p.character_id:
+            raise HTTPException(400, "Só jogadoras com personagem têm token no mapa.")
+
+    if req.hp is not None: p.hp = max(0, min(100, req.hp))
+    if req.energy is not None: p.energy = max(0, min(100, req.energy))
+    if req.strength is not None: p.strength = max(0, min(100, req.strength))
+    if req.skill is not None: p.skill = max(0, min(100, req.skill))
+    if req.current_node is not None: p.current_node = req.current_node[:64]
+    if req.x is not None: p.token_x = max(0, min(100, req.x))
+    if req.y is not None: p.token_y = max(0, min(100, req.y))
+    if req.weakness is not None: p.weakness = req.weakness
+    if req.notes is not None: p.notes = req.notes
+    if req.inventory is not None: p.inventory = req.inventory
+    p.updated_at = datetime.utcnow()
+    db.commit()
     await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
     return {"ok": True}
 
@@ -1586,8 +1733,16 @@ def ai_worker_status():
 
 @app.post("/rooms/{room_id}/ai/request")
 async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_staff(db, room_id, user)
-    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary", "question", "location_event") else "narrative"
+    # v19.6.6: todos os membros da sala podem conversar/perguntar à IA.
+    # Narração oficial, evento de local, resumo e prompt de imagem continuam restritos a Mestre/Ajudante,
+    # com publicação oficial preservada apenas para Mestre no endpoint /publish.
+    rp = ensure_room_member(db, room_id, user)
+    job_type = req.job_type if req.job_type in ("narrative", "image_prompt", "summary", "question", "location_event") else "question"
+    is_staff_member = bool(user.is_admin or (rp and rp.role in ("mestre", "ajudante")))
+    if job_type != "question" and not is_staff_member:
+        job_type = "question"
+    if job_type == "narrative" and rp.role != "mestre" and not user.is_admin:
+        raise HTTPException(403, "A narração oficial é exclusiva da Mestre. A Ajudante pode usar Perguntar, Resumir e Bastidores.")
 
     # v8.2: evita criar vários pedidos iguais se o worker estiver desligado.
     existing = (
@@ -1723,6 +1878,8 @@ async def publish_ai_job(room_id: str, job_id: int, req: AIPublishReq, request: 
         title = "Evento do local gerado pela IA Local"
 
     target = (req.target or "chat").strip().lower()
+    if target in ("chat", "location") and rp.role != "mestre" and not user.is_admin:
+        raise HTTPException(403, "A publicação de narração oficial é exclusiva da Mestre. Use Bastidores para preparar o texto.")
     final_text = (req.text if req.text is not None else job.result).strip()
     if not final_text:
         raise HTTPException(400, "O texto final está vazio")
@@ -1774,7 +1931,26 @@ def get_all_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: U
 @app.get("/rooms/{room_id}/cards/my")
 def get_my_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     ensure_room_member(db, room_id, user)
-    cards = db.query(AdventureCard).filter(AdventureCard.room_id == room_id, AdventureCard.recipient_user_id == user.id).order_by(AdventureCard.id.desc()).limit(80).all()
+    current_user_id = int(user.id)
+    cards = (
+        db.query(AdventureCard)
+        .filter(
+            AdventureCard.room_id == room_id,
+            AdventureCard.revoked_at.is_(None),
+            or_(
+                AdventureCard.recipient_user_id == current_user_id,
+                and_(AdventureCard.recipient_user_id.is_(None), AdventureCard.target_scope.in_(["all", "game"])),
+            ),
+        )
+        .order_by(AdventureCard.id.desc())
+        .limit(80)
+        .all()
+    )
+    if os.getenv("DEBUG_CARDS_PRIVACY", "false").lower() == "true":
+        print(
+            f"[cards/my] room={room_id} user_id={current_user_id} "
+            f"returned={[{'id': c.id, 'recipient_user_id': c.recipient_user_id} for c in cards]}"
+        )
     return [adventure_card_dict(db, c) for c in cards]
 
 @app.get("/rooms/{room_id}/cards/sent")
@@ -1785,43 +1961,76 @@ def get_sent_adventure_cards(room_id: str, db: Session = Depends(db_dep), user: 
 
 @app.post("/rooms/{room_id}/cards/send")
 async def send_adventure_card(room_id: str, req: AdventureCardSendReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
-    require_master(db, room_id, user)
+    require_staff(db, room_id, user)
     title = enforce_safe_message(db, room_id, user, request, req.title or "", source="adventure_card_title").strip()[:160]
     body = enforce_safe_message(db, room_id, user, request, req.text or "", source="adventure_card_text").strip()[:4000]
     origin = enforce_safe_message(db, room_id, user, request, req.origin or "", source="adventure_card_origin").strip()[:160]
     if not title or not body:
         raise HTTPException(400, "Título e texto da carta são obrigatórios")
     kind = (req.kind or "pista").strip().lower()
-    if kind not in ("pista", "item", "missao", "mensagem", "recompensa"):
+    if kind not in ("pista", "item", "missao", "mensagem", "recompensa", "power", "special", "identity", "evento", "perigo", "especial", "susto"):
         kind = "pista"
     target = (req.target or "all").strip().lower()
-    recipients = []
+    catalog_id = (req.catalog_id or "").strip()[:120]
+    rarity = (req.rarity or "common").strip().lower()[:30]
+    image_path = (req.image_path or "").strip()[:260]
+    if image_path and not image_path.startswith("/assets/cards/") and not image_path.startswith("/assets/characters/"):
+        image_path = ""
+
     if target == "one":
         if not req.target_user_id:
             raise HTTPException(400, "Escolha uma jogadora para enviar a carta")
         rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=req.target_user_id).first()
         if not rp:
             raise HTTPException(404, "Jogadora alvo não encontrada na sala")
-        recipients = [req.target_user_id]
+        if rp.role != "participante" or not rp.character_id:
+            raise HTTPException(400, "Cartas de personagem só podem ser enviadas para jogadoras com personagem escolhido")
+        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=req.target_user_id, kind=kind, title=title, text=body, origin=origin, catalog_id=catalog_id, rarity=rarity, image_path=image_path, target_scope="one")
+        label = db.get(User, req.target_user_id).username if db.get(User, req.target_user_id) else "jogadora"
+    elif target == "staff":
+        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=None, kind=kind, title=title, text=body, origin=origin, catalog_id=catalog_id, rarity=rarity, image_path=image_path, target_scope="staff")
+        label = "Mestre/Ajudante"
+    elif target == "game":
+        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=None, kind=kind, title=title, text=body, origin=origin, catalog_id=catalog_id, rarity=rarity, image_path=image_path, target_scope="game")
+        label = "jogo/mesa"
     else:
-        recipients = [rp.user_id for rp in db.query(RoomPlayer).filter(RoomPlayer.room_id == room_id, RoomPlayer.user_id != user.id).all()]
-    if not recipients:
-        raise HTTPException(400, "Não há jogadoras disponíveis para receber a carta")
-    created = []
-    for recipient_user_id in recipients:
-        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=recipient_user_id, kind=kind, title=title, text=body, origin=origin)
-        db.add(card)
-        created.append(card)
-    db.add(EventLog(room_id=room_id, kind="adventure_card", text=f"{user.username} enviou {len(recipients)} carta(s) da aventura."))
+        # Carta global: uma única linha com recipient_user_id=None.
+        # /cards/my entrega esta carta para todas sem duplicar privadas.
+        card = AdventureCard(room_id=room_id, sender_user_id=user.id, recipient_user_id=None, kind=kind, title=title, text=body, origin=origin, catalog_id=catalog_id, rarity=rarity, image_path=image_path, target_scope="all")
+        label = "todas as jogadoras"
+
+    db.add(card)
+    db.add(EventLog(room_id=room_id, kind="adventure_card", text=f"{user.username} enviou carta da aventura para {label}."))
     db.commit()
     await manager.broadcast(room_id, {"type": "cards_updated"})
-    return {"ok": True, "count": len(recipients), "cards": [adventure_card_dict(db, c) for c in created]}
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "count": 1, "id": card.id, "card": adventure_card_dict(db, card)}
+
+
+@app.post("/rooms/{room_id}/cards/{card_id}/use")
+async def use_adventure_card(room_id: str, card_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    ensure_room_member(db, room_id, user)
+    card = db.get(AdventureCard, card_id)
+    if not card or card.room_id != room_id:
+        raise HTTPException(404, "Carta não encontrada")
+    if getattr(card, "revoked_at", None):
+        raise HTTPException(410, "Carta retirada pela Mestre")
+    rp = db.query(RoomPlayer).filter_by(room_id=room_id, user_id=user.id).first()
+    visible = user.is_admin or (rp and rp.role in ("mestre", "ajudante")) or card.recipient_user_id == user.id or (card.recipient_user_id is None and getattr(card, "target_scope", "all") in ("all", "game"))
+    if not visible:
+        raise HTTPException(403, "Você não pode usar esta carta")
+    card.used_at = datetime.utcnow()
+    card.used_by_user_id = user.id
+    db.add(EventLog(room_id=room_id, kind="adventure_card_used", text=f"{user.username} marcou a carta como usada: {card.title}"))
+    db.commit()
+    await manager.broadcast(room_id, {"type": "cards_updated"})
+    return {"ok": True, "card": adventure_card_dict(db, card)}
 
 @app.post("/rooms/{room_id}/cards/{card_id}/seen")
 async def see_adventure_card(room_id: str, card_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     ensure_room_member(db, room_id, user)
     card = db.get(AdventureCard, card_id)
-    if not card or card.room_id != room_id or card.recipient_user_id != user.id:
+    if not card or card.room_id != room_id or getattr(card, "revoked_at", None) or (card.recipient_user_id is not None and card.recipient_user_id != user.id):
         raise HTTPException(404, "Carta não encontrada")
     if not card.seen_at:
         card.seen_at = datetime.utcnow()
@@ -1833,7 +2042,7 @@ async def see_adventure_card(room_id: str, card_id: int, db: Session = Depends(d
 async def save_adventure_card(room_id: str, card_id: int, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     ensure_room_member(db, room_id, user)
     card = db.get(AdventureCard, card_id)
-    if not card or card.room_id != room_id or card.recipient_user_id != user.id:
+    if not card or card.room_id != room_id or getattr(card, "revoked_at", None) or (card.recipient_user_id is not None and card.recipient_user_id != user.id):
         raise HTTPException(404, "Carta não encontrada")
     now = datetime.utcnow()
     if not card.seen_at:
@@ -1842,6 +2051,23 @@ async def save_adventure_card(room_id: str, card_id: int, db: Session = Depends(
     db.commit()
     await manager.broadcast(room_id, {"type": "cards_updated"})
     return adventure_card_dict(db, card)
+
+
+@app.post("/rooms/{room_id}/cards/{card_id}/revoke")
+async def revoke_adventure_card(room_id: str, card_id: int, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    require_staff(db, room_id, user)
+    card = db.get(AdventureCard, card_id)
+    if not card or card.room_id != room_id:
+        raise HTTPException(404, "Carta não encontrada")
+    if not getattr(card, "revoked_at", None):
+        card.revoked_at = datetime.utcnow()
+        card.revoked_by_user_id = user.id
+        card.revoked_reason = "Retirada pela Mestre/Ajudante"
+        db.add(EventLog(room_id=room_id, kind="adventure_card_revoked", text=f"{user.username} retirou a carta: {card.title}"))
+        db.commit()
+    await manager.broadcast(room_id, {"type": "cards_updated"})
+    await manager.broadcast(room_id, {"type":"state", "state":room_state(db, room_id)})
+    return {"ok": True, "card": adventure_card_dict(db, card)}
 
 @app.get("/rooms/{room_id}/master-events")
 def get_master_events(room_id: str, db: Session = Depends(db_dep), user: User = Depends(current_user)):
@@ -1915,9 +2141,9 @@ def get_adventure_diary_timeline(room_id: str, db: Session = Depends(db_dep), us
 
     card_q = db.query(AdventureCard).filter(AdventureCard.room_id == room_id)
     if not is_staff_user:
-        card_q = card_q.filter(AdventureCard.recipient_user_id == user.id)
+        card_q = card_q.filter(or_(AdventureCard.recipient_user_id == user.id, AdventureCard.recipient_user_id.is_(None)))
     for c in card_q.order_by(AdventureCard.created_at.asc()).all():
-        recipient = db.get(User, c.recipient_user_id)
+        recipient = db.get(User, c.recipient_user_id) if c.recipient_user_id else None
         entries.append({
             "id": f"card-{c.id}",
             "kind": "card",
@@ -2000,7 +2226,7 @@ def get_adventure_diary_summary_draft(room_id: str, db: Session = Depends(db_dep
     if cards:
         lines.append("Cartas e pistas importantes:")
         for c in cards[-8:]:
-            recipient = db.get(User, c.recipient_user_id)
+            recipient = db.get(User, c.recipient_user_id) if c.recipient_user_id else None
             suffix = " guardada" if c.saved_at else ""
             lines.append(f"- {c.title} para {recipient.username if recipient else 'jogadora'}{suffix}.")
         lines.append("")

@@ -38,9 +38,6 @@ A v17.3 não cria mapa novo. Ela prepara a transição para a fase v18.0, com:
 Foco: tela inicial profissional, modo demonstração, tutorial integrado, responsividade, revisão visual geral e material de apresentação.
 
 
-## v17.3.1 — Hotfix cadastro pendente visível
-- Painel admin mostra botão para atualizar cadastros pendentes.
-- Painel admin mostra últimos usuários cadastrados.
-- Nova rota GET /admin/users.
-- Nova rota POST /admin/approve-username/{username}.
-- Cadastro retorna mensagem mais clara para a jogadora.
+## v18.0 — Remaster funcional da Floresta Negra
+
+Primeira etapa oficial do remaster visual mapa por mapa. A Floresta Negra recebeu imagem cinematográfica, token pequeno de caminhada e atalhos funcionais para Inventário, Cartas, Mapa, Missões, Diário e Jornada.

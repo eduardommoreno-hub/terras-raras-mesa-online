@@ -20,8 +20,10 @@ let sentAdventureCards = [];
 let currentAdventureCardId = null;
 let masterEventsCache = [];
 let allAdventureCards = [];
+let cardCatalog = null;
 let adventureDiaryTimeline = [];
 let adventureDiaryDraft = null;
+let pendingStateDuringPremiumDrag = null;
 
 function qs(id){ return document.getElementById(id); }
 function isMountainMap(map){
@@ -108,19 +110,21 @@ async function api(path, opts={}){
 
 /* ===== Auth / Hub ===== */
 function drawAuth(){
-  qs('tabLogin')?.classList.toggle('on',mode==='login');
-  qs('tabReg')?.classList.toggle('on',mode==='reg');
   const body=qs('authBody');
   if(!body) return;
-  body.innerHTML = mode==='login'
-    ? `<label>Usuário</label><input id="u" autocomplete="username">
-       <label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div>
-       <button id="loginBtn" class="btn" style="margin-top:14px" onclick="doLogin()">Entrar</button>`
-    : `<label>Nome da jogadora</label><input id="u" autocomplete="username">
-       <label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div>
-       <button id="registerBtn" class="btn" style="margin-top:14px" onclick="doRegister()">Pedir autorização</button>`;
+  if(!qs('u') || !qs('p')){
+    body.innerHTML = `<label>Usuário</label><input id="u" autocomplete="username" placeholder="Digite seu usuário">
+      <label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div>
+      <div id="authMsg" class="msg"></div>`;
+  }
   msg('');
 }
+function openLandingAuth(kind){
+  mode = kind === 'reg' ? 'reg' : 'login';
+  drawAuth();
+  qs('u')?.focus();
+}
+function closeLandingAuth(){ msg(''); }
 function togglePassword(){ const p=qs('p'); if(!p)return; p.type=p.type==='password'?'text':'password'; const b=document.querySelector('.eyeBtn'); if(b)b.textContent=p.type==='password'?'Ver':'Ocultar'; }
 async function doLogin(){
   const u=qs('u')?.value.trim()||'', p=qs('p')?.value||'', b=qs('loginBtn');
@@ -163,101 +167,42 @@ async function loadHub(){
   const up=qs('userPill'); if(up) up.textContent = me.username + (me.is_admin?' · admin':'');
   const roomsEl=qs('rooms');
   if(roomsEl){
-    roomsEl.innerHTML = rooms.length ? rooms.map(r=>`<div class="room"><div class="grow"><b>${esc(r.name)}</b><br><span class="pill">${esc(r.code)}</span> <span style="color:var(--muted)">${roleName(r.role)} · ${r.players_count||0}/${r.token_capacity||"?"} totens</span></div><button class="btn small" onclick="openRoom('${r.id}')">Abrir</button><button class="btn small danger" onclick="leaveRoom('${r.id}', event)">Sair</button></div>`).join('') : '<p style="color:var(--muted)">Nenhuma mesa ainda.</p>';
+    roomsEl.innerHTML = rooms.length ? rooms.map(r=>`<div class="room"><div class="grow"><b>${esc(r.name)}</b><br><span class="pill">Jogadoras: ${esc(r.player_code||r.code)}</span>${r.helper_code&&['mestre','ajudante'].includes(r.role)?` <span class="pill">Ajudante: ${esc(r.helper_code)}</span>`:''} <span style="color:var(--muted)">${roleName(r.role)} · ${r.players_count||0}/${r.token_capacity||"?"} jogadoras</span></div><button class="btn small" onclick="openRoom('${r.id}')">Abrir</button>${r.role==='mestre'?'':`<button class="btn small danger" onclick="leaveRoom('${r.id}', event)">Sair</button>`}</div>`).join('') : '<p style="color:var(--muted)">Nenhuma mesa ainda.</p>';
   }
   renderPublicRooms(publicRooms);
   ensurePublicRoomCreateControls();
   const charsEl=qs('chars');
   if(charsEl){
-    charsEl.innerHTML = charsCache.map(c=>`<div class="char"><div class="art">${c.avatar_svg||''}</div><div class="pad"><b>${esc(c.name)}</b><br><span style="color:var(--muted)">${esc(c.role)} · ${esc(c.zone)}</span><p>${esc(c.description)}</p></div></div>`).join('');
+    charsEl.classList.add('characterRosterPremium');
+    charsEl.innerHTML = charsCache.map(c=>{
+      const id=String(c.id||'').toLowerCase();
+      const hubCard=`/assets/characters/hub_cards/${id}_card_hub.webp?v=19.6.11.14`;
+      return `<div class="char premiumCharacterCard hubOfficialCharacterCard" style="--char-accent:${esc(c.color||'#d0a94a')}" title="${esc(c.name)}">
+        <img class="hubOfficialCharacterImage" src="${hubCard}" alt="${esc(c.name)}" onerror="this.onerror=null;this.src='${esc(c.card_url||'')}?v=19.6.11.14';">
+      </div>`;
+    }).join('');
   }
   if(me.is_admin){ qs('adminBox')?.classList.remove('hidden'); loadPending(); loadSecurityLogs(); } else qs('adminBox')?.classList.add('hidden');
 }
 
-function ensurePublicRoomCreateControls(){
-  const roleSelect=qs('createRole');
-  if(!roleSelect || qs('roomVisibility'))return;
-  const wrap=document.createElement('div');
-  wrap.className='publicCreateBox';
-  wrap.innerHTML=`<label>Tipo da sala</label>
-    <select id="roomVisibility" onchange="toggleCreatePublicOptions()">
-      <option value="closed" selected>Sala fechada</option>
-      <option value="public">Sala pública</option>
-    </select>
-    <div id="createPublicOptions" class="hidden">
-      <label>Início da sessão</label>
-      <select id="createStartMode" onchange="toggleCreateStartAt()">
-        <option value="now">Agora</option>
-        <option value="15">Em 15 min</option>
-        <option value="30" selected>Em 30 min</option>
-        <option value="60">Em 1 hora</option>
-        <option value="custom">Escolher horário</option>
-      </select>
-      <input id="createStartAt" type="datetime-local" class="hidden" style="margin-top:8px" value="${localDateTimeValue()}">
-      <div class="aiHelp">Salvo em UTC; cada jogadora vê a contagem no próprio fuso.</div>
-    </div>`;
-  const help=roleSelect.parentElement?.querySelector('.roleHelp');
-  if(help) help.after(wrap); else roleSelect.after(wrap);
-}
-function toggleCreatePublicOptions(){ qs('createPublicOptions')?.classList.toggle('hidden', qs('roomVisibility')?.value!=='public'); }
-function toggleCreateStartAt(){ qs('createStartAt')?.classList.toggle('hidden', qs('createStartMode')?.value!=='custom'); }
-function renderPublicRooms(publicRooms){
-  let box=qs('publicRoomsBox');
-  if(!box){
-    const roomsEl=qs('rooms');
-    if(!roomsEl)return;
-    box=document.createElement('div');
-    box.id='publicRoomsBox';
-    box.className='publicRoomsBox';
-    roomsEl.parentElement.appendChild(box);
-  }
-  const list=publicRooms||[];
-  box.innerHTML=`<h2 class="title" style="margin-top:22px">Salas públicas</h2>`+
-    (list.length?list.map(r=>`<div class="room publicRoomCard">
-      <div class="grow"><b>${esc(r.name)}</b><br>
-      <span class="pill">${esc(r.code)}</span>
-      <span class="pill">${esc(r.players_count)}/${esc(r.token_capacity||"?")} totens</span>
-      <br><span style="color:var(--muted)">Mestre: ${esc(r.master||'?')} · <span class="countdown" data-start="${esc(r.scheduled_start||'')}">${sessionStatusLabel(r.session_status,r.scheduled_start)}</span></span></div>
-      <button class="btn small" onclick="${r.already_joined?`openRoom('${r.id}')`:`joinPublicRoom('${r.code}')`}">${r.already_joined?'Abrir':'Entrar'}</button>
-    </div>`).join(''):'<p style="color:var(--muted)">Nenhuma sala pública no momento.</p>');
-}
+function ensurePublicRoomCreateControls(){}
+function renderPublicRooms(publicRooms){ return; }
 async function joinPublicRoom(code){
-  const role=prompt('Entrar como: jogadora ou ajudante?', 'jogadora');
-  const chosen=(role||'jogadora').toLowerCase().includes('ajud')?'ajudante':'participante';
   try{
-    const r=await api('/rooms/join',{method:'POST',body:JSON.stringify({code,role:chosen})});
+    const clean=String(code||'').trim().toUpperCase();
+    if(!clean){ alert('Informe o código da sala.'); return; }
+    const r=await api('/rooms/join',{method:'POST',body:JSON.stringify({code:clean})});
     openRoom(r.id);
   }catch(e){ alert(e.message); }
 }
+function toggleCreatePublicOptions(){ return; }
+function toggleCreateStartAt(){ return; }
+
 async function loadPending(){
   try{
     const p=await api('/admin/pending');
-    const el=qs('pending');
-    if(el){
-      el.innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn small" onclick="loadPending()">Atualizar cadastros</button><button class="btn small ghost" onclick="approveByName()">Autorizar por nome</button></div>` +
-        (p.length?p.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">aguardando autorização${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente. Clique em “Atualizar cadastros” depois que a jogadora terminar o cadastro.</p>');
-    }
-    await loadAdminUsers();
-  }catch(e){
-    const el=qs('pending');
-    if(el) el.innerHTML=`<p class="err">Não consegui carregar cadastros pendentes: ${esc(e.message||e)}</p>`;
-  }
-}
-
-async function loadAdminUsers(){
-  const box=qs('adminUsersBox');
-  if(!box) return;
-  try{
-    const users=await api('/admin/users');
-    box.innerHTML=users.length?users.map(u=>`<div class="pending"><div class="grow"><b>${esc(u.username)}</b><br><span style="color:var(--muted);font-size:12px">${u.is_admin?'admin':(u.approved?'autorizada':'pendente')}${u.created_at?' · '+new Date(u.created_at).toLocaleString():''}</span></div>${(!u.approved&&!u.is_admin)?`<button class="btn small" onclick="approve(${u.id})">Autorizar</button>`:''}</div>`).join(''):'<p style="color:var(--muted)">Nenhum usuário encontrado.</p>';
-  }catch(e){ box.innerHTML=`<p class="err">Não consegui carregar usuários: ${esc(e.message||e)}</p>`; }
-}
-
-async function approveByName(){
-  const name=(prompt('Digite o nome de usuária exatamente como ela cadastrou:')||'').trim().toLowerCase();
-  if(!name) return;
-  try{ await api('/admin/approve-username/'+encodeURIComponent(name),{method:'POST'}); alert('Usuária autorizada: '+name); loadPending(); }
-  catch(e){ alert(e.message||e); }
+    const el=qs('pending'); if(el) el.innerHTML=p.length?p.map(u=>`<div class="pending"><b class="grow">${esc(u.username)}</b><button class="btn small" onclick="approve(${u.id})">Autorizar</button></div>`).join(''):'<p style="color:var(--muted)">Nenhum cadastro pendente.</p>';
+  }catch(e){}
 }
 
 async function loadSecurityLogs(){
@@ -309,12 +254,20 @@ async function approve(id){ await api('/admin/approve/'+id,{method:'POST'}); loa
 async function createRoom(){
   const isPublic=qs('roomVisibility')?.value==='public';
   const scheduled_start=isPublic?toUTCISOFromPublicControls('create'):null;
-  const r=await api('/rooms/create',{method:'POST',body:JSON.stringify({name:qs('roomName')?.value||'Terras Raras',role:qs('createRole')?.value||'mestre',is_public:isPublic,scheduled_start})});
+  const r=await api('/rooms/create',{method:'POST',body:JSON.stringify({name:qs('roomName')?.value||'Terras Raras',is_public:isPublic,scheduled_start})});
+  if(r.player_code || r.helper_code){
+    alert(`Sala criada.
+
+Código da Ajudante: ${r.helper_code||'-'}
+Código das Jogadoras: ${r.player_code||r.code||'-'}
+
+A Mestre entra sem personagem e só Mestre/Ajudante movem tokens.`);
+  }
   openRoom(r.id);
 }
 async function joinRoom(){
   try{
-    const r=await api('/rooms/join',{method:'POST',body:JSON.stringify({code:qs('joinCode')?.value||'',role:qs('joinRole')?.value||'participante'})});
+    const r=await api('/rooms/join',{method:'POST',body:JSON.stringify({code:qs('joinCode')?.value||''})});
     openRoom(r.id);
   }catch(e){ alert(e.message); }
 }
@@ -538,6 +491,31 @@ function progressValue(key){ return !!(state?.progress_flags||[]).find(f=>f.map_
 function locKey(id,suffix){ return `loc:${id}:${suffix}`; }
 function portalReleased(){ return progressValue('portal_released') || progressValue('portal:released') || progressValue('Liberou o Portal da Próxima Zona'); }
 
+async function fetchCardCatalog(){
+  if(cardCatalog) return cardCatalog;
+  try{
+    cardCatalog = await fetch('/assets/cards/catalog.json?v=19.6.11').then(r=>r.json());
+  }catch(e){
+    cardCatalog = {version:'fallback',cards:[]};
+  }
+  return cardCatalog;
+}
+function catalogCards(filter={}){
+  const cards=(cardCatalog?.cards||[]);
+  return cards.filter(c=>{
+    if(filter.category && c.category!==filter.category) return false;
+    if(filter.map_id && c.map_id!==filter.map_id) return false;
+    if(filter.character_id && c.character_id!==filter.character_id) return false;
+    if(filter.type && c.type!==filter.type) return false;
+    return true;
+  });
+}
+function templateFromCatalogCard(c){
+  const kindMap={power:'power',special:'special',identity:'identity',pista:'pista',item:'item',evento:'evento',perigo:'perigo',missao:'missao',especial:'especial'};
+  return {kind:kindMap[c.type]||'pista', title:c.title, origin:c.origin||c.map_id||c.character_id||'Terras Raras', text:`${c.short_text||''}${c.effect_text&&c.effect_text!==c.short_text?'\n\n'+c.effect_text:''}${c.flavor_text?'\n\n'+c.flavor_text:''}`.trim(), catalog_id:c.id, rarity:c.rarity||'common', image_path:c.image_path||'', type:c.type, id:c.id};
+}
+function catalogKindLabel(t){ return {identity:'Identidade',power:'Poder',special:'Especial',pista:'Pista',item:'Item',evento:'Evento',perigo:'Perigo',missao:'Missão',especial:'Especial'}[t]||t||'Carta'; }
+
 /* ===== Sala / WebSocket ===== */
 async function openRoom(id){
   currentRoom=id;
@@ -546,6 +524,7 @@ async function openRoom(id){
   show('game');
   connectWS();
   await refreshCharacters();
+  await fetchCardCatalog();
   renderRoom();
   fetchAdventureCards(false);
   fetchMasterEvents(false);
@@ -557,7 +536,7 @@ function connectWS(){
   ws.onopen=()=>{ const p=qs('roomCode'); if(p&&p.dataset.baseCode) p.textContent=p.dataset.baseCode; };
   ws.onmessage=e=>{
     const d=JSON.parse(e.data);
-    if(d.type==='state'){ state=d.state; renderRoom(); }
+    if(d.type==='state'){ if(typeof premiumDraggingPlayer !== 'undefined' && premiumDraggingPlayer){ pendingStateDuringPremiumDrag=d.state; } else { state=d.state; renderRoom(); } }
     else if(d.type==='staff_chat_updated'){ renderStaffChat(); }
     else if(d.type==='cards_updated'){ fetchAdventureCards(true); }
     else if(d.type==='master_events_updated'){ fetchMasterEvents(true); }
@@ -576,6 +555,13 @@ function connectWS(){
 function roleName(r){ return r==='mestre'?'Mestre':r==='ajudante'?'Ajudante da Mestre':'Jogadora'; }
 function isStaff(){ return !!(state?.me && ['mestre','ajudante','admin'].includes(state.me.role)) || !!me?.is_admin; }
 function isMasterRole(){ return !!(state?.me && state.me.role==='mestre') || !!me?.is_admin; }
+function isParticipantPlayer(p){ return String(p?.role||'participante')==='participante'; }
+function playerHasToken(p){ return isParticipantPlayer(p) && !!p?.character; }
+function participantPlayers(){ return (state?.players||[]).filter(p=>isParticipantPlayer(p)); }
+function participantPlayersWithCharacter(){ return participantPlayers().filter(p=>!!p.character); }
+function staffPlayers(){ return (state?.players||[]).filter(p=>!isParticipantPlayer(p)); }
+function tokenMovementNotice(){ return 'Nesta mesa, apenas a Mestre e a Ajudante movem os tokens.'; }
+function copyText(text){ try{ navigator.clipboard.writeText(text||''); if(typeof toast==='function') toast('Código copiado.'); else alert('Código copiado.'); }catch(e){ prompt('Copie o código:', text||''); } }
 async function changeMyRoomRole(){
   const r=qs('myRoomRole')?.value; if(!r)return;
   await api(`/rooms/${currentRoom}/role`,{method:'POST',body:JSON.stringify({role:r})});
@@ -639,11 +625,12 @@ function renderRolePanel(){
   let box=qs('rolePanel');
   if(!box){ box=document.createElement('div'); box.id='rolePanel'; box.className='sideSection rolePanel'; side.prepend(box); }
   const r=state.me.role;
-  const help=r==='mestre'?'Controle completo da sessão, mapa, diário e IA.':r==='ajudante'?'Acesso a IA, diário e bastidores.':'Participa da aventura e controla seu personagem.';
-  const tokenInfo=`${state.room?.tokens_used||0}/${state.room?.token_capacity||"?"} totens em uso`;
+  const help=r==='mestre'?'Você é a Mestre: não tem personagem/token; controla o mundo e move os tokens das jogadoras.':r==='ajudante'?'Você é Ajudante: não tem personagem/token; ajuda a Mestre e move os tokens das jogadoras.':'Você é Jogadora: escolha uma personagem. A movimentação dos tokens é feita pela Mestre/Ajudante.';
+  const tokenInfo=`${state.room?.tokens_used||0}/${state.room?.token_capacity||"?"} jogadoras na mesa · ${tokenMovementNotice()}`;
   const room=state.room||{};
   const vis=isMasterRole()?roomVisibilityControlHTML('room', room, 'sideVisibilityControls'):'';
-  box.innerHTML=`<h3 class="title">Função na mesa</h3><div class="forestCard"><b>Você está como: ${roleName(r)} <span class="roleBadge">${esc(r)}</span></b>${help}<br><span style="color:var(--muted)">${tokenInfo}</span></div><label>Alterar minha função</label><select id="myRoomRole"><option value="mestre" ${r==='mestre'?'selected':''}>Mestre</option><option value="ajudante" ${r==='ajudante'?'selected':''}>Ajudante da Mestre</option><option value="participante" ${r==='participante'?'selected':''}>Jogadora</option></select><button class="btn small ghost" style="margin-top:8px" onclick="changeMyRoomRole()">Aplicar função</button>${vis}`;
+  const codes=isStaff()?`<div class="forestCard"><b>Códigos da sala</b><br><span class="pill">Ajudante: ${esc(room.helper_code||'-')}</span> <button class="btn small ghost" onclick="copyText('${esc(room.helper_code||'')}')">Copiar</button><br><span class="pill">Jogadoras: ${esc(room.player_code||room.code||'-')}</span> <button class="btn small ghost" onclick="copyText('${esc(room.player_code||room.code||'')}')">Copiar</button></div>`:'';
+  box.innerHTML=`<h3 class="title">Função na mesa</h3><div class="forestCard"><b>Você está como: ${roleName(r)} <span class="roleBadge">${esc(r)}</span></b><br>${help}<br><span style="color:var(--muted)">${tokenInfo}</span></div>${codes}${vis}`;
   syncRoomVisibilityChoice('room');
   toggleRoomStartControls('room');
   toggleRoomStartAt('room');
@@ -671,10 +658,20 @@ function initPanelTabs(){
     const title=s.querySelector('.title')?.textContent?.trim()||'Painel';
     if(s.id==='localAIBox')return 'IA';
     if(s.id==='staffSection')return 'Bastidores';
-    return title.replace('Escolher personagem','Personagem').replace('Diário da Mestre','Diário');
+    return title.replace('Escolher personagem','Personagem').replace('Anotações da Mesa','Diário');
   });
   const tabs=document.createElement('div'); tabs.className='panelTabs';
-  tabs.innerHTML=labels.map((l,i)=>`<button onclick="openPanelTab(${i})">${esc(l)}</button>`).join('');
+  const isForestUI=isVisualForestMap(state?.map);
+  if(isForestUI){
+    tabs.classList.add('groupedPanelTabs');
+    const friendly=labels.map((l,i)=>({label:(i===0?(state?.map?.name||'Floresta Negra'):l), i}));
+    const norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const groupOf=(l)=>{ const n=norm(l); if(n.includes('floresta')||n.includes('mapa')||n.includes('cartas')||n.includes('inventario')||n.includes('missoes')||n.includes('diario visual')) return 'JOGO'; if(n.includes('jogadoras')||n.includes('personagem')||n.includes('chat')||n.includes('jornada')) return 'MESA'; return isStaff()?'MESTRE':'OUTROS'; };
+    const order=['JOGO','MESA','MESTRE','OUTROS'];
+    tabs.innerHTML=order.map(g=>{ const items=friendly.filter(it=>groupOf(it.label)===g); if(!items.length)return ''; return `<div class="panelTabGroup"><div class="panelTabGroupTitle">${g}</div>${items.map(it=>`<button onclick="openPanelTab(${it.i})">${esc(it.label)}</button>`).join('')}</div>`; }).join('');
+  }else{
+    tabs.innerHTML=labels.map((l,i)=>`<button onclick="openPanelTab(${i})">${esc(l)}</button>`).join('');
+  }
   const ref=sections[0]; if(ref) side.insertBefore(tabs, ref);
   if(activePanelIndex>=sections.length) activePanelIndex=0;
   openPanelTab(activePanelIndex);
@@ -773,11 +770,12 @@ function renderWaitingRoom(){
     side.classList.remove('closed');
     side.innerHTML=`<div class="sideSection rolePanel" id="rolePanel"></div>
       <div class="sideSection"><h3 class="title">Jogadoras presentes</h3><div id="players" class="players"></div></div>
-      <div class="sideSection"><h3 class="title">Escolher totem</h3><select id="charSelect"></select><button class="btn small" style="margin-top:8px" onclick="chooseChar()">Usar personagem</button></div>
+      <div class="sideSection" id="chooseCharSection"><h3 class="title">Escolher personagem</h3><select id="charSelect"></select><button class="btn small" style="margin-top:8px" onclick="chooseChar()">Usar personagem</button><div class="permissionHint">Apenas jogadoras escolhem personagem.</div></div>
       <div class="sideSection"><h3 class="title">Chat pré-jogo</h3><div id="chat" class="chat"></div><div class="row" style="margin-top:8px"><input id="chatText" placeholder="Mensagem..."><button class="btn small" onclick="sendChat()">Enviar</button></div></div>`;
   }
+  qs('chooseCharSection')?.classList.toggle('hidden', isStaff());
   if(qs('charSelect')){
-    const myPlayer=(state.players||[]).find(p=>p.username===me?.username);
+    const myPlayer=myRoomPlayer();
     const used=new Set((state.players||[]).filter(p=>!myPlayer||p.id!==myPlayer.id).map(p=>p.character?.id).filter(Boolean));
     qs('charSelect').innerHTML=(charsCache||[]).map(c=>`<option value="${c.id}" ${used.has(c.id)?'disabled':''} ${myPlayer?.character?.id===c.id?'selected':''}>${esc(c.name)} · ${esc(c.role)}${used.has(c.id)?' — em uso':''}</option>`).join('');
   }
@@ -947,20 +945,266 @@ function ensureGameScaffold(){
     mapArea.innerHTML=`<div id="mapSvg" class="mapSvg"></div><svg id="pathLayer" class="pathLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="mapNodes" class="mapNodes"></div><div class="mapShade"></div><div id="tokens"></div><div class="mapHint">Clique nos pontos do mapa para revelar locais, mover tokens e gerar narração com IA local.</div>`;
   }
   if(side && !qs('locationBox')){
-    side.innerHTML=`<div class="sideSection"><h3 class="title" id="mapName">Mapa</h3><p id="mapDesc" style="color:var(--muted)"></p><div id="masterMapControls" class="hidden"><label>Mudar zona/mapa</label><select id="mapSelect"></select><button class="btn small" style="margin-top:8px" onclick="changeMap()">Alterar mapa</button></div><div class="legend"><span>● local</span><span>● perigo</span><span>● portal</span><span>linha = caminho</span></div><div id="locationBox" class="locationBox"><b>Nenhum local selecionado</b><div class="locationMeta">Clique em um ponto do mapa para ver descrição, mover personagens e gerar narrativa daquele local.</div></div></div><div class="sideSection"><h3 class="title">Jogadoras</h3><div id="players" class="players"></div></div><div class="sideSection"><h3 class="title">Escolher personagem</h3><select id="charSelect"></select><button class="btn small" style="margin-top:8px" onclick="chooseChar()">Usar personagem</button></div><div class="sideSection"><h3 class="title">Chat</h3><div id="chat" class="chat"></div><div class="row" style="margin-top:8px"><input id="chatText" placeholder="Mensagem..."><button class="btn small" onclick="sendChat()">Enviar</button></div></div><div class="sideSection"><h3 class="title">Diário da Mestre</h3><div id="notes" class="notes"></div><div id="masterNotes" class="hidden"><label>Título</label><input id="noteTitle" value="Resumo da sessão"><label>Texto</label><textarea id="noteText" placeholder="Eventos importantes, fraquezas, itens, localização, pendências..."></textarea><button class="btn small" style="margin-top:8px" onclick="addNote()">Salvar nota</button></div></div><div class="sideSection hidden" id="masterCentralBox"><h3 class="title">Central da Mestre</h3><div id="masterCentralContent"></div></div><div class="sideSection" id="journeyBox"><h3 class="title">Jornada</h3><div id="journeyContent"></div></div><div class="sideSection" id="adventureCardsBox"><h3 class="title">Cartas da Aventura</h3><div id="adventureCardsContent"></div></div><div class="sideSection" id="inventoryBox"><h3 class="title">Inventário</h3><div id="inventoryContent"></div></div><div class="sideSection" id="visualDiaryBox"><h3 class="title">Diário Visual</h3><div id="visualDiaryContent"></div></div><div class="sideSection" id="missionsBox"><h3 class="title">Missões</h3><div id="missionsContent"></div></div><div class="sideSection hidden" id="masterEventsBox"><h3 class="title">Eventos da Mestre</h3><div id="masterEventsContent"></div></div><div class="sideSection hidden" id="localAIBox"><h3 class="title">IA Local · Zero API</h3><p style="color:var(--muted);font-size:14px;line-height:1.35">Ollama roda no seu computador. Mestre e Ajudante usam a IA em bastidor e publicam só o que aprovarem.</p><div class="aiTabs"><button id="aiTabAsk" class="on" onclick="showAIInnerTab('ask')">Perguntar</button><button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções da Mestre</button><button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button><button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button></div><div id="aiPaneAsk" class="aiPane on"><label>Pergunta / ação livre</label><textarea id="aiAction" placeholder="Ex.: O que devo falar para as participantes no início do jogo?"></textarea><div class="row" style="margin-top:8px"><button class="btn small" onclick="requestAIAndShow('narrative')">Narrar cena</button><button class="btn small ghost" onclick="requestAIAndShow('question')">Perguntar</button></div><div class="aiHelp">Use <b>Narrar cena</b> para texto pronto de jogo. Use <b>Perguntar</b> para pedir orientação, ideias, pistas e condução.</div></div><div id="aiPaneFunctions" class="aiPane"><div class="masterFunctionBox"><label>Escolha uma função</label><select id="masterFunction"><option value="opening">Início da sessão</option><option value="tension">Cena de tensão</option><option value="discovery">Cena de descoberta</option><option value="clue">Criar pista</option><option value="scare">Criar susto leve</option><option value="consequence">Criar consequência</option><option value="npc">Fala de NPC</option><option value="catchup">Resumo para quem chegou atrasada</option><option value="ending">Encerrar sessão com gancho</option><option value="improvise">Improvisar fuga do plano</option><option value="riddle">Criar enigma simples</option><option value="reward">Criar recompensa</option></select><label>Detalhe opcional para a IA considerar</label><textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Ponte Quebrada e ainda não sabem que a floresta está viva."></textarea><button class="btn small" style="margin-top:8px;width:100%" onclick="generateMasterFunction()">Gerar função</button><div class="aiHelp">A função usa o modo de velocidade escolhido em Configuração. Por padrão fica rápido e curto.</div></div></div><div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div><div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short" selected>Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelp">Modo <b>Rápida</b> usa prompt menor e limita a resposta para acelerar no seu PC.</div><div class="row" style="margin-top:8px"><button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir</button><button class="btn small ghost" onclick="requestAIAndShow('image_prompt')">Criar prompt de imagem</button></div></div></div></div>`;
+    side.innerHTML=`<div class="sideSection"><h3 class="title" id="mapName">Mapa</h3><p id="mapDesc" style="color:var(--muted)"></p><div id="masterMapControls" class="hidden"><label>Mudar zona/mapa</label><select id="mapSelect"></select><button class="btn small" style="margin-top:8px" onclick="changeMap()">Alterar mapa</button></div><div class="legend"><span>● local</span><span>● perigo</span><span>● portal</span><span>linha = caminho</span></div><div id="locationBox" class="locationBox"><b>Nenhum local selecionado</b><div class="locationMeta">Clique em um ponto do mapa para ver descrição, mover personagens e gerar narrativa daquele local.</div></div></div><div class="sideSection"><h3 class="title">Jogadoras</h3><div id="players" class="players"></div></div><div class="sideSection" id="chooseCharSection"><h3 class="title">Escolher personagem</h3><select id="charSelect"></select><button class="btn small" style="margin-top:8px" onclick="chooseChar()">Usar personagem</button><div class="permissionHint">Apenas jogadoras escolhem personagem.</div></div><div class="sideSection"><h3 class="title">Chat</h3><div id="chat" class="chat"></div><div class="row" style="margin-top:8px"><input id="chatText" placeholder="Mensagem..."><button class="btn small" onclick="sendChat()">Enviar</button></div></div><div class="sideSection"><h3 class="title">Anotações da Mesa</h3><div id="notes" class="notes"></div><div id="masterNotes" class="hidden"><label>Título</label><input id="noteTitle" value="Resumo da sessão"><label>Texto</label><textarea id="noteText" placeholder="Eventos importantes, fraquezas, itens, localização, pendências..."></textarea><button class="btn small" style="margin-top:8px" onclick="addNote()">Salvar nota</button></div></div><div class="sideSection hidden" id="masterCentralBox"><h3 class="title">Central da Mestre</h3><div id="masterCentralContent"></div></div><div class="sideSection" id="journeyBox"><h3 class="title">Jornada</h3><div id="journeyContent"></div></div><div class="sideSection" id="adventureCardsBox"><h3 class="title">Cartas da Aventura</h3><div id="adventureCardsContent"></div></div><div class="sideSection" id="inventoryBox"><h3 class="title">Inventário</h3><div id="inventoryContent"></div></div><div class="sideSection" id="visualDiaryBox"><h3 class="title">Diário Visual</h3><div id="visualDiaryContent"></div></div><div class="sideSection" id="missionsBox"><h3 class="title">Missões</h3><div id="missionsContent"></div></div><div class="sideSection hidden" id="masterEventsBox"><h3 class="title">Eventos da Mestre</h3><div id="masterEventsContent"></div></div><div class="sideSection hidden" id="localAIBox"><h3 class="title">IA Local · Zero API</h3><p style="color:var(--muted);font-size:14px;line-height:1.35">Ollama roda no seu computador. Mestre e Ajudante usam a IA em bastidor e publicam só o que aprovarem.</p><div class="aiTabs"><button id="aiTabAsk" class="on" onclick="showAIInnerTab('ask')">Perguntar</button><button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções da Mestre</button><button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button><button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button></div><div id="aiPaneAsk" class="aiPane on"><label>Pergunta / ação livre</label><textarea id="aiAction" placeholder="Ex.: O que devo falar para as participantes no início do jogo?"></textarea><div class="row" style="margin-top:8px"><button class="btn small" onclick="requestAIAndShow('narrative')">Narrar cena</button><button class="btn small ghost" onclick="requestAIAndShow('question')">Perguntar</button></div><div class="aiHelp">Use <b>Narrar cena</b> para texto pronto de jogo. Use <b>Perguntar</b> para pedir orientação, ideias, pistas e condução.</div></div><div id="aiPaneFunctions" class="aiPane"><div class="masterFunctionBox"><label>Escolha uma função</label><select id="masterFunction"><option value="opening">Início da sessão</option><option value="tension">Cena de tensão</option><option value="discovery">Cena de descoberta</option><option value="clue">Criar pista</option><option value="scare">Criar susto leve</option><option value="consequence">Criar consequência</option><option value="npc">Fala de NPC</option><option value="catchup">Resumo para quem chegou atrasada</option><option value="ending">Encerrar sessão com gancho</option><option value="improvise">Improvisar fuga do plano</option><option value="riddle">Criar enigma simples</option><option value="reward">Criar recompensa</option></select><label>Detalhe opcional para a IA considerar</label><textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Ponte Quebrada e ainda não sabem que a floresta está viva."></textarea><button class="btn small" style="margin-top:8px;width:100%" onclick="generateMasterFunction()">Gerar função</button><div class="aiHelp">A função usa o modo de velocidade escolhido em Configuração. Por padrão fica rápido e curto.</div></div></div><div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div><div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short" selected>Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelp">Modo <b>Rápida</b> usa prompt menor e limita a resposta para acelerar no seu PC.</div><div class="row" style="margin-top:8px"><button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir</button><button class="btn small ghost" onclick="requestAIAndShow('image_prompt')">Criar prompt de imagem</button></div></div></div></div>`;
   }
 }
 
+
+
+/* ===== v19.1 — Floresta Negra Premium Map Only Funcional ===== */
+const FOREST_V19_VISUAL = {
+  image:'/assets/visual/floresta_negra_v18_map_only.png?v=19.2.0',
+  nodes:[
+    {id:'entrada',name:'Entrada da Floresta',x:13.4,y:23.0,type:'normal',icon:'🌿'},
+    {id:'trilha',name:'Trilha das Folhas Altas',x:21.0,y:43.3,type:'normal',icon:'🍃'},
+    {id:'toca',name:'Toca da Raposa de Névoa',x:14.2,y:72.0,type:'normal',icon:'🦊'},
+    {id:'jardim',name:'Jardim das Pegadas',x:32.4,y:72.0,type:'normal',icon:'🐾'},
+    {id:'cabana',name:'Cabana Vazia',x:45.0,y:30.5,type:'normal',icon:'🏚️'},
+    {id:'lago',name:'Lago do Espelho Quieto',x:66.0,y:31.0,type:'normal',icon:'🌙'},
+    {id:'arvore',name:'Árvore dos Segredos',x:88.0,y:32.0,type:'danger',icon:'🌳'},
+    {id:'clareira',name:'Clareira das Lanternas',x:55.0,y:52.0,type:'normal',icon:'🏮'},
+    {id:'ponte',name:'Ponte dos Galhos',x:80.3,y:54.6,type:'normal',icon:'🌉'},
+    {id:'mirante',name:'Mirante da Lua Baixa',x:51.5,y:75.5,type:'normal',icon:'🌕'},
+    {id:'coracao',name:'Coração da Floresta',x:75.1,y:74.7,type:'secret',icon:'💚'},
+    {id:'portal',name:'Portal da Fábrica',x:94.5,y:75.2,type:'portal',icon:'✨'}
+  ],
+  links:[['entrada','trilha'],['trilha','cabana'],['trilha','toca'],['toca','jardim'],['jardim','mirante'],['cabana','lago'],['lago','arvore'],['clareira','ponte'],['mirante','coracao'],['coracao','portal'],['arvore','portal']]
+};
+function isVisualForestMap(map){
+  const id=String(map?.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const name=String(map?.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return id==='floresta_negra' || id==='forest' || id.includes('floresta') || name.includes('floresta negra');
+}
+function openPanelByLabel(label){
+  const target=String(label||'').toLowerCase();
+  const buttons=[...document.querySelectorAll('.panelTabs button')];
+  const aliases={cartas:'cartas da aventura',diário:'diário visual',diario:'diário visual',mapa:'floresta negra'};
+  const wanted=aliases[target]||target;
+  let idx=buttons.findIndex(b=>b.textContent.trim().toLowerCase()===wanted);
+  if(idx<0) idx=buttons.findIndex(b=>b.textContent.trim().toLowerCase().includes(wanted));
+  if(idx>=0){ openPanelTab(idx); const side=qs('side'); side?.classList.remove('closed'); document.querySelector('.game')?.classList.remove('panelClosed'); updateVisualNavActive(label); }
+}
+function updateVisualNavActive(label){
+  const t=String(label||'Mapa').toLowerCase();
+  document.querySelectorAll('#visualQuickNav button').forEach(b=>b.classList.toggle('on',b.dataset.nav===t || (t==='diario'&&b.dataset.nav==='diário')));
+}
+function openVisualMap(){
+  updateVisualNavActive('Mapa');
+  const side=qs('side'); const game=document.querySelector('.game');
+  if(side && window.innerWidth<1100){ side.classList.add('closed'); game?.classList.add('panelClosed'); }
+}
+function ensureVisualForestUI(){
+  const mapArea=qs('mapArea'); if(!mapArea)return;
+  mapArea.classList.add('visualForestV19','visualForestPremium');
+  if(!qs('visualHint')){
+    const hint=document.createElement('div'); hint.id='visualHint'; hint.className='visualHint collapsed';
+    hint.innerHTML=`<button class="visualHintTab" onclick="toggleVisualHint()" title="Ajuda do mapa">?</button><div class="visualHintBody"><button class="visualHintClose" onclick="toggleVisualHint(false)" title="Fechar">×</button><b>Floresta Negra</b><br>Clique nos locais, mova o totem único e conduza a cena.</div>`;
+    mapArea.appendChild(hint);
+  }
+  if(!qs('visualQuickNav')){
+    const nav=document.createElement('div'); nav.id='visualQuickNav'; nav.className='visualQuickNav';
+    nav.innerHTML=`<button data-nav="inventário" onclick="openPanelByLabel('Inventário')">🎒 Inventário</button><button data-nav="cartas" onclick="openPanelByLabel('Cartas')">🃏 Cartas</button><button data-nav="mapa" class="on" onclick="openVisualMap()">🧭 Mapa</button><button data-nav="missões" onclick="openPanelByLabel('Missões')">📜 Missões</button><button data-nav="diário" onclick="openPanelByLabel('Diário')">📖 Diário</button>`;
+    mapArea.appendChild(nav);
+  }
+}
+function toggleVisualHint(force){ const h=qs('visualHint'); if(!h)return; const open = force===undefined ? h.classList.contains('collapsed') : !!force; h.classList.toggle('collapsed', !open); }
+function cleanupVisualForestUI(){ qs('visualHint')?.remove(); qs('visualQuickNav')?.remove(); qs('visualRightPanel')?.remove(); const m=qs('mapArea'); m?.classList.remove('visualForestV19','visualForestPremium'); }
+function prioritizeVisualForestSide(){ const side=qs('side'); if(!side) return; const panel=qs('visualRightPanel'); if(panel){ try{ panel.scrollIntoView({block:'start',behavior:'smooth'}); }catch(e){ side.scrollTop=0; } } }
+function myRoomPlayer(){
+  if(!state) return null;
+  if(state.me?.id) return (state.players||[]).find(p=>p.id===state.me.id)||state.me;
+  return (state.players||[]).find(p=>p.username===me?.username)||null;
+}
+function visiblePlayersForVisualForest(){
+  if(!state) return [];
+  const list=isStaff() ? participantPlayersWithCharacter() : [myRoomPlayer()].filter(p=>playerHasToken(p));
+  const seen=new Set();
+  return list.filter(p=>{ const k=p?.id||p?.username; if(!k||seen.has(k)) return false; seen.add(k); return true; });
+}
+
+function characterSpritePosition(characterId){
+  const id=String(characterId||'').toLowerCase();
+  const positions={
+    katrina:'0% 0%',
+    lina:'50% 0%',
+    maya:'100% 0%',
+    clara:'0% 100%',
+    bento:'50% 100%',
+    tom:'100% 100%'
+  };
+  return positions[id] || '0% 0%';
+}
+
+
+const FOREST_TOKEN_ANCHORS = {
+  entrada:{x:17.8,y:31.2}, trilha:{x:29.3,y:37.2}, cabana:{x:38.4,y:34.2}, lago:{x:58.5,y:34.0}, arvore:{x:78.8,y:35.2},
+  toca:{x:20.5,y:63.8}, jardim:{x:39.0,y:66.0}, mirante:{x:55.8,y:68.0}, clareira:{x:49.5,y:47.8}, ponte:{x:74.4,y:47.8},
+  coracao:{x:69.5,y:70.0}, portal:{x:88.7,y:72.8}
+};
+function visualTokenAnchor(nodeId){
+  const n=FOREST_TOKEN_ANCHORS[nodeId] || visualNodeById(nodeId) || FOREST_V19_VISUAL.nodes[0];
+  return {x:n.x, y:n.y};
+}
+function visualNodeById(id){ return FOREST_V19_VISUAL.nodes.find(n=>n.id===id); }
+let premiumDraggingPlayer=null;
+let premiumDragGhost=null;
+let premiumDragJustEnded=false;
+let premiumDragPos=null;
+function premiumTokenPositionForPlayer(p){
+  const anchor=visualTokenAnchor(p?.current_node||'entrada');
+  const x=Number.isFinite(Number(p?.x)) ? Number(p.x) : anchor.x;
+  const y=Number.isFinite(Number(p?.y)) ? Number(p.y) : anchor.y;
+  return {x:Math.max(0,Math.min(100,x)), y:Math.max(0,Math.min(100,y))};
+}
+function canMovePremiumToken(p){
+  if(!playerHasToken(p)) return false;
+  return !!(me?.is_admin || isStaff());
+}
+function renderVisualForestMap(){
+  const container=qs('mapSvg'); if(!container) return;
+  if(premiumDraggingPlayer) return;
+  const data=FOREST_V19_VISUAL;
+  const selected=selectedNode?.id || state?.map?.selected_node;
+  let hotspots='';
+  data.nodes.forEach(n=>{
+    const isPortal=n.type==='portal'; const locked=isPortal&&!portalReleased();
+    hotspots+=`<button class="premiumHotspot ${selected===n.id?'active':''} ${n.type||'normal'}" data-id="${n.id}" title="${esc(n.name)}" style="left:${n.x}%;top:${n.y}%" onclick="selectVisualNode('${n.id}')"><span>${locked?'🔒':n.icon}</span></button>`;
+  });
+  let tokens='';
+  visiblePlayersForVisualForest().forEach(p=>{
+    const pos=premiumTokenPositionForPlayer(p);
+    const ch=p.character;
+    const name=ch?.name||p.username||'Jogadora';
+    const sprite=characterSpritePosition(ch?.id);
+    const movable = canMovePremiumToken(p) ? ' mine' : '';
+    const pointerDown = canMovePremiumToken(p) ? ` onpointerdown="startPremiumTokenDrag(event,${p.id})"` : '';
+    tokens+=`<button class="premiumPlayerToken${movable}" data-player="${esc(p.id||'')}" title="${esc(name)}" style="left:${pos.x}%;top:${pos.y}%;--sprite-pos:${sprite};--token-color:${ch?.color||'#c8a84b'}" onclick="handlePremiumTokenClick(event,${p.id})"${pointerDown}><span class="tokenPortrait"></span></button>`;
+  });
+  container.innerHTML=`<div class="premiumForestStage"><img class="premiumForestMap" src="${data.image}" alt="Floresta Negra"><div class="premiumHotspots">${hotspots}</div><div class="premiumTokens">${tokens}</div></div>`;
+}
+function handlePremiumTokenClick(ev, playerId){
+  if(premiumDragJustEnded){ premiumDragJustEnded=false; ev?.preventDefault?.(); return; }
+  openMyCharacterModal();
+}
+function animateVisualTokenTo(anchor){
+  const tokenEl=document.querySelector('.premiumPlayerToken.mine');
+  if(tokenEl){
+    tokenEl.style.left=`${anchor.x}%`;
+    tokenEl.style.top=`${anchor.y}%`;
+    tokenEl.classList.add('moving');
+    setTimeout(()=>tokenEl.classList.remove('moving'), 550);
+  }
+  if(!premiumDraggingPlayer) renderVisualForestMap();
+}
+function startPremiumTokenDrag(ev, playerId){
+  if(!currentRoom) return;
+  premiumDraggingPlayer=playerId;
+  premiumDragGhost=ev.currentTarget;
+  premiumDragPos=null;
+  premiumDragJustEnded=false;
+  premiumDragGhost?.classList.add('moving');
+  ev.preventDefault();
+  ev.stopPropagation();
+  window.addEventListener('pointermove', premiumTokenDragMove);
+  window.addEventListener('pointerup', premiumTokenDragEnd, {once:true});
+}
+function premiumTokenDragMove(ev){
+  if(!premiumDragGhost) return;
+  const stage=document.querySelector('.premiumForestStage');
+  if(!stage) return;
+  const rect=stage.getBoundingClientRect();
+  const x=Math.max(1,Math.min(99,((ev.clientX-rect.left)/rect.width)*100));
+  const y=Math.max(1,Math.min(99,((ev.clientY-rect.top)/rect.height)*100));
+  premiumDragPos={x,y};
+  premiumDragGhost.style.left=`${x}%`;
+  premiumDragGhost.style.top=`${y}%`;
+}
+async function premiumTokenDragEnd(ev){
+  window.removeEventListener('pointermove', premiumTokenDragMove);
+  const playerId=premiumDraggingPlayer;
+  const pos=premiumDragPos;
+  premiumDraggingPlayer=null;
+  if(premiumDragGhost){ premiumDragGhost.classList.remove('moving'); }
+  premiumDragGhost=null;
+  premiumDragPos=null;
+  premiumDragJustEnded=true;
+  setTimeout(()=>premiumDragJustEnded=false,180);
+  if(pos && playerId){
+    const local=(state.players||[]).find(p=>String(p.id)===String(playerId));
+    if(local){ local.x=pos.x; local.y=pos.y; }
+    renderVisualForestMap();
+    await api(`/rooms/${currentRoom}/move-token`,{method:'POST',body:JSON.stringify({player_id:playerId,x:pos.x,y:pos.y})});
+  }
+  if(pendingStateDuringPremiumDrag){ state=pendingStateDuringPremiumDrag; pendingStateDuringPremiumDrag=null; renderRoom(); }
+}
+function selectVisualNode(nodeId){
+  const node=visualNodeById(nodeId); if(!node)return;
+  selectedNode=(graph().nodes||[]).find(n=>n.id===nodeId)||{id:node.id,name:node.name,desc:''};
+  renderVisualForestMap();
+  const gNode=(graph().nodes||[]).find(n=>n.id===nodeId);
+  const box=qs('locationBox'); if(!box)return;
+  const staff=isStaff();
+  const tokenOptions=participantPlayersWithCharacter().map(p=>`<option value="${p.id}">${esc(p.character?.name||p.username)} · ${esc(p.username)}</option>`).join('');
+  const moveControls=staff?`<label>Mover token para cá</label><select id="visualTargetPlayer">${tokenOptions||'<option value="">Nenhuma jogadora com personagem</option>'}</select><div class="locActions"><button class="btn small" onclick="moveVisualSelectedToNode('${nodeId}')" ${tokenOptions?'':'disabled'}>Mover token</button><button class="btn small ghost" onclick="requestAIAndShow('narrative')">Narrar com IA</button></div>`:`<div class="permissionHint">${esc(tokenMovementNotice())}</div>`;
+  box.innerHTML=`<div class="locTitle">${esc(node.name)}</div><div class="locIcon" style="font-size:32px;margin:8px 0">${node.icon}</div><div class="locationMeta">${esc(gNode?.desc||'Local ainda não revelado.')}</div>${gNode?.event&&staff?`<div class="locEvent"><b>Evento:</b> ${esc(gNode.event)}</div>`:''}${gNode?.clue&&staff?`<div class="locClue"><b>Pista:</b> ${esc(gNode.clue)}</div>`:''}${gNode?.secret&&staff?`<div class="locSecret"><b>Segredo:</b> ${esc(gNode.secret)}</div>`:''}${moveControls}`;
+  enhanceVisualSideForForest();
+}
+async function moveTokenToNode(playerId,nodeId){
+  if(!currentRoom) return;
+  const node=visualNodeById(nodeId)||nodeById(nodeId); if(!node||!playerId)return;
+  const anchor=visualTokenAnchor(nodeId);
+  const p=(state.players||[]).find(x=>String(x.id)===String(playerId));
+  if(p){ p.current_node=nodeId; p.x=anchor.x; p.y=anchor.y; }
+  animateVisualTokenTo(anchor);
+  await api(`/rooms/${currentRoom}/stats`,{method:'POST',body:JSON.stringify({player_id:Number(playerId),current_node:nodeId,x:anchor.x,y:anchor.y})});
+}
+async function moveVisualSelectedToNode(nodeId){
+  const id=Number(qs('visualTargetPlayer')?.value||0);
+  if(!id) return alert('Escolha uma jogadora com personagem.');
+  await moveTokenToNode(id,nodeId);
+}
+async function moveMyToken(nodeId){
+  if(!isStaff()) return alert(tokenMovementNotice());
+  const id=Number(qs('visualTargetPlayer')?.value||0);
+  if(id) return moveTokenToNode(id,nodeId);
+}
+function calcVisualLevel(player){ const flags=(state.progress_flags||[]).filter(f=>f.value).length; const saved=(myAdventureCards||[]).filter(c=>c.saved_at).length; return Math.max(1,Math.floor((flags+saved)/2)+1); }
+function inventoryItemsForPlayer(p){ return (p?.inventory||'').split('\n').map(x=>x.trim()).filter(Boolean); }
+function visualCardMeta(kind){ return {pista:['PISTA','#4a3a8a','🔍'],item:['ITEM','#315a32','🗝️'],missao:['MISSÃO','#68421d','🎯'],mensagem:['MENSAGEM','#1a4b68','💌'],recompensa:['RECOMPENSA','#705719','🏆']}[kind]||['CARTA','#4a3a8a','✉']; }
+function renderMiniCard(card){ const [label,color,icon]=visualCardMeta(card.kind); const saved=card.saved_at?'🔖':''; return `<button class="miniCard" onclick="openCardModal(${card.id})" style="--kind:${color}"><span class="miniCardTop"><b>${icon} ${esc(label)}</b><i>${saved}</i></span><strong>${esc(card.title||'Carta')}</strong><small>${esc(card.origin||state?.map?.name||'')}</small><span>${esc((card.text||'').slice(0,72))}${(card.text||'').length>72?'…':''}</span></button>`; }
+function renderVisualRightPanel(){
+  const side=qs('side'); if(!side||!isVisualForestMap(state?.map)) return;
+  let panel=qs('visualRightPanel'); if(!panel){ panel=document.createElement('div'); panel.id='visualRightPanel'; side.insertBefore(panel, side.firstChild); }
+  const mine=myRoomPlayer(); const staff=isStaff(); const ch=mine?.character; const name=staff&&!ch?'Mestre':(ch?.name||mine?.username||me?.username||'Jogadora'); const hp=mine?.hp??100, energy=mine?.energy??80, strength=mine?.strength??5, skill=mine?.skill??7; const level=calcVisualLevel(mine); const sprite=characterSpritePosition(ch?.id); const cards=staff?[]:(myAdventureCards||[]);
+  const portraitHTML=ch?.card_url?`<button class="vtcPortrait cardAvatar" onclick="openMyCharacterModal()" title="Ver ficha"><img src="${esc(ch.card_url)}?v=19.6.11.14" alt="${esc(ch.name||name)}"></button>`:`<button class="vtcPortrait spriteAvatar" style="--sprite-pos:${sprite}" onclick="openMyCharacterModal()" title="Ver ficha"></button>`;
+  const tokenCard=`<div class="visualTokenCard"><button class="visualGear" onclick="${staff?'toggleForestAdminPanel()':'openPanelByLabel(\'Personagem\')'}">⚙</button><div class="vtcName">${esc(name)}</div>${portraitHTML}<div class="vtcRole">${esc(ch?.role||roleName(mine?.role)||'')}</div><div class="vtcStats"><span>❤️ ${hp}</span><span>✦ ${energy}</span><span>⚔️ ${strength}</span><span>🔑 ${skill}</span><span class="vtcLevel">NÍVEL ${level}</span></div><button class="btn small ghost vtcDiaryBtn" onclick="openPanelByLabel('Diário')">📖 Diário de Jornada</button>${staff?`<button class="btn small ghost visualAdminToggle" onclick="toggleForestAdminPanel()">⚙ Configurações da mesa</button>`:''}</div>`;
+  const cardsHTML=staff?`<div class="vtcNoCards locked">🔒<br>A Mestre não vê cartas privadas das jogadoras.</div>`:(cards.length?cards.map(renderMiniCard).join(''):`<div class="vtcNoCards">Nenhuma carta ainda.<br>A Mestre enviará pistas aqui.</div>`);
+  panel.innerHTML=tokenCard+`<div class="vtcCardsSection"><div class="vtcCardsSectionTitle">CARTAS DA AVENTURA</div><div class="vtcCardsList">${cardsHTML}</div>${!staff?`<button class="btn small ghost" onclick="openPanelByLabel('Cartas')">Ver todas</button>`:''}</div>`;
+  prioritizeVisualForestSide();
+}
+function openMyCharacterModal(){
+  const mine=myRoomPlayer(), ch=mine?.character; const name=ch?.name||mine?.username||me?.username||'Jogadora'; const items=inventoryItemsForPlayer(mine);
+  const html=`<div class="adventureCardOverlay on characterDetailsOverlay"><div class="adventureCardFrame"><div class="adventureCardKicker">Ficha da personagem</div><h2>${esc(name)}</h2><div class="adventureCardText">❤️ HP: ${esc(String(mine?.hp??100))}<br>✦ Energia: ${esc(String(mine?.energy??80))}<br>⚔️ Força: ${esc(String(mine?.strength??5))}<br>🔑 Habilidade: ${esc(String(mine?.skill??7))}<br>📖 Cartas: ${(myAdventureCards||[]).length}<br>🎒 Itens: ${items.length}${items.length?'<br><br>'+esc(items.join(', ')):''}</div><div class="adventureCardActions"><button class="btn small ghost" onclick="document.querySelector('.characterDetailsOverlay')?.remove()">Fechar</button></div></div></div>`;
+  document.querySelector('.characterDetailsOverlay')?.remove(); document.body.insertAdjacentHTML('beforeend',html);
+}
+function enhanceVisualSideForForest(){ const loc=qs('locationBox'); if(loc&&!qs('visualSideCTA')){ const div=document.createElement('div'); div.id='visualSideCTA'; div.className='visualSideCTA'; div.innerHTML=`<button class="btn small ghost" onclick="openPanelByLabel('Cartas')">Ver cartas</button><button class="btn small ghost" onclick="openPanelByLabel('Missões')">Ver missão</button><button class="btn small ghost" onclick="openPanelByLabel('Diário')">Diário</button><button class="btn small ghost" onclick="openPanelByLabel('Jornada')">Jornada</button>`; loc.appendChild(div); } }
 function renderGame(){
   ensureGameScaffold();
   ensureSidePanels();
   if(!state)return;
   const r=state.room, m=state.map;
   const area=qs('mapArea');
-  if(area){ area.classList.toggle('iceMap',isIceMap(m)); area.classList.toggle('mountainMap',isMountainMap(m)); area.classList.toggle('alexandriaMap',isAlexandriaMap(m)); area.classList.toggle('stormMap',isStormMap(m)); area.classList.toggle('raceMap',isRaceMap(m)); area.classList.toggle('voidMap',isVoidMap(m)); }
+  const gameShell=document.querySelector('.game');
+  const visualForest=isVisualForestMap(m);
+  if(area){
+    area.classList.toggle('iceMap',isIceMap(m)); area.classList.toggle('mountainMap',isMountainMap(m)); area.classList.toggle('alexandriaMap',isAlexandriaMap(m)); area.classList.toggle('stormMap',isStormMap(m)); area.classList.toggle('raceMap',isRaceMap(m)); area.classList.toggle('voidMap',isVoidMap(m));
+    area.classList.toggle('visualForest',visualForest);
+  }
+  gameShell?.classList.toggle('visualForestShell',visualForest);
+  if(visualForest){ ensureVisualForestUI(); } else cleanupVisualForestUI();
   qs('gameTitle').textContent=r.name;
   qs('roomCode').textContent=r.code;
-  qs('mapSvg').innerHTML=m.image_svg||'';
+  if(qs('mapSvg')) qs('mapSvg').innerHTML = visualForest ? '' : (m.image_svg||'');
   qs('mapName').textContent=m.name;
   qs('mapDesc').textContent=m.description||'';
   qs('masterMapControls')?.classList.toggle('hidden',!isMasterRole());
@@ -969,21 +1213,28 @@ function renderGame(){
   qs('masterEventsBox')?.classList.toggle('hidden',!isStaff());
   qs('masterCentralBox')?.classList.toggle('hidden',!isStaff());
   qs('masterLibraryBox')?.classList.toggle('hidden',!isStaff());
+  qs('chooseCharSection')?.classList.toggle('hidden', isStaff());
   ensureEndMapButton();
   if(qs('mapSelect')) qs('mapSelect').innerHTML=(state.maps||[]).map(x=>`<option value="${x.id}" ${x.id===m.id?'selected':''}>${zoneNumberForMap(x)}. ${esc(x.name)}</option>`).join('');
+  qs('chooseCharSection')?.classList.toggle('hidden', isStaff());
   if(qs('charSelect')){
-    const myPlayer=(state.players||[]).find(p=>p.username===me?.username);
+    const myPlayer=myRoomPlayer();
     const used=new Set((state.players||[]).filter(p=>!myPlayer||p.id!==myPlayer.id).map(p=>p.character?.id).filter(Boolean));
     qs('charSelect').innerHTML=(charsCache||[]).map(c=>`<option value="${c.id}" ${used.has(c.id)?'disabled':''} ${myPlayer?.character?.id===c.id?'selected':''}>${esc(c.name)} · ${esc(c.role)}${used.has(c.id)?' — em uso':''}</option>`).join('');
   }
   safeRender('painel de função', renderRolePanel);
   safeRender('bastidores', ensureStaffSection);
   safeRender('abas', initPanelTabs);
-  safeRender('mapa', renderMapGraph);
-  safeRender('totens', renderTokens);
+  if(visualForest){
+    safeRender('mapa cinematográfico da Floresta', renderVisualForestMap);
+    safeRender('painel visual da Floresta', renderVisualRightPanel);
+  } else {
+    safeRender('mapa', renderMapGraph);
+    safeRender('totens', renderTokens);
+  }
   safeRender('jogadoras', renderPlayers);
   safeRender('chat', renderChat);
-  safeRender('diário da mestre', renderNotes);
+  safeRender('anotações da mesa', renderNotes);
   safeRender('local selecionado', renderLocationBox);
   safeRender('cartas', renderAdventureCards);
   safeRender('inventário', renderInventoryVisual);
@@ -993,9 +1244,11 @@ function renderGame(){
   safeRender('central da mestre', renderMasterCentral);
   safeRender('biblioteca da mestre', renderMasterLibrary);
   safeRender('jornada', renderJourney);
+  if(isVisualForestMap(m)) { safeRender('atalhos visuais da Floresta', enhanceVisualSideForForest); safeRender('hierarquia lateral da Floresta', prioritizeVisualForestSide); }
   safeRender('respostas da IA', renderAIJobs);
   safeRender('chat de bastidores', renderStaffChat);
   safeRender('status do worker', renderWorkerStatus);
+  
   safeRender('abertura cinematográfica', renderSessionIntro);
 }
 
@@ -1006,6 +1259,10 @@ function cardTemplatesForMap(mapId){
     {kind:'recompensa',title:'Pequena recompensa',origin:state?.map?.name||'Terras Raras',text:'Uma recompensa simbólica por uma escolha criativa, cooperativa ou corajosa.'},
     {kind:'pista',title:'Pista descoberta',origin:state?.map?.name||'',text:'Uma pista importante foi revelada. A Mestre pode adaptar este texto para o momento da cena.'}
   ];
+  if(mapId==='floresta_negra' && cardCatalog){
+    const forest=catalogCards({category:'map',map_id:'floresta_negra'}).map(templateFromCatalogCard);
+    if(forest.length) return forest.concat(common);
+  }
 
 
   if(mapId==='o_vazio' || isVoidMap(state?.map)){
@@ -1170,7 +1427,13 @@ function cardKindMeta(kind){
     item:{label:'Item',icon:'⬢',theme:'item'},
     missao:{label:'Missão',icon:'✧',theme:'mission'},
     mensagem:{label:'Mensagem Especial',icon:'✉',theme:'message'},
-    recompensa:{label:'Recompensa',icon:'★',theme:'reward'}
+    recompensa:{label:'Recompensa',icon:'★',theme:'reward'},
+    power:{label:'Poder',icon:'⚡',theme:'reward'},
+    special:{label:'Especial',icon:'★',theme:'reward'},
+    identity:{label:'Identidade',icon:'✦',theme:'message'},
+    evento:{label:'Evento',icon:'✦',theme:'message'},
+    perigo:{label:'Perigo',icon:'⚠',theme:'danger'},
+    especial:{label:'Especial',icon:'★',theme:'reward'}
   };
   return map[kind]||map.pista;
 }
@@ -1187,6 +1450,7 @@ async function fetchAdventureCards(openOverlay=true){
     allAdventureCards=isStaff()?await api(`/rooms/${currentRoom}/cards/all`):[];
     renderAdventureCards();
     renderInventoryVisual();
+    if(isVisualForestMap(state?.map)) renderVisualRightPanel();
     if(openOverlay) maybeOpenAdventureCardOverlay();
   }catch(e){}
 }
@@ -1196,17 +1460,29 @@ function renderAdventureCards(){
   const inbox=(myAdventureCards||[]).slice(0,10);
   const unseen=inbox.filter(c=>!c.seen_at).length;
   const saved=inbox.filter(c=>!!c.saved_at).length;
-  const targetPlayers=(state?.players||[]).filter(p=>p.username!==me?.username && p.role==='participante');
+  const targetPlayers=participantPlayersWithCharacter();
   const templates=cardTemplatesForMap(state?.map?.id);
   const templateOptions=templates.map((t,i)=>`<option value="${i}">${esc(t.title)} · ${esc(cardKindMeta(t.kind).label)}</option>`).join('');
   const defaultTemplate=templates[0]||{kind:'pista',title:'Pista descoberta',origin:state?.map?.name||'',text:''};
-  const compose=isMasterRole()?`<div class="cardComposer"><div class="staffMini">Envie pistas, itens e mensagens especiais. Use modelos prontos do mapa ou escreva livremente.</div><label>Modelos rápidos do mapa</label><div class="row"><select id="cardTemplateSelect">${templateOptions}</select><button class="btn small ghost" onclick="loadCardTemplate()">Carregar modelo</button></div><label>Tipo</label><select id="cardKind"><option value="pista" ${defaultTemplate.kind==='pista'?'selected':''}>Pista</option><option value="item" ${defaultTemplate.kind==='item'?'selected':''}>Item</option><option value="missao" ${defaultTemplate.kind==='missao'?'selected':''}>Missão</option><option value="mensagem" ${defaultTemplate.kind==='mensagem'?'selected':''}>Mensagem Especial</option><option value="recompensa" ${defaultTemplate.kind==='recompensa'?'selected':''}>Recompensa</option></select><label>Título</label><input id="cardTitle" value="${esc(defaultTemplate.title)}"><label>Origem / local</label><input id="cardOrigin" value="${esc(defaultTemplate.origin)}"><label>Texto</label><textarea id="cardText" placeholder="Descreva a pista, item ou mensagem que será enviada para a jogadora.">${esc(defaultTemplate.text)}</textarea><label>Destinatário</label><select id="cardTargetMode" onchange="toggleCardTargetMode()"><option value="all">Todas as jogadoras</option><option value="one">Uma jogadora específica</option></select><div id="cardTargetPlayerWrap" class="hidden"><label>Jogadora</label><select id="cardTargetUser">${targetPlayers.map(p=>`<option value="${p.id}">${esc(p.username)}${p.character?.name?` · ${esc(p.character.name)}`:''}</option>`).join('')||'<option value="">Sem jogadoras disponíveis</option>'}</select></div><button class="btn small" style="margin-top:10px;width:100%" onclick="sendAdventureCard()">Enviar carta</button></div>`:'';
-  const inboxHTML=inbox.length?inbox.map(c=>{ const meta=cardKindMeta(c.kind); return `<div class="adventureCardListItem ${meta.theme}"><div class="adventureCardListTop"><span class="miniBadge">${meta.icon} ${meta.label}</span><span class="cardStatus ${cardStatusText(c)}">${cardStatusText(c)}</span></div><b>${esc(c.title)}</b><div class="adventureCardOrigin">${esc(c.origin||'Sem origem')}</div><div class="adventureCardPreview">${esc((c.text||'').slice(0,100))}${(c.text||'').length>100?'…':''}</div><div class="securityActions"><button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>${c.saved_at?'':'<button class="btn small ghost" onclick="saveAdventureCard('+c.id+')">Guardar</button>'}</div></div>`; }).join(''):'<div class="permissionHint">Nenhuma carta recebida ainda.</div>';
-  const sentHTML=isMasterRole()?`<div class="staffMini" style="margin-top:12px">Últimas cartas enviadas</div>${(sentAdventureCards||[]).slice(0,6).map(c=>{ const meta=cardKindMeta(c.kind); return `<div class="sentCardItem"><b>${meta.icon} ${esc(c.title)}</b><br><span style="color:var(--muted)">Para ${esc(c.recipient_username)} · ${esc(c.origin||'sem origem')}</span></div>`; }).join('')||'<div class="permissionHint">Nenhuma carta enviada ainda.</div>'}`:'';
-  box.innerHTML=`${compose}<div class="forestCard" style="margin-top:${isMasterRole()?12:0}px"><b>Inventário de cartas</b><span style="color:var(--muted)">${unseen} nova(s) · ${saved} guardada(s)</span></div><div class="adventureCardInbox">${inboxHTML}</div>${sentHTML}`;
+  const compose=isStaff()?`<div class="cardComposer"><div class="staffMini">Envie pistas, itens e mensagens especiais. Use modelos prontos do mapa ou escreva livremente.</div><label>Modelos rápidos do mapa</label><div class="row"><select id="cardTemplateSelect">${templateOptions}</select><button class="btn small ghost" onclick="loadCardTemplate()">Carregar modelo</button></div><label>Tipo</label><select id="cardKind"><option value="pista" ${defaultTemplate.kind==='pista'?'selected':''}>Pista</option><option value="item" ${defaultTemplate.kind==='item'?'selected':''}>Item</option><option value="missao" ${defaultTemplate.kind==='missao'?'selected':''}>Missão</option><option value="mensagem" ${defaultTemplate.kind==='mensagem'?'selected':''}>Mensagem Especial</option><option value="recompensa" ${defaultTemplate.kind==='recompensa'?'selected':''}>Recompensa</option><option value="evento" ${defaultTemplate.kind==='evento'?'selected':''}>Evento</option><option value="perigo" ${defaultTemplate.kind==='perigo'?'selected':''}>Perigo</option><option value="especial" ${defaultTemplate.kind==='especial'?'selected':''}>Especial</option><option value="power" ${defaultTemplate.kind==='power'?'selected':''}>Poder</option><option value="special" ${defaultTemplate.kind==='special'?'selected':''}>Poder Especial</option><option value="identity" ${defaultTemplate.kind==='identity'?'selected':''}>Identidade</option></select><label>Título</label><input id="cardTitle" value="${esc(defaultTemplate.title)}"><label>Origem / local</label><input id="cardOrigin" value="${esc(defaultTemplate.origin)}"><label>Texto</label><textarea id="cardText" placeholder="Descreva a pista, item ou mensagem que será enviada para a jogadora.">${esc(defaultTemplate.text)}</textarea><input type="hidden" id="cardCatalogId" value="${esc(defaultTemplate.catalog_id||'')}"><input type="hidden" id="cardRarity" value="${esc(defaultTemplate.rarity||'common')}"><input type="hidden" id="cardImagePath" value="${esc(defaultTemplate.image_path||'')}"><label>Destinatário</label><select id="cardTargetMode" onchange="toggleCardTargetMode()"><option value="all">Todas as jogadoras</option><option value="one">Uma jogadora específica</option></select><div id="cardTargetPlayerWrap" class="hidden"><label>Jogadora</label><select id="cardTargetUser">${targetPlayers.map(p=>`<option value="${p.id}">${esc(p.username)}${p.character?.name?` · ${esc(p.character.name)}`:''}</option>`).join('')||'<option value="">Sem jogadoras disponíveis</option>'}</select></div><button class="btn small" style="margin-top:10px;width:100%" onclick="sendAdventureCard()">Enviar carta</button></div>`:'';
+  const inboxHTML=inbox.length?inbox.map(c=>{ const meta=cardKindMeta(c.kind); const img=c.image_path?`<img class="adventureListAsset" src="${esc(c.image_path)}" alt="${esc(c.title)}">`:''; return `<div class="adventureCardListItem ${meta.theme}"><div class="adventureCardListTop"><span class="miniBadge">${meta.icon} ${meta.label}</span><span class="cardStatus ${cardStatusText(c)}">${cardStatusText(c)}</span></div>${img}<b>${esc(c.title)}</b><div class="adventureCardOrigin">${esc(c.origin||'Sem origem')}</div><div class="adventureCardPreview">${esc((c.text||'').slice(0,100))}${(c.text||'').length>100?'…':''}</div><div class="securityActions"><button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>${c.saved_at?'':'<button class="btn small ghost" onclick="saveAdventureCard('+c.id+')">Guardar</button>'}</div></div>`; }).join(''):'<div class="permissionHint">Nenhuma carta recebida ainda.</div>';
+  const sentHTML=isStaff()?`<div class="staffMini" style="margin-top:12px">Últimas cartas enviadas</div>${(sentAdventureCards||[]).slice(0,6).map(c=>{ const meta=cardKindMeta(c.kind); return `<div class="sentCardItem"><b>${meta.icon} ${esc(c.title)}</b><br><span style="color:var(--muted)">Para ${esc(c.recipient_username)} · ${esc(c.origin||'sem origem')}</span></div>`; }).join('')||'<div class="permissionHint">Nenhuma carta enviada ainda.</div>'}`:'';
+  box.innerHTML=`${compose}<div class="forestCard" style="margin-top:${isStaff()?12:0}px"><b>Inventário de cartas</b><span style="color:var(--muted)">${unseen} nova(s) · ${saved} guardada(s)</span></div><div class="adventureCardInbox">${inboxHTML}</div>${sentHTML}`;
   toggleCardTargetMode();
 }
 
+function loadCardTemplate(){
+  const templates=cardTemplatesForMap(state?.map?.id);
+  const t=templates[Number(qs('cardTemplateSelect')?.value||0)]||templates[0];
+  if(!t)return;
+  if(qs('cardKind')) qs('cardKind').value=t.kind||'pista';
+  if(qs('cardTitle')) qs('cardTitle').value=t.title||'';
+  if(qs('cardOrigin')) qs('cardOrigin').value=t.origin||state?.map?.name||'';
+  if(qs('cardText')) qs('cardText').value=t.text||'';
+  if(qs('cardCatalogId')) qs('cardCatalogId').value=t.catalog_id||'';
+  if(qs('cardRarity')) qs('cardRarity').value=t.rarity||'common';
+  if(qs('cardImagePath')) qs('cardImagePath').value=t.image_path||'';
+}
 async function sendAdventureCard(){
   const kind=qs('cardKind')?.value||'pista';
   const title=(qs('cardTitle')?.value||'').trim();
@@ -1214,8 +1490,11 @@ async function sendAdventureCard(){
   const origin=(qs('cardOrigin')?.value||'').trim();
   const target=qs('cardTargetMode')?.value||'all';
   const target_user_id=target==='one'?Number(qs('cardTargetUser')?.value||0):null;
+  const catalog_id=qs('cardCatalogId')?.value||'';
+  const rarity=qs('cardRarity')?.value||'common';
+  const image_path=qs('cardImagePath')?.value||'';
   if(!title||!text){ alert('Preencha o título e o texto da carta.'); return; }
-  const res=await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify({kind,title,text,origin,target,target_user_id})});
+  const res=await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify({kind,title,text,origin,target,target_user_id,catalog_id,rarity,image_path})});
   if(qs('cardText')) qs('cardText').value='';
   if(qs('cardTitle')) qs('cardTitle').value='';
   if(qs('cardOrigin')) qs('cardOrigin').value=state?.map?.name||'';
@@ -1247,7 +1526,8 @@ async function openAdventureCard(id, auto=false){
   document.querySelector('.adventureCardOverlay')?.remove();
   const overlay=document.createElement('div');
   overlay.className=`adventureCardOverlay ${meta.theme}`;
-  overlay.innerHTML=`<div class="adventureCardGlow"></div><div class="adventureCardFrame"><div class="adventureCardStamp">${meta.icon}</div><div class="adventureCardKicker">Carta da Aventura · ${esc(meta.label)}</div><h2>${esc(card.title)}</h2><div class="adventureCardOrigin">${esc(card.origin||'Sem origem')}</div><div class="adventureCardText">${esc(card.text||'').split('\n').join('<br>')}</div><div class="adventureCardActions"><button class="btn" onclick="saveAdventureCard(${card.id})">Guardar no inventário</button><button class="btn small ghost" onclick="closeAdventureCardOverlay()">Fechar</button></div></div>`;
+  const img=card.image_path?`<img class="adventureCardAsset" src="${esc(card.image_path)}" alt="${esc(card.title)}">`:'';
+  overlay.innerHTML=`<div class="adventureCardGlow"></div><div class="adventureCardFrame"><div class="adventureCardStamp">${meta.icon}</div><div class="adventureCardKicker">Carta da Aventura · ${esc(meta.label)}</div><h2>${esc(card.title)}</h2><div class="adventureCardOrigin">${esc(card.origin||'Sem origem')}</div>${img}<div class="adventureCardText">${esc(card.text||'').split('\n').join('<br>')}</div><div class="adventureCardActions"><button class="btn" onclick="saveAdventureCard(${card.id})">Guardar no inventário</button><button class="btn small ghost" onclick="closeAdventureCardOverlay()">Fechar</button></div></div>`;
   document.body.appendChild(overlay);
   setTimeout(()=>overlay.classList.add('on'),20);
   await fetchAdventureCards(false);
@@ -1729,7 +2009,9 @@ function masterLibraryForMap(mapId){
   };
 }
 function libraryCardHTML(kind, item, i){
-  return `<div class="libraryTile ${kind}"><div class="libraryTop"><b>${esc(item.title||item)}</b><span>${esc(item.origin||item.role||kind)}</span></div><p>${esc(item.text||item)}</p><div class="libraryActions"><button class="btn small ghost" onclick="libraryToEvent('${kind}',${i})">Evento</button><button class="btn small ghost" onclick="libraryToCard('${kind}',${i})">Carta</button>${kind==='items'?`<button class="btn small ghost" onclick="libraryToItem(${i})">Item</button>`:''}</div></div>`;
+  const img=item.image_path?`<img class="libraryCardAsset" src="${esc(item.image_path)}" alt="${esc(item.title||'Carta')}">`:'';
+  const rarity=item.rarity?`<em>${esc(item.rarity)}</em>`:'';
+  return `<div class="libraryTile ${kind}">${img}<div class="libraryTop"><b>${esc(item.title||item)}</b><span>${esc(item.origin||item.role||kind)}${rarity}</span></div><p>${esc(item.text||item)}</p><div class="libraryActions"><button class="btn small ghost" onclick="libraryToEvent('${kind}',${i})">Evento</button><button class="btn small ghost" onclick="libraryToCard('${kind}',${i})">Carta</button>${kind==='items'?`<button class="btn small ghost" onclick="libraryToItem(${i})">Item</button>`:''}</div></div>`;
 }
 function renderMasterLibrary(){
   const box=qs('masterLibraryContent');
@@ -1740,8 +2022,12 @@ function renderMasterLibrary(){
   const riddles=lib.riddles.map((x,i)=>libraryCardHTML('riddles',x,i)).join('');
   const phrases=lib.phrases.map((x,i)=>libraryCardHTML('phrases',x,i)).join('');
   const hooks=lib.hooks.map((x,i)=>libraryCardHTML('hooks',x,i)).join('');
-  box.innerHTML=`<div class="libraryHero"><div class="centralKicker">v17.3 · campanha auditada</div><h4>${esc(lib.title)}</h4><p>${esc(lib.intro)}</p></div>
+  const forestCatalog=catalogCards({category:'map',map_id:'floresta_negra'}).map((c,i)=>libraryCardHTML('catalogMap',templateFromCatalogCard(c),i)).join('');
+  const charCatalog=catalogCards({category:'character'}).slice(0,48).map((c,i)=>libraryCardHTML('catalogCharacter',templateFromCatalogCard(c),i)).join('');
+  box.innerHTML=`<div class="libraryHero"><div class="centralKicker">v19.5 · biblioteca de cartas inicial</div><h4>${esc(lib.title)}</h4><p>${esc(lib.intro)}</p></div>
     <div class="libraryQuick"><button class="btn small" onclick="libraryFillMapScene()">Cena pronta do mapa</button><button class="btn small ghost" onclick="libraryPromptAI()">Pedir variação à IA</button></div>
+    <label>Baralho da Floresta Negra</label><div class="libraryGrid">${forestCatalog||'<div class="permissionHint">Catálogo ainda carregando.</div>'}</div>
+    <label>Poderes e identidades dos personagens</label><div class="libraryGrid">${charCatalog||'<div class="permissionHint">Catálogo ainda carregando.</div>'}</div>
     <label>Itens prontos</label><div class="libraryGrid">${items||'<div class="permissionHint">Sem itens específicos para este mapa.</div>'}</div>
     <label>NPCs seguros</label><div class="libraryGrid">${npcs||'<div class="permissionHint">Sem NPCs específicos para este mapa.</div>'}</div>
     <label>Enigmas simples</label><div class="libraryGrid">${riddles||'<div class="permissionHint">Sem enigmas específicos para este mapa.</div>'}</div>
@@ -1750,7 +2036,9 @@ function renderMasterLibrary(){
 }
 function libraryGet(kind,i){
   const lib=masterLibraryForMap(state?.map?.id);
-  const arr=lib[kind]||[];
+  let arr=lib[kind]||[];
+  if(kind==='catalogMap') arr=catalogCards({category:'map',map_id:'floresta_negra'}).map(templateFromCatalogCard);
+  if(kind==='catalogCharacter') arr=catalogCards({category:'character'}).map(templateFromCatalogCard);
   const raw=arr[Number(i)];
   if(!raw) return null;
   return typeof raw==='string'?{title:'Frase cinematográfica',origin:state?.map?.name||'Terras Raras',text:raw}:raw;
@@ -1771,10 +2059,13 @@ function libraryToCard(kind,i){
   const item=libraryGet(kind,i); if(!item) return;
   centralOpenPanel('Cartas da Aventura');
   setTimeout(()=>{
-    if(qs('cardKind')) qs('cardKind').value=kind==='items'?'item':kind==='riddles'?'missao':kind==='hooks'?'mensagem':'pista';
+    if(qs('cardKind')) qs('cardKind').value=item.kind||item.type||item.kind||(kind==='items'?'item':kind==='riddles'?'missao':kind==='hooks'?'mensagem':'pista');
     if(qs('cardTitle')) qs('cardTitle').value=item.title||`Carta de ${state?.map?.name||'Terras Raras'}`;
     if(qs('cardOrigin')) qs('cardOrigin').value=item.origin||state?.map?.name||'Terras Raras';
     if(qs('cardText')) qs('cardText').value=item.text||'';
+    if(qs('cardCatalogId')) qs('cardCatalogId').value=item.catalog_id||item.id||'';
+    if(qs('cardRarity')) qs('cardRarity').value=item.rarity||'common';
+    if(qs('cardImagePath')) qs('cardImagePath').value=item.image_path||'';
   },60);
 }
 function libraryToItem(i){
@@ -2526,15 +2817,17 @@ function renderMapGraph(){
 }
 function renderTokens(){
   const box=qs('tokens'); if(!box)return;
-  box.innerHTML=(state.players||[]).map(p=>{
+  const players=isVisualForestMap(state?.map)?visiblePlayersForVisualForest():participantPlayersWithCharacter();
+  box.innerHTML=players.map(p=>{
     const ch=p.character, art=ch?.avatar_svg||'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#d0a94a"/></svg>';
-    return `<div class="token" style="left:${p.x}%;top:${p.y}%" onpointerdown="startDrag(event,${p.id})">${art}<div class="tokenName">${esc(ch?.name||p.username)}</div></div>`;
+    const sprite=characterSpritePosition(ch?.id);
+    return `<div class="token" data-char="${esc(ch?.id||'')}" style="left:${p.x}%;top:${p.y}%;--sprite-pos:${sprite}" onpointerdown="startDrag(event,${p.id})">${art}<div class="tokenName">${esc(ch?.name||p.username)}</div></div>`;
   }).join('');
 }
 function startDrag(ev,id){
   const p=(state.players||[]).find(x=>x.id===id);
   if(!p)return;
-  if(!isMasterRole() && state.me?.id!==id)return;
+  if(!isStaff())return;
   dragging=id; ev.preventDefault();
   window.onpointermove=dragMove; window.onpointerup=dragEnd;
 }
@@ -2554,11 +2847,11 @@ async function dragEnd(ev){
 function renderPlayers(){
   const box=qs('players'); if(!box)return;
   box.innerHTML=(state.players||[]).map(p=>{
-    const staff=isMasterRole();
+    const staff=isStaff(); const canKick=isMasterRole();
     return `<div class="player"><b>${esc(p.character?.name||p.username)}</b> <span class="pill">${roleName(p.role)}</span><br><span style="color:var(--muted)">${esc(p.username)}</span>
       <label>HP</label><input id="hp_${p.id}" type="number" value="${p.hp}" ${staff?'':'disabled'}><div class="meter"><div class="fill" style="width:${p.hp}%"></div></div>
       <label>Energia</label><input id="en_${p.id}" type="number" value="${p.energy}" ${staff?'':'disabled'}><div class="meter"><div class="fill energy" style="width:${p.energy}%"></div></div>
-      ${staff?`<label>Fraqueza</label><input id="weak_${p.id}" value="${esc(p.weakness||'')}"><label>Notas</label><textarea id="pnotes_${p.id}">${esc(p.notes||'')}</textarea><label>Inventário</label><input id="inv_${p.id}" value="${esc(p.inventory||'')}"><div class="row" style="margin-top:8px"><button class="btn small" onclick="saveStats(${p.id})">Salvar</button><button class="btn small danger" onclick="kickPlayer(${p.id},'${esc(String(p.username||'jogadora').replace(/'/g,"&#39;"))}')">Remover da sala</button></div>`:''}
+      ${staff?`<div class="row"><div style="flex:1"><label>Força</label><input id="str_${p.id}" type="number" value="${p.strength??5}"></div><div style="flex:1"><label>Habilidade</label><input id="skill_${p.id}" type="number" value="${p.skill??7}"></div></div><label>Fraqueza</label><input id="weak_${p.id}" value="${esc(p.weakness||'')}"><label>Notas</label><textarea id="pnotes_${p.id}">${esc(p.notes||'')}</textarea><label>Inventário</label><input id="inv_${p.id}" value="${esc(p.inventory||'')}"><div class="row" style="margin-top:8px"><button class="btn small" onclick="saveStats(${p.id})">Salvar</button>${canKick?`<button class="btn small danger" onclick="kickPlayer(${p.id},'${esc(String(p.username||'jogadora').replace(/'/g,"&#39;"))}')">Remover da sala</button>`:""}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -2574,7 +2867,7 @@ async function kickPlayer(id,name){
   }catch(e){ alert(e.message); }
 }
 async function saveStats(id){
-  await api(`/rooms/${currentRoom}/stats`,{method:'POST',body:JSON.stringify({player_id:id,hp:+qs('hp_'+id).value,energy:+qs('en_'+id).value,weakness:qs('weak_'+id)?.value||'',notes:qs('pnotes_'+id)?.value||'',inventory:qs('inv_'+id)?.value||''})});
+  await api(`/rooms/${currentRoom}/stats`,{method:'POST',body:JSON.stringify({player_id:id,hp:+qs('hp_'+id).value,energy:+qs('en_'+id).value,strength:+(qs('str_'+id)?.value||5),skill:+(qs('skill_'+id)?.value||7),weakness:qs('weak_'+id)?.value||'',notes:qs('pnotes_'+id)?.value||'',inventory:qs('inv_'+id)?.value||''})});
 }
 const saveNotes=saveStats;
 function renderChat(){ const box=qs('chat'); if(box) box.innerHTML=(state.chat||[]).map(c=>`<div class="bubble"><b>${esc(c.username)}</b><br>${esc(c.text).replace(/\n/g,'<br>')}</div>`).join(''); }
@@ -2693,7 +2986,7 @@ function renderLocationBox(){
     return;
   }
   const n=overrideFor(selectedNode);
-  const players=(state.players||[]).map(p=>`<option value="${p.id}">${esc(p.character?.name||p.username)} · ${esc(p.username)}</option>`).join('');
+  const players=participantPlayersWithCharacter().map(p=>`<option value="${p.id}">${esc(p.character?.name||p.username)} · ${esc(p.username)}</option>`).join('');
   const closed=n.id==='portal'&&!portalReleased();
   let html=`<div class="locTitle">${esc(n.name)} ${closed?'🔒':''}</div><span class="locType">${nodeTypeText(n.type)}</span><div class="locationMeta">${esc(n.desc)}</div>`;
   if(isStaff()){
@@ -2710,8 +3003,8 @@ function renderLocationBox(){
       ${n.type==='portal' && !portalReleased()?`<button class="btn small" onclick="setProgress('portal_released',true,state.map.id==='cidade_relogios'?'Abriu o Portal do Amanhã':(state.map.id==='montanhas_arcaicas'?'Despertou o Coração de Pedra e abriu o Portal de Pedra Viva':(state.map.id==='gelo_eterno'?'Libertou a Canção Congelada e abriu o Portal da Aurora':(state.map.id==='alexandria'?'Acendeu o Farol de Alexandria e abriu o Portal das Estrelas Escritas':(state.map.id==='tempestade_deuses'?'Acalmou a Tempestade dos Deuses e abriu o Portal da Corrida Celeste':(state.map.id==='correr_ou_morrer'?'Chegou ao fim do caminho e abriu o Portal da Última Luz':(state.map.id==='o_vazio'?'Reacendeu a Última Luz e abriu o Portal do Recomeço':(state.map.id==='fabrica_doces'?'Confeiteira aceitou abrir o Portal de Caramelo':'Liberou o Portal da Próxima Zona'))))))))">Liberar portal agora</button>`:''}
     </div>`;
   }
-  html+=`<label>Mover token para este local</label><select id="targetPlayer">${players}</select><div class="locationActions">
-    <button class="btn small" onclick="moveSelectedToNode()" ${isMasterRole()?'':'disabled'}>Mover token</button>
+  html+=`<label>Mover token para este local</label><select id="targetPlayer">${players||'<option value="">Nenhuma jogadora com personagem</option>'}</select><div class="locationActions">
+    <button class="btn small" onclick="moveSelectedToNode()" ${isStaff()&&players?'':'disabled'}>Mover token</button>
     <button class="btn small ghost" onclick="narrateSelectedNode()">Narrar local</button>
     ${isStaff()?`<button class="btn small ghost" onclick="generateLocalEvent()">Gerar evento</button><button class="btn small ghost" onclick="noteSelectedNode()">Enviar ao diário</button><button class="btn small ghost" onclick="imagePromptSelectedNode()">Prompt imagem</button>`:''}
   </div>${progressChecklist()}`;
@@ -2719,8 +3012,10 @@ function renderLocationBox(){
 }
 async function moveSelectedToNode(){
   if(!selectedNode)return;
+  if(!isStaff()) return alert(tokenMovementNotice());
   const id=+qs('targetPlayer')?.value; if(!id)return;
-  await api(`/rooms/${currentRoom}/move-token`,{method:'POST',body:JSON.stringify({player_id:id,x:selectedNode.x,y:selectedNode.y})});
+  const n=overrideFor(selectedNode);
+  await api(`/rooms/${currentRoom}/stats`,{method:'POST',body:JSON.stringify({player_id:id,current_node:n.id,x:n.x,y:n.y})});
 }
 function forestContext(n){return `Local: ${n.name}. Descrição: ${n.desc}. Evento: ${n.event||''}. Pista: ${n.clue||''}. Segredo da Mestre: ${n.secret||''}. Escolhas: ${n.choices||''}.`;}
 function narrateSelectedNode(){ if(!selectedNode)return; qs('aiAction').value=`${forestContext(overrideFor(selectedNode))} Narre a chegada das personagens a este local. Use apenas o que pode ser dito às jogadoras. Termine com uma decisão objetiva.`; requestAIAndShow('narrative'); }
@@ -2730,6 +3025,7 @@ function imagePromptSelectedNode(){ if(!selectedNode)return; const n=overrideFor
 
 /* ===== Personagens / mapas ===== */
 async function chooseChar(){
+  if(isStaff()) return alert('Mestre e Ajudante entram sem personagem. Apenas Jogadoras escolhem personagem.');
   const cid=qs('charSelect')?.value; if(!cid)return;
   try{
     await api(`/rooms/${currentRoom}/choose-character`,{method:'POST',body:JSON.stringify({room_id:currentRoom,character_id:cid})});
@@ -2989,3 +3285,1483 @@ function refreshCountdowns(){
 setInterval(()=>{ refreshCountdowns(); },1000);
 setInterval(()=>{ if(currentRoom&&isStaff()) updateWorkerStatus(); },5000);
 boot();
+
+/* ===== v19.6 — Mesa dinâmica: barra inferior + painel lateral por perfil + cartas visuais ===== */
+let cardsPanelTab = 'personagem';
+let gameCardsTypeFilter = 'all';
+let selectedCardsPlayerId = null;
+let selectedGameTargetMode = 'all';
+let selectedGameTargetUserId = null;
+
+function hasNarrationPermission(){ return !!(state?.me && state.me.role==='mestre') || !!me?.is_admin; }
+function canOperateAsStaff(){ return isStaff(); }
+function normalizeLabelV196(label){ return String(label||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function sectionLabelForV196(section){
+  const id=section?.id||'';
+  if(id==='rolePanel') return 'Configurações';
+  if(id==='localAIBox') return 'IA';
+  if(id==='staffSection') return 'Bastidores';
+  if(id==='adventureCardsBox') return 'Cartas';
+  if(id==='inventoryBox') return 'Inventário';
+  if(id==='visualDiaryBox') return 'Diário';
+  if(id==='missionsBox') return 'Missões';
+  if(id==='journeyBox') return 'Jornada';
+  if(id==='masterCentralBox') return 'Central';
+  if(id==='masterEventsBox') return 'Eventos';
+  if(id==='masterLibraryBox') return 'Biblioteca';
+  const title=section?.querySelector?.('.title')?.textContent?.trim()||'Painel';
+  return title.replace('Escolher personagem','Personagem').replace('Anotações da Mesa','Diário').replace('Diário Visual','Diário').replace('Cartas da Aventura','Cartas');
+}
+function sectionMatchesV196(label, section){
+  const n=normalizeLabelV196(label), s=normalizeLabelV196(sectionLabelForV196(section));
+  const aliases={
+    mapa:['mapa','floresta negra','zona'],
+    chat:['chat'],
+    cartas:['cartas','cartas da aventura'],
+    inventario:['inventario'],
+    diario:['diario','diario visual','anotacoes da mesa'],
+    missoes:['missoes'],
+    jogadoras:['jogadoras','jogadoras presentes'],
+    personagem:['personagem','escolher personagem'],
+    jornada:['jornada'],
+    central:['central','central da mestre'],
+    eventos:['eventos','eventos da mestre'],
+    biblioteca:['biblioteca','biblioteca da mestre'],
+    bastidores:['bastidores'],
+    ia:['ia','ia local'],
+    configuracoes:['configuracoes','funcao na mesa']
+  };
+  const variants=aliases[n]||[n];
+  return variants.some(v=>s.includes(v) || v.includes(s));
+}
+function dynamicNavItemsV196(){
+  const base=[
+    ['Mapa','🧭','mapa'],['Chat','💬','chat'],['Cartas','🃏','cartas'],['Inventário','🎒','inventario'],['Diário','📖','diario'],['Missões','📜','missoes'],['Jogadoras','👥','jogadoras'],['Personagem','🧍','personagem'],['Jornada','🗺️','jornada']
+  ];
+  if(canOperateAsStaff()){
+    base.push(['Central','✦','central'],['Eventos','⚡','eventos'],['Biblioteca','📚','biblioteca'],['Bastidores','🔒','bastidores'],['IA','🤖','ia'],['Configurações','⚙','configuracoes']);
+  }
+  if(hasNarrationPermission()) base.push(['Narrar','🎙️','narrar']);
+  return base;
+}
+function ensureVisualForestUI(){
+  const mapArea=qs('mapArea'); if(!mapArea)return;
+  mapArea.classList.add('visualForestV19','visualForestPremium','dynamicMesaV196');
+  if(!qs('visualHint')){
+    const hint=document.createElement('div'); hint.id='visualHint'; hint.className='visualHint collapsed';
+    hint.innerHTML=`<button class="visualHintTab" onclick="toggleVisualHint()" title="Ajuda do mapa">?</button><div class="visualHintBody"><button class="visualHintClose" onclick="toggleVisualHint(false)" title="Fechar">×</button><b>Floresta Negra</b><br>Mapa no centro. Use a barra inferior para abrir cada ferramenta na lateral.</div>`;
+    mapArea.appendChild(hint);
+  }
+  let nav=qs('visualQuickNav');
+  if(!nav){ nav=document.createElement('div'); nav.id='visualQuickNav'; nav.className='visualQuickNav mesaBottomNav'; mapArea.appendChild(nav); }
+  nav.innerHTML=dynamicNavItemsV196().map(([label,icon,key])=>`<button data-nav="${key}" onclick="openMesaTool('${esc(label)}')">${icon} ${esc(label)}</button>`).join('');
+  updateVisualNavActive('Mapa');
+}
+function openMesaTool(label){
+  if(label==='Narrar'){
+    if(!hasNarrationPermission()){ alert('A narração oficial é exclusiva da Mestre.'); return; }
+    requestAIAndShow('narrative');
+    openPanelByLabel('IA');
+    return;
+  }
+  if(normalizeLabelV196(label)==='mapa') return openVisualMap();
+  openPanelByLabel(label);
+}
+function initPanelTabs(){
+  const side=qs('side'); if(!side)return;
+  side.querySelector('.panelTabs')?.remove();
+  const sections=[...side.children].filter(x=>x.classList?.contains('sideSection'));
+  sections.forEach((s,i)=>{ s.classList.add('tabPane'); s.dataset.navLabel=sectionLabelForV196(s); });
+  if(!sections.some(s=>s.classList.contains('on'))) activePanelIndex=sections.findIndex(s=>sectionMatchesV196('Mapa',s));
+  if(activePanelIndex<0 || activePanelIndex>=sections.length) activePanelIndex=0;
+  openPanelTab(activePanelIndex);
+}
+function openPanelTab(i){
+  activePanelIndex=i;
+  const side=qs('side'); if(!side)return;
+  const panes=[...side.querySelectorAll('.tabPane')];
+  panes.forEach((p,k)=>p.classList.toggle('on',k===i));
+  const active=panes[i];
+  if(active){
+    const label=active.dataset.navLabel||sectionLabelForV196(active);
+    const normalized=normalizeLabelV196(label);
+    const showVisualCard = normalized==='mapa' || normalized==='personagem';
+    side.classList.toggle('showVisualCard', showVisualCard);
+    if(!showVisualCard) side.scrollTop=0;
+    updateVisualNavActive(label);
+  }
+}
+function openPanelByLabel(label){
+  const side=qs('side'); if(!side)return;
+  const panes=[...side.querySelectorAll('.tabPane')];
+  let idx=panes.findIndex(p=>sectionMatchesV196(label,p));
+  if(idx<0 && normalizeLabelV196(label)==='diario') idx=panes.findIndex(p=>sectionMatchesV196('Anotações da Mesa',p));
+  if(idx>=0){
+    openPanelTab(idx);
+    side.classList.remove('closed');
+    document.querySelector('.game')?.classList.remove('panelClosed');
+    updateVisualNavActive(label);
+  }
+}
+function updateVisualNavActive(label){
+  const n=normalizeLabelV196(label);
+  const keyMap={inventario:'inventario',diario:'diario',missoes:'missoes',jogadoras:'jogadoras',personagem:'personagem',jornada:'jornada',central:'central',eventos:'eventos',biblioteca:'biblioteca',bastidores:'bastidores',ia:'ia',cartas:'cartas',mapa:'mapa',configuracoes:'configuracoes',narrar:'narrar',chat:'chat'};
+  const key=keyMap[n]||n;
+  document.querySelectorAll('#visualQuickNav button').forEach(b=>b.classList.toggle('on',b.dataset.nav===key));
+}
+
+function catalogByIdV196(id){ return (cardCatalog?.cards||[]).find(c=>c.id===id)||null; }
+function receivedCardCategoryV196(card){ const cat=catalogByIdV196(card.catalog_id||''); if(cat?.category) return cat.category; if(['power','special','identity'].includes(card.kind)) return 'character'; return 'map'; }
+function cardTypeLabelV196(type){ return ({identity:'Identidade',power:'Poder',special:'Poder especial',pista:'Pista',susto:'Susto',item:'Item',evento:'Evento',perigo:'Perigo',missao:'Missão',especial:'Especial',recompensa:'Recompensa',mensagem:'Mensagem'})[type]||type||'Carta'; }
+function renderCatalogVisualCardV196(c, actions=''){
+  const img=c.image_path?`<img class="cardShelfImg" src="${esc(c.image_path)}" alt="${esc(c.title)}">`:`<div class="cardShelfPlaceholder">✦</div>`;
+  return `<div class="cardShelfItem rarity-${esc(c.rarity||'common')}">${img}<div class="cardShelfBody"><div class="cardShelfMeta">${esc(cardTypeLabelV196(c.type))} · ${esc(c.rarity||'comum')}</div><b>${esc(c.title)}</b><p>${esc(c.short_text||c.effect_text||'')}</p>${actions}</div></div>`;
+}
+function renderReceivedVisualCardV196(c, actions=''){
+  const meta=cardKindMeta(c.kind);
+  const img=c.image_path?`<img class="cardShelfImg" src="${esc(c.image_path)}" alt="${esc(c.title)}">`:`<div class="cardShelfPlaceholder">${meta.icon}</div>`;
+  const status=c.revoked_at?'retirada':(c.used_at?'usada':cardStatusText(c));
+  return `<div class="cardShelfItem ${meta.theme} ${c.revoked_at?'revoked':''}">${img}<div class="cardShelfBody"><div class="cardShelfMeta">${meta.icon} ${esc(meta.label)} · ${esc(c.origin||'')}</div><b>${esc(c.title)}</b><p>${esc((c.text||'').slice(0,120))}${(c.text||'').length>120?'…':''}</p><span class="cardStatus ${status}">${status}</span>${actions}</div></div>`;
+}
+function setCardsPanelTab(tab){ cardsPanelTab=tab; renderAdventureCards(); }
+function setGameCardsTypeFilter(t){ gameCardsTypeFilter=t; renderAdventureCards(); }
+function setSelectedCardsPlayer(id){ selectedCardsPlayerId=Number(id)||null; renderAdventureCards(); }
+function setGameTargetModeV196(mode){ selectedGameTargetMode=mode; renderAdventureCards(); }
+function setGameTargetUserV196(id){ selectedGameTargetUserId=Number(id)||null; }
+function catalogTemplateV196(c){ return templateFromCatalogCard(c); }
+async function sendCatalogCardV196(catalogId,target='one',targetUserId=null){
+  const c=catalogByIdV196(catalogId); if(!c) return alert('Carta não encontrada no catálogo.');
+  const t=catalogTemplateV196(c);
+  const payload={kind:t.kind,title:t.title,text:t.text,origin:t.origin,target,target_user_id:target==='one'?Number(targetUserId||0):null,catalog_id:t.catalog_id,rarity:t.rarity,image_path:t.image_path};
+  if(target==='one' && !payload.target_user_id) return alert('Escolha a jogadora/personagem que receberá a carta.');
+  const res=await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify(payload)});
+  await fetchAdventureCards(false);
+  alert(`Carta enviada com sucesso.`);
+}
+async function markAdventureCardUsed(id){
+  await api(`/rooms/${currentRoom}/cards/${id}/use`,{method:'POST'});
+  await fetchAdventureCards(false);
+}
+function cardGridEmptyV196(text){ return `<div class="permissionHint cardPanelEmpty">${esc(text)}</div>`; }
+function staffCharacterCardsPanelV196(){
+  const players=(state?.players||[]).filter(p=>p.character && p.role==='participante');
+  const first=players[0]?.id||null;
+  if(!selectedCardsPlayerId || !players.some(p=>p.id===selectedCardsPlayerId)) selectedCardsPlayerId=first;
+  const selected=players.find(p=>p.id===selectedCardsPlayerId);
+  const charId=selected?.character?.id;
+  const cards=charId?catalogCards({category:'character',character_id:charId}):[];
+  const opts=players.map(p=>`<option value="${p.id}" ${p.id===selectedCardsPlayerId?'selected':''}>${esc(p.username)} · ${esc(p.character?.name||'')}</option>`).join('');
+  return `<div class="cardsToolIntro"><b>Cartas de Personagem</b><span>Escolha a jogadora/personagem. A Mestre ou Ajudante envia poderes e cartas daquele personagem.</span></div><label>Jogadora / personagem</label><select onchange="setSelectedCardsPlayer(this.value)">${opts||'<option>Sem personagens escolhidos</option>'}</select><div class="cardShelfGrid">${cards.length?cards.map(c=>renderCatalogVisualCardV196(c,`<button class="btn small" onclick="sendCatalogCardV196('${esc(c.id)}','one',${Number(selected?.user_id||0)})">Enviar para ${esc(selected?.username||'jogadora')}</button>`)).join(''):cardGridEmptyV196('Escolha uma jogadora que já tenha personagem.')}</div>`;
+}
+function staffGameCardsPanelV196(){
+  const mapId=state?.map?.id||'floresta_negra';
+  let cards=catalogCards({category:'map',map_id:mapId});
+  if(!cards.length && mapId!=='floresta_negra') cards=catalogCards({category:'map',map_id:'floresta_negra'});
+  const types=['all','pista','susto','item','evento','perigo','missao','especial'];
+  const filtered=gameCardsTypeFilter==='all'?cards:cards.filter(c=>c.type===gameCardsTypeFilter);
+  const players=(state?.players||[]).filter(p=>p.role==='participante');
+  if(!selectedGameTargetUserId && players[0]) selectedGameTargetUserId=players[0].user_id;
+  const targetSelect=selectedGameTargetMode==='one'?`<label>Jogadora</label><select onchange="setGameTargetUserV196(this.value)">${players.map(p=>`<option value="${p.user_id}" ${p.user_id===selectedGameTargetUserId?'selected':''}>${esc(p.username)} · ${esc(p.character?.name||'')}</option>`).join('')}</select>`:'';
+  return `<div class="cardsToolIntro"><b>Cartas de Jogo</b><span>Pistas, sustos, itens, eventos, perigos e missões do mapa atual.</span></div><div class="cardFilterRow">${types.map(t=>`<button class="chipBtn ${gameCardsTypeFilter===t?'on':''}" onclick="setGameCardsTypeFilter('${t}')">${esc(t==='all'?'Todos':cardTypeLabelV196(t))}</button>`).join('')}</div><label>Destino da carta</label><div class="cardFilterRow"><button class="chipBtn ${selectedGameTargetMode==='all'?'on':''}" onclick="setGameTargetModeV196('all')">Todos</button><button class="chipBtn ${selectedGameTargetMode==='one'?'on':''}" onclick="setGameTargetModeV196('one')">Uma jogadora</button><button class="chipBtn ${selectedGameTargetMode==='game'?'on':''}" onclick="setGameTargetModeV196('game')">Jogo / mesa</button><button class="chipBtn ${selectedGameTargetMode==='staff'?'on':''}" onclick="setGameTargetModeV196('staff')">Mestre/Ajudante</button></div>${targetSelect}<div class="cardShelfGrid">${filtered.length?filtered.map(c=>renderCatalogVisualCardV196(c,`<button class="btn small" onclick="sendCatalogCardV196('${esc(c.id)}','${selectedGameTargetMode}',${Number(selectedGameTargetUserId||0)})">Enviar carta</button>`)).join(''):cardGridEmptyV196('Nenhuma carta deste tipo no mapa atual.')}</div>`;
+}
+function staffUsedCardsPanelV196(category){
+  const used=(allAdventureCards||[]).filter(c=>c.used_at && receivedCardCategoryV196(c)===category);
+  const active=(allAdventureCards||[]).filter(c=>!c.used_at && receivedCardCategoryV196(c)===category).slice(0,8);
+  return `<div class="cardsToolIntro"><b>${category==='character'?'Usadas: Personagem':'Usadas: Jogo'}</b><span>Histórico do que já foi usado neste mapa e cartas ainda ativas.</span></div><h4 class="cardSubTitle">Já usadas</h4><div class="cardShelfGrid compact">${used.length?used.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>`)).join(''):cardGridEmptyV196('Nenhuma carta marcada como usada ainda.')}</div><h4 class="cardSubTitle">Ativas / enviadas</h4><div class="cardShelfGrid compact">${active.length?active.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="markAdventureCardUsed(${c.id})">Marcar usada</button>`)).join(''):cardGridEmptyV196('Nenhuma carta ativa nesta categoria.')}</div>`;
+}
+function playerCardsPanelV196(category){
+  const cards=(myAdventureCards||[]).filter(c=>!c.used_at && receivedCardCategoryV196(c)===category);
+  return `<div class="cardsToolIntro"><b>${category==='character'?'Cartas do Personagem':'Cartas do Jogo'}</b><span>${category==='character'?'Poderes e cartas recebidas do seu personagem.':'Pistas, sustos, itens, missões e cartas públicas da mesa.'}</span></div><div class="cardShelfGrid">${cards.length?cards.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Olhar</button><button class="btn small" onclick="markAdventureCardUsed(${c.id})">Usar</button>${c.saved_at?'':'<button class="btn small ghost" onclick="saveAdventureCard('+c.id+')">Guardar</button>'}`)).join(''):cardGridEmptyV196('Nenhuma carta recebida nesta aba.')}</div>`;
+}
+function playerUsedCardsPanelV196(){
+  const cards=(myAdventureCards||[]).filter(c=>c.used_at);
+  return `<div class="cardsToolIntro"><b>Cartas usadas</b><span>Controle das cartas que você já usou durante a aventura.</span></div><div class="cardShelfGrid compact">${cards.length?cards.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Rever</button>`)).join(''):cardGridEmptyV196('Nenhuma carta usada ainda.')}</div>`;
+}
+function renderAdventureCards(){
+  const box=qs('adventureCardsContent'); if(!box) return;
+  const staff=canOperateAsStaff();
+  const tabs=staff?[
+    ['personagem','Cartas de Personagem'],['jogo','Cartas de Jogo'],['usadas_personagem','Usadas: Personagem'],['usadas_jogo','Usadas: Jogo']
+  ]:[['personagem','Personagem'],['jogo','Jogo'],['usadas','Usadas']];
+  if(!tabs.some(t=>t[0]===cardsPanelTab)) cardsPanelTab=tabs[0][0];
+  let body='';
+  if(staff){
+    if(cardsPanelTab==='personagem') body=staffCharacterCardsPanelV196();
+    else if(cardsPanelTab==='jogo') body=staffGameCardsPanelV196();
+    else if(cardsPanelTab==='usadas_personagem') body=staffUsedCardsPanelV196('character');
+    else body=staffUsedCardsPanelV196('map');
+  }else{
+    if(cardsPanelTab==='personagem') body=playerCardsPanelV196('character');
+    else if(cardsPanelTab==='jogo') body=playerCardsPanelV196('map');
+    else body=playerUsedCardsPanelV196();
+  }
+  const unseen=(myAdventureCards||[]).filter(c=>!c.seen_at).length;
+  box.innerHTML=`<div class="cardsPanelHeader"><div><b>${staff?'Central de Cartas':'Minhas Cartas'}</b><span>${unseen} nova(s)</span></div></div><div class="cardsPanelTabs">${tabs.map(([k,l])=>`<button class="${cardsPanelTab===k?'on':''}" onclick="setCardsPanelTab('${k}')">${esc(l)}</button>`).join('')}</div>${body}`;
+}
+
+// Exporta novos comandos para chamadas inline.
+Object.assign(window,{openMesaTool,setCardsPanelTab,setSelectedCardsPlayer,setGameCardsTypeFilter,setGameTargetModeV196,setGameTargetUserV196,sendCatalogCardV196,markAdventureCardUsed});
+
+/* v19.6 — narração oficial só para Mestre */
+async function requestAIAndShow(kind){
+  if(kind==='narrative' && !hasNarrationPermission()){
+    openPanelByLabel('IA');
+    showAIInnerTab('ask');
+    alert('A narração oficial é exclusiva da Mestre. A Ajudante pode usar Perguntar, Resumir, Cartas e Bastidores.');
+    return;
+  }
+  trOpenAIResponses();
+  return requestAI(kind);
+}
+async function publishAI(id,target){
+  const st=qs('aiStatus');
+  try{
+    if((target==='chat' || target==='location') && !hasNarrationPermission()){
+      alert('A publicação de narração oficial é exclusiva da Mestre. Use Bastidores para preparar o texto.');
+      return;
+    }
+    if(st){st.textContent='Publicando resposta...';st.className='msg';}
+    const edited=qs('aiEdit_'+id);
+    const payload={target};
+    if(edited) payload.text=edited.value;
+    if(target==='location'){
+      if(!selectedNode){ alert('Selecione um local do mapa antes de usar como descrição do local.'); if(st){st.textContent='Selecione um local do mapa antes.';st.className='msg err';} return; }
+      payload.map_id=state.map.id; payload.location_id=selectedNode.id; payload.location_name=selectedNode.name;
+    }
+    await api(`/rooms/${currentRoom}/ai/jobs/${id}/publish`,{method:'POST',body:JSON.stringify(payload)});
+    state=await api('/rooms/'+currentRoom);
+    renderGame(); trOpenAIResponses();
+    const msg=target==='chat'?'Resposta enviada ao chat geral.':target==='staff'?'Resposta enviada aos bastidores.':target==='notes'?'Resposta salva no diário.':'Descrição do local atualizada.';
+    if(qs('aiStatus')){qs('aiStatus').textContent=msg;qs('aiStatus').className='msg';}
+  }catch(e){ alert('Erro ao publicar resposta: '+e.message); if(st){st.textContent=e.message;st.className='msg err';} }
+}
+
+/* ===== v19.6.3 — Confirmação e retirada de cartas ===== */
+function trAssetSrcV1962(path){
+  if(!path) return '';
+  try{ return encodeURI(path) + (String(path).includes('?')?'':'?v=19.6.11'); }catch(e){ return path; }
+}
+function trCloseWideOverlay(){
+  document.getElementById('wideToolOverlay')?.remove();
+  updateVisualNavActive('Mapa');
+}
+function trWideOverlayShell(title, subtitle, body){
+  const mapArea=qs('mapArea'); if(!mapArea) return;
+  document.getElementById('wideToolOverlay')?.remove();
+  const el=document.createElement('div');
+  el.id='wideToolOverlay';
+  el.className='wideToolOverlay';
+  el.innerHTML=`<div class="wideToolHeader"><div><h2>${esc(title)}</h2><p>${esc(subtitle||'')}</p></div><div class="grow"></div><button class="btn small ghost" onclick="trCloseWideOverlay()">Fechar e voltar ao mapa</button></div><div class="wideToolBody">${body||''}</div>`;
+  mapArea.appendChild(el);
+}
+function trWideCardHTML(c, actions='', received=false){
+  const title=c.title||'Carta';
+  const type=c.type||c.kind||'carta';
+  const rarity=c.rarity||'common';
+  const imgPath=c.image_path||'';
+  const text=c.short_text || c.effect_text || c.text || '';
+  const extra=(c.effect_text && c.effect_text!==c.short_text)?c.effect_text:'';
+  const finalText=[text, extra, c.flavor_text||''].filter(Boolean).join('\n\n');
+  const origin=c.origin || c.map_id || c.character_id || 'Terras Raras';
+  const img=imgPath?`<img src="${esc(trAssetSrcV1962(imgPath))}" alt="${esc(title)}" onerror="this.closest('.wideCardImgWrap').innerHTML='<div class=&quot;wideCardMissing&quot;>✦</div>'">`:`<div class="wideCardMissing">✦</div>`;
+  return `<article class="wideCardTile rarity-${esc(rarity)} ${c.revoked_at?'revoked':''}"><div class="wideCardImgWrap">${img}</div><div class="wideCardBody"><div class="wideCardMeta">${esc(cardTypeLabelV196(type))} · ${esc(origin)} · ${esc(rarity)}${c.revoked_at?' · RETIRADA':''}</div><b>${esc(title)}</b><div class="wideCardText">${esc(finalText||'Sem descrição.').split('\n').join('<br>')}</div><div class="wideCardActions">${actions||''}</div></div></article>`;
+}
+function trWideReceivedCardHTML(c, actions=''){
+  const cat=catalogByIdV196(c.catalog_id||'');
+  const imgPath=c.image_path || cat?.image_path || '';
+  const obj={title:c.title, kind:c.kind, type:c.kind, rarity:c.rarity||cat?.rarity||'common', origin:c.origin, text:c.text, image_path:imgPath, revoked_at:c.revoked_at, used_at:c.used_at};
+  return trWideCardHTML(obj, actions, true);
+}
+function trWidePlayersWithCharacters(){ return (state?.players||[]).filter(p=>p.role==='participante' && p.character); }
+function trSetWideTab(tab){ cardsPanelTab=tab; trOpenWideCards(); }
+function trSetWidePlayer(id){ selectedCardsPlayerId=Number(id)||null; trOpenWideCards(); }
+function trSetWideType(t){ gameCardsTypeFilter=t; trOpenWideCards(); }
+function trSetWideTarget(mode){ selectedGameTargetMode=mode; trOpenWideCards(); }
+function trSetWideTargetUser(id){ selectedGameTargetUserId=Number(id)||null; }
+function trTargetLabelV1963(target, targetUserId){
+  if(target==='all') return 'TODOS os jogadores';
+  if(target==='game') return 'JOGO / MESA';
+  if(target==='staff') return 'Mestre e Ajudante';
+  const p=(state?.players||[]).find(x=>Number(x.user_id)===Number(targetUserId));
+  return p ? `${p.username}${p.character?.name?' / '+p.character.name:''}` : 'jogadora selecionada';
+}
+async function trSendCatalogCard(catalogId,target='one',targetUserId=null){
+  const c=catalogByIdV196(catalogId); if(!c) return alert('Carta não encontrada no catálogo.');
+  const t=templateFromCatalogCard(c);
+  const payload={kind:t.kind,title:t.title,text:t.text,origin:t.origin,target,target_user_id:target==='one'?Number(targetUserId||0):null,catalog_id:t.catalog_id,rarity:t.rarity,image_path:t.image_path};
+  if(target==='one' && !payload.target_user_id) return alert('Escolha a jogadora/personagem que receberá a carta.');
+  const destino=trTargetLabelV1963(target, payload.target_user_id);
+  const pergunta=`Enviar esta carta?\n\nCarta: ${t.title}\nDestino: ${destino}\nTipo: ${cardTypeLabelV196(t.kind)}\nOrigem: ${t.origin||'Terras Raras'}\n\nConfirma o envio?`;
+  if(!window.confirm(pergunta)) return;
+  await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify(payload)});
+  await fetchAdventureCards(false);
+  trCloseWideOverlay();
+  updateVisualNavActive('Mapa');
+}
+async function trRevokeAdventureCard(cardId){
+  const source=(allAdventureCards||[]);
+  const c=source.find(x=>Number(x.id)===Number(cardId));
+  const title=c?.title||'carta';
+  const destino=c?.target_scope==='all'?'todos':(c?.target_scope==='game'?'jogo/mesa':(c?.target_scope==='staff'?'Mestre/Ajudante':(c?.recipient_username||'jogadora')));
+  if(!window.confirm(`Retirar esta carta?\n\nCarta: ${title}\nDestino atual: ${destino}\n\nEla deixará de aparecer para a jogadora/destinatário. A ação ficará registrada no histórico da Mestre.\n\nConfirmar retirada?`)) return;
+  await api(`/rooms/${currentRoom}/cards/${cardId}/revoke`,{method:'POST'});
+  await fetchAdventureCards(false);
+  trOpenWideCards();
+}
+function trWideStaffCharacterCards(){
+  const players=trWidePlayersWithCharacters();
+  if(!selectedCardsPlayerId || !players.some(p=>p.id===selectedCardsPlayerId)) selectedCardsPlayerId=players[0]?.id||null;
+  const selected=players.find(p=>p.id===selectedCardsPlayerId);
+  const charId=selected?.character?.id;
+  const cards=charId?catalogCards({category:'character',character_id:charId}):[];
+  const opts=players.map(p=>`<option value="${p.id}" ${p.id===selectedCardsPlayerId?'selected':''}>${esc(p.username)} · ${esc(p.character?.name||'')}</option>`).join('');
+  const controls=`<div class="wideControlGrid"><div class="wideControlCard"><label>Jogadora / personagem</label><select onchange="trSetWidePlayer(this.value)">${opts||'<option>Sem personagens escolhidos</option>'}</select><p style="color:var(--muted);font-size:13px">Escolha uma personagem para ver somente as cartas dela. Ao enviar, a carta vai para a jogadora dona desse personagem.</p></div></div>`;
+  const grid=cards.length?cards.map(c=>trWideCardHTML(c,`<button class="btn small" onclick="trSendCatalogCard('${esc(c.id)}','one',${Number(selected?.user_id||0)})">Enviar para ${esc(selected?.username||'jogadora')}</button>`)).join(''):`<div class="wideEmpty">Escolha uma jogadora que já tenha personagem.</div>`;
+  return controls+`<div class="wideCardsGrid">${grid}</div>`;
+}
+function trWideStaffGameCards(){
+  const mapId=state?.map?.id||'floresta_negra';
+  let cards=catalogCards({category:'map',map_id:mapId});
+  if(!cards.length && mapId!=='floresta_negra') cards=catalogCards({category:'map',map_id:'floresta_negra'});
+  const types=['all','pista','susto','item','evento','perigo','missao','especial'];
+  const filtered=gameCardsTypeFilter==='all'?cards:cards.filter(c=>c.type===gameCardsTypeFilter);
+  const players=(state?.players||[]).filter(p=>p.role==='participante');
+  if(!selectedGameTargetUserId && players[0]) selectedGameTargetUserId=players[0].user_id;
+  const targetUser=selectedGameTargetMode==='one'?`<div class="wideControlCard"><label>Jogadora</label><select onchange="trSetWideTargetUser(this.value)">${players.map(p=>`<option value="${p.user_id}" ${p.user_id===selectedGameTargetUserId?'selected':''}>${esc(p.username)}${p.character?.name?` · ${esc(p.character.name)}`:''}</option>`).join('')}</select></div>`:'';
+  const controls=`<div class="wideControlGrid"><div class="wideControlCard"><label>Tipo de carta</label><div class="wideFilterRow">${types.map(t=>`<button class="chipBtn ${gameCardsTypeFilter===t?'on':''}" onclick="trSetWideType('${t}')">${esc(t==='all'?'Todos':cardTypeLabelV196(t))}</button>`).join('')}</div></div><div class="wideControlCard"><label>Destino</label><div class="wideFilterRow"><button class="chipBtn ${selectedGameTargetMode==='all'?'on':''}" onclick="trSetWideTarget('all')">Todos</button><button class="chipBtn ${selectedGameTargetMode==='one'?'on':''}" onclick="trSetWideTarget('one')">Uma jogadora</button><button class="chipBtn ${selectedGameTargetMode==='game'?'on':''}" onclick="trSetWideTarget('game')">Jogo / mesa</button><button class="chipBtn ${selectedGameTargetMode==='staff'?'on':''}" onclick="trSetWideTarget('staff')">Mestre/Ajudante</button></div></div>${targetUser}</div>`;
+  const grid=filtered.length?filtered.map(c=>trWideCardHTML(c,`<button class="btn small" onclick="trSendCatalogCard('${esc(c.id)}','${selectedGameTargetMode}',${Number(selectedGameTargetUserId||0)})">Enviar carta</button>`)).join(''):`<div class="wideEmpty">Nenhuma carta deste tipo no mapa atual.</div>`;
+  return controls+`<div class="wideCardsGrid">${grid}</div>`;
+}
+function trWideUsedCards(category){
+  const revoked=(allAdventureCards||[]).filter(c=>c.revoked_at && receivedCardCategoryV196(c)===category);
+  const used=(allAdventureCards||[]).filter(c=>!c.revoked_at && c.used_at && receivedCardCategoryV196(c)===category);
+  const active=(allAdventureCards||[]).filter(c=>!c.revoked_at && !c.used_at && receivedCardCategoryV196(c)===category);
+  return `<h3 class="title">Ativas / enviadas</h3><div class="wideCardsGrid compact">${active.length?active.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button><button class="btn small" onclick="markAdventureCardUsed(${c.id})">Marcar usada</button><button class="btn small danger" onclick="trRevokeAdventureCard(${c.id})">Retirar carta</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta ativa nesta categoria.</div>'}</div><h3 class="title" style="margin-top:20px">Já usadas</h3><div class="wideCardsGrid compact">${used.length?used.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Rever</button><button class="btn small danger" onclick="trRevokeAdventureCard(${c.id})">Retirar carta</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta usada ainda.</div>'}</div><h3 class="title" style="margin-top:20px">Retiradas / canceladas</h3><div class="wideCardsGrid compact">${revoked.length?revoked.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Rever histórico</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta retirada nesta categoria.</div>'}</div>`;
+}
+function trWidePlayerCards(category){
+  const cards=(myAdventureCards||[]).filter(c=>!c.revoked_at && !c.used_at && receivedCardCategoryV196(c)===category);
+  return `<div class="wideCardsGrid">${cards.length?cards.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Olhar</button><button class="btn small" onclick="markAdventureCardUsed(${c.id})">Usar</button>${c.saved_at?'':'<button class="btn small ghost" onclick="saveAdventureCard('+c.id+')">Guardar</button>'}`)).join(''):'<div class="wideEmpty">Nenhuma carta recebida nesta aba.</div>'}</div>`;
+}
+function trWidePlayerUsedCards(){
+  const cards=(myAdventureCards||[]).filter(c=>!c.revoked_at && c.used_at);
+  return `<div class="wideCardsGrid compact">${cards.length?cards.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Rever</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta usada ainda.</div>'}</div>`;
+}
+async function trOpenWideCards(){
+  await loadCardCatalog();
+  await fetchAdventureCards(false);
+  const staff=canOperateAsStaff();
+  const tabs=staff?[
+    ['personagem','Cartas de Personagem'],['jogo','Cartas de Jogo'],['usadas_personagem','Usadas: Personagem'],['usadas_jogo','Usadas: Jogo']
+  ]:[['personagem','Personagem'],['jogo','Jogo'],['usadas','Usadas']];
+  if(!tabs.some(t=>t[0]===cardsPanelTab)) cardsPanelTab=tabs[0][0];
+  let body='';
+  if(staff){
+    if(cardsPanelTab==='personagem') body=trWideStaffCharacterCards();
+    else if(cardsPanelTab==='jogo') body=trWideStaffGameCards();
+    else if(cardsPanelTab==='usadas_personagem') body=trWideUsedCards('character');
+    else body=trWideUsedCards('map');
+  }else{
+    if(cardsPanelTab==='personagem') body=trWidePlayerCards('character');
+    else if(cardsPanelTab==='jogo') body=trWidePlayerCards('map');
+    else body=trWidePlayerUsedCards();
+  }
+  const tabBar=`<div class="wideTabs">${tabs.map(([k,l])=>`<button class="${cardsPanelTab===k?'on':''}" onclick="trSetWideTab('${k}')">${esc(l)}</button>`).join('')}</div>`;
+  trWideOverlayShell(staff?'Central de Cartas':'Minhas Cartas', staff?'Escolha em tela ampla, confira o efeito e confirme antes de enviar. Retire cartas enviadas por engano no histórico.':'Veja suas cartas recebidas, amplie, guarde e use.', tabBar+body);
+  updateVisualNavActive('Cartas');
+}
+function trOpenWideLibrary(kind='Biblioteca'){
+  loadCardCatalog().then(()=>{
+    const mapCards=catalogCards({category:'map',map_id:'floresta_negra'});
+    const charCards=catalogCards({category:'character'});
+    const mapGrid=mapCards.map(c=>trWideCardHTML(c,`<button class="btn small" onclick="cardsPanelTab='jogo'; selectedGameTargetMode='game'; trSendCatalogCard('${esc(c.id)}','game',null)">Enviar para o jogo</button><button class="btn small ghost" onclick="cardsPanelTab='jogo'; trOpenWideCards()">Abrir em Cartas</button>`)).join('');
+    const charGrid=charCards.map(c=>trWideCardHTML(c,`<button class="btn small ghost" onclick="cardsPanelTab='personagem'; trOpenWideCards()">Escolher destinatário</button>`)).join('');
+    trWideOverlayShell(kind==='Eventos'?'Eventos e Cartas do Mapa':'Biblioteca Visual da Mestre', 'Cartas e eventos aparecem grandes sobre o mapa para escolha segura. Feche para retornar ao mapa.', `<h3 class="title">Cartas de jogo / Floresta Negra</h3><div class="wideCardsGrid">${mapGrid}</div><h3 class="title" style="margin-top:24px">Cartas de personagem</h3><div class="wideCardsGrid">${charGrid}</div>`);
+    updateVisualNavActive(kind);
+  });
+}
+// Sobrescreve renderização lateral para corrigir imagem com acentos quando ainda usada.
+function renderCatalogVisualCardV196(c, actions=''){
+  const img=c.image_path?`<img class="cardShelfImg" src="${esc(trAssetSrcV1962(c.image_path))}" alt="${esc(c.title)}" onerror="this.outerHTML='<div class=&quot;cardShelfPlaceholder&quot;>✦</div>'">`:`<div class="cardShelfPlaceholder">✦</div>`;
+  return `<div class="cardShelfItem rarity-${esc(c.rarity||'common')}">${img}<div class="cardShelfBody"><div class="cardShelfMeta">${esc(cardTypeLabelV196(c.type))} · ${esc(c.rarity||'comum')}</div><b>${esc(c.title)}</b><p>${esc(c.short_text||c.effect_text||'')}</p>${actions}</div></div>`;
+}
+function renderReceivedVisualCardV196(c, actions=''){
+  const meta=cardKindMeta(c.kind);
+  const cat=catalogByIdV196(c.catalog_id||'');
+  const imgPath=c.image_path||cat?.image_path||'';
+  const img=imgPath?`<img class="cardShelfImg" src="${esc(trAssetSrcV1962(imgPath))}" alt="${esc(c.title)}" onerror="this.outerHTML='<div class=&quot;cardShelfPlaceholder&quot;>${meta.icon}</div>'">`:`<div class="cardShelfPlaceholder">${meta.icon}</div>`;
+  const status=c.revoked_at?'retirada':(c.used_at?'usada':cardStatusText(c));
+  return `<div class="cardShelfItem ${meta.theme} ${c.revoked_at?'revoked':''}">${img}<div class="cardShelfBody"><div class="cardShelfMeta">${meta.icon} ${esc(meta.label)} · ${esc(c.origin||'')}</div><b>${esc(c.title)}</b><p>${esc((c.text||'').slice(0,120))}${(c.text||'').length>120?'…':''}</p><span class="cardStatus ${status}">${status}</span>${actions}</div></div>`;
+}
+// Abre ferramentas grandes sobre o mapa, em vez de prendê-las na lateral.
+function openMesaTool(label){
+  const n=normalizeLabelV196(label);
+  if(label==='Narrar' || n==='narrar'){
+    if(!hasNarrationPermission()){ alert('A narração oficial é exclusiva da Mestre.'); return; }
+    requestAIAndShow('narrative'); openPanelByLabel('IA'); return;
+  }
+  if(n==='mapa') return openVisualMap();
+  if(n==='cartas') return trOpenWideCards();
+  if(canOperateAsStaff() && (n==='eventos' || n==='biblioteca')) return trOpenWideLibrary(n==='eventos'?'Eventos':'Biblioteca');
+  trCloseWideOverlay();
+  openPanelByLabel(label);
+}
+Object.assign(window,{trOpenWideCards,trCloseWideOverlay,trSetWideTab,trSetWidePlayer,trSetWideType,trSetWideTarget,trSetWideTargetUser,trSendCatalogCard,trRevokeAdventureCard,trOpenWideLibrary,openMesaTool});
+
+
+/* ===== v19.6.11 — Hotfix botões da mesa, IA com subseções e painéis sem tela vazia ===== */
+function trPanelTitleV1964(label){
+  const n=normalizeLabelV196(label);
+  return ({mapa:'Mapa',chat:'Chat',cartas:'Cartas',inventario:'Inventário',diario:'Diário',missoes:'Missões',jogadoras:'Jogadoras',personagem:'Personagem',jornada:'Jornada',central:'Central da Mestre',eventos:'Eventos',biblioteca:'Biblioteca',bastidores:'Bastidores',ia:'IA',configuracoes:'Configurações'})[n] || label || 'Painel';
+}
+function trEnsureAISubsectionsV1964(){
+  const box=qs('localAIBox'); if(!box) return null;
+  box.classList.remove('hidden');
+  if(!box.querySelector('.aiTabs') || !qs('aiPaneAsk') || !qs('aiPaneFunctions') || !qs('aiPaneResponses') || !qs('aiPaneConfig')){
+    box.innerHTML=`<h3 class="title">IA Local · Zero API</h3><p style="color:var(--muted);font-size:14px;line-height:1.35">Use a IA como bastidor da Mestre/Ajudante. A narração oficial continua exclusiva da Mestre.</p><div class="aiTabs"><button id="aiTabAsk" class="on" onclick="showAIInnerTab('ask')">Perguntar</button><button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções</button><button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button><button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button></div><div id="aiPaneAsk" class="aiPane on"><label>Pergunta / ação livre</label><textarea id="aiAction" placeholder="Ex.: crie uma pista, sugira uma consequência ou prepare uma fala para a Mestre."></textarea><div class="row" style="margin-top:8px"><button class="btn small" onclick="requestAIAndShow('${hasNarrationPermission()?'narrative':'question'}')">${hasNarrationPermission()?'Narrar cena':'Preparar sugestão'}</button><button class="btn small ghost" onclick="requestAIAndShow('question')">Perguntar</button></div><div class="aiHelp">Ajudante pode preparar textos e ideias. Só a Mestre publica/narra oficialmente.</div></div><div id="aiPaneFunctions" class="aiPane"><div class="masterFunctionBox"><label>Escolha uma função</label><select id="masterFunction"><option value="opening">Início da sessão</option><option value="tension">Cena de tensão</option><option value="discovery">Cena de descoberta</option><option value="clue">Criar pista</option><option value="scare">Criar susto leve</option><option value="consequence">Criar consequência</option><option value="npc">Fala de NPC</option><option value="catchup">Resumo para quem chegou atrasada</option><option value="ending">Encerrar sessão com gancho</option><option value="improvise">Improvisar fuga do plano</option><option value="riddle">Criar enigma simples</option><option value="reward">Criar recompensa</option></select><label>Detalhe opcional</label><textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Cabana Vazia e ainda não sabem que a floresta está viva."></textarea><button class="btn small" style="margin-top:8px;width:100%" onclick="generateMasterFunction()">Gerar função</button></div></div><div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div><div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short" selected>Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelp">Modo rápida usa prompt menor e limita a resposta para acelerar no computador local.</div><div class="row" style="margin-top:8px"><button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir</button><button class="btn small ghost" onclick="requestAIAndShow('image_prompt')">Prompt de imagem</button></div></div></div>`;
+  }
+  showAIInnerTab(aiInnerTab||'ask');
+  return box;
+}
+function showAIInnerTab(tab){
+  aiInnerTab=tab||'ask';
+  trEnsureAISubsectionsV1964();
+  ['ask','functions','responses','config'].forEach(t=>{
+    qs('aiTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('on',t===aiInnerTab);
+    qs('aiPane'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('on',t===aiInnerTab);
+  });
+}
+function trEnsureToolPanelV1964(label){
+  const side=qs('side'); if(!side) return null;
+  const n=normalizeLabelV196(label);
+  const id='toolPanel_'+n.replace(/[^a-z0-9]+/g,'_');
+  let sec=qs(id);
+  if(!sec){
+    sec=document.createElement('div'); sec.id=id; sec.className='sideSection tabPane'; sec.dataset.navLabel=trPanelTitleV1964(label);
+    sec.innerHTML=`<h3 class="title">${esc(trPanelTitleV1964(label))}</h3><div class="toolEmptyBox">Esta seção ainda não tinha painel próprio. Ela foi criada para que o botão não fique sem resposta. Use a barra inferior para alternar de volta ao mapa ou às cartas.</div>`;
+    side.appendChild(sec);
+  }
+  return sec;
+}
+function trRefreshCharacterPreviewV1964(){
+  const sec=[...document.querySelectorAll('.sideSection')].find(s=>sectionMatchesV196('Personagem',s));
+  if(!sec) return;
+  let wrap=sec.querySelector('#characterPreviewMini');
+  if(!wrap){ wrap=document.createElement('div'); wrap.id='characterPreviewMini'; wrap.className='characterPreviewMini'; sec.insertBefore(wrap, sec.querySelector('select')||sec.children[1]||null); }
+  const mine=myRoomPlayer(); const ch=mine?.character || (charsCache||[]).find(c=>c.id===qs('charSelect')?.value);
+  if(ch?.card_url){ wrap.innerHTML=`<img src="${esc(ch.card_url)}?v=19.6.11.14" alt="${esc(ch.name)}"><div><b>${esc(ch.name)}</b><span>${esc(ch.role||'Personagem')}<br>${esc(ch.zone||ch.description||'Totem da aventura')}</span></div>`; }
+  else { wrap.innerHTML=`<div style="width:76px;height:100px;border-radius:12px;border:1px solid rgba(241,207,120,.25);display:flex;align-items:center;justify-content:center;color:#f1cf78">✦</div><div><b>Escolha um personagem</b><span>Depois da escolha, a imagem real aparecerá aqui.</span></div>`; }
+}
+function openPanelTab(i){
+  activePanelIndex=i;
+  const side=qs('side'); if(!side)return;
+  const panes=[...side.querySelectorAll('.tabPane')];
+  panes.forEach((p,k)=>p.classList.toggle('on',k===i));
+  const active=panes[i];
+  if(active){
+    if(active.id==='localAIBox') trEnsureAISubsectionsV1964();
+    if(sectionMatchesV196('Personagem',active)) trRefreshCharacterPreviewV1964();
+    const label=active.dataset.navLabel||sectionLabelForV196(active);
+    const normalized=normalizeLabelV196(label);
+    const showVisualCard = normalized==='mapa' || normalized==='personagem';
+    side.classList.toggle('showVisualCard', showVisualCard);
+    side.classList.remove('closed');
+    document.querySelector('.game')?.classList.remove('panelClosed');
+    if(!showVisualCard) side.scrollTop=0;
+    updateVisualNavActive(label);
+  }
+}
+function openPanelByLabel(label){
+  const side=qs('side'); if(!side)return;
+  const n=normalizeLabelV196(label);
+  if(n==='ia') trEnsureAISubsectionsV1964();
+  if(n==='personagem') trRefreshCharacterPreviewV1964();
+  let panes=[...side.querySelectorAll('.tabPane')];
+  let idx=panes.findIndex(p=>sectionMatchesV196(label,p));
+  if(idx<0 && n==='diario') idx=panes.findIndex(p=>sectionMatchesV196('Anotações da Mesa',p));
+  if(idx<0){
+    const sec=trEnsureToolPanelV1964(label);
+    initPanelTabs();
+    panes=[...side.querySelectorAll('.tabPane')];
+    idx=panes.indexOf(sec);
+  }
+  if(idx>=0){
+    const pane=panes[idx];
+    if(canOperateAsStaff() || !['central','eventos','biblioteca','bastidores','ia'].includes(n)) pane.classList.remove('hidden');
+    openPanelTab(idx);
+  }else{
+    alert('Não consegui abrir a seção: '+label);
+  }
+}
+function openMesaTool(label){
+  const n=normalizeLabelV196(label);
+  if(n==='narrar'){
+    if(!hasNarrationPermission()){ alert('A narração oficial é exclusiva da Mestre.'); return; }
+    trCloseWideOverlay();
+    openPanelByLabel('IA');
+    showAIInnerTab('ask');
+    requestAIAndShow('narrative');
+    return;
+  }
+  if(n==='mapa') return openVisualMap();
+  if(n==='cartas') return trOpenWideCards();
+  if(canOperateAsStaff() && (n==='eventos' || n==='biblioteca')) return trOpenWideLibrary(n==='eventos'?'Eventos':'Biblioteca');
+  trCloseWideOverlay();
+  if(n==='ia'){ openPanelByLabel('IA'); showAIInnerTab('ask'); return; }
+  openPanelByLabel(label);
+}
+function openVisualMap(){
+  trCloseWideOverlay();
+  updateVisualNavActive('Mapa');
+  const side=qs('side'); const game=document.querySelector('.game');
+  if(side && window.innerWidth<1100){ side.classList.add('closed'); game?.classList.add('panelClosed'); }
+}
+function ensureVisualForestUI(){
+  const mapArea=qs('mapArea'); if(!mapArea)return;
+  mapArea.classList.add('visualForestV19','visualForestPremium','dynamicMesaV196');
+  if(!qs('visualHint')){
+    const hint=document.createElement('div'); hint.id='visualHint'; hint.className='visualHint collapsed';
+    hint.innerHTML=`<button class="visualHintTab" onclick="toggleVisualHint()" title="Ajuda do mapa">?</button><div class="visualHintBody"><button class="visualHintClose" onclick="toggleVisualHint(false)" title="Fechar">×</button><b>Floresta Negra</b><br>Mapa no centro. Use os botões abaixo para abrir uma ferramenta por vez.</div>`;
+    mapArea.appendChild(hint);
+  }
+  let nav=qs('visualQuickNav');
+  if(!nav){ nav=document.createElement('div'); nav.id='visualQuickNav'; nav.className='visualQuickNav mesaBottomNav'; mapArea.appendChild(nav); }
+  nav.innerHTML=dynamicNavItemsV196().map(([label,icon,key])=>`<button data-nav="${key}" onclick="openMesaTool('${esc(label)}')">${icon} ${esc(label)}</button>`).join('');
+  updateVisualNavActive('Mapa');
+}
+Object.assign(window,{openMesaTool,openPanelByLabel,openPanelTab,showAIInnerTab,trEnsureAISubsectionsV1964,trRefreshCharacterPreviewV1964});
+
+/* ===== v19.6.5 — Estabilização de navegação, painéis amplos e IA sem recursão ===== */
+function trApplyAIInnerTabV1965(tab){
+  aiInnerTab=tab||'ask';
+  ['ask','functions','responses','config'].forEach(t=>{
+    const suffix=t.charAt(0).toUpperCase()+t.slice(1);
+    qs('aiTab'+suffix)?.classList.toggle('on',t===aiInnerTab);
+    qs('aiPane'+suffix)?.classList.toggle('on',t===aiInnerTab);
+  });
+}
+function trEnsureAISubsectionsV1965(){
+  const box=qs('localAIBox'); if(!box) return null;
+  box.classList.remove('hidden');
+  const official=hasNarrationPermission();
+  if(!box.querySelector('.aiTabs') || !qs('aiPaneAsk') || !qs('aiPaneFunctions') || !qs('aiPaneResponses') || !qs('aiPaneConfig')){
+    box.innerHTML=`<h3 class="title">IA Local · Zero API</h3><p style="color:var(--muted);font-size:14px;line-height:1.35">Use a IA como bastidor da Mestre/Ajudante. A narração oficial continua exclusiva da Mestre.</p><div class="aiTabs"><button id="aiTabAsk" class="on" onclick="showAIInnerTab('ask')">Perguntar</button><button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções</button><button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button><button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button></div><div id="aiPaneAsk" class="aiPane on"><label>Pergunta / ação livre</label><textarea id="aiAction" placeholder="Ex.: crie uma pista, sugira uma consequência ou prepare uma fala para a Mestre."></textarea><div class="row" style="margin-top:8px"><button class="btn small" onclick="requestAIAndShow('${official?'narrative':'question'}')">${official?'Narrar cena':'Preparar sugestão'}</button><button class="btn small ghost" onclick="requestAIAndShow('question')">Perguntar</button></div><div class="aiHelp">Ajudante pode preparar textos e ideias. Só a Mestre publica/narra oficialmente.</div></div><div id="aiPaneFunctions" class="aiPane"><div class="masterFunctionBox"><label>Escolha uma função</label><select id="masterFunction"><option value="opening">Início da sessão</option><option value="tension">Cena de tensão</option><option value="discovery">Cena de descoberta</option><option value="clue">Criar pista</option><option value="scare">Criar susto leve</option><option value="consequence">Criar consequência</option><option value="npc">Fala de NPC</option><option value="catchup">Resumo para quem chegou atrasada</option><option value="ending">Encerrar sessão com gancho</option><option value="improvise">Improvisar fuga do plano</option><option value="riddle">Criar enigma simples</option><option value="reward">Criar recompensa</option></select><label>Detalhe opcional</label><textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Cabana Vazia e ainda não sabem que a floresta está viva."></textarea><button class="btn small" style="margin-top:8px;width:100%" onclick="generateMasterFunction()">Gerar função</button><div class="aiHelp">Funções prontas: narrar cena, resumir cena, sugerir consequência, criar descrição curta, ajudar com cartas, eventos, pistas, diário e próximo passo.</div></div></div><div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div><div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short" selected>Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelp">Modo rápida usa prompt menor e limita a resposta para acelerar no computador local.</div><div class="row" style="margin-top:8px"><button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir</button><button class="btn small ghost" onclick="requestAIAndShow('image_prompt')">Prompt de imagem</button></div></div></div>`;
+  }
+  trApplyAIInnerTabV1965(aiInnerTab||'ask');
+  try{ renderWorkerStatus(); renderAIJobs(); }catch(e){}
+  return box;
+}
+function showAIInnerTab(tab){ trEnsureAISubsectionsV1965(); trApplyAIInnerTabV1965(tab||'ask'); }
+function openPanelTab(i){
+  activePanelIndex=i;
+  const side=qs('side'); if(!side)return;
+  const panes=[...side.querySelectorAll('.tabPane')];
+  if(!panes.length) return;
+  panes.forEach((p,k)=>p.classList.toggle('on',k===i));
+  const active=panes[i];
+  if(active){
+    if(active.id==='localAIBox') trEnsureAISubsectionsV1965();
+    if(sectionMatchesV196('Personagem',active)) trRefreshCharacterPreviewV1964();
+    const label=active.dataset.navLabel||sectionLabelForV196(active);
+    const normalized=normalizeLabelV196(label);
+    const showVisualCard = normalized==='mapa' || normalized==='personagem';
+    side.classList.toggle('showVisualCard', showVisualCard);
+    side.classList.remove('closed');
+    document.querySelector('.game')?.classList.remove('panelClosed');
+    if(!showVisualCard) side.scrollTop=0;
+    updateVisualNavActive(label);
+  }
+}
+function openPanelByLabel(label){
+  const side=qs('side'); if(!side)return;
+  const n=normalizeLabelV196(label);
+  if(n==='ia') trEnsureAISubsectionsV1965();
+  if(n==='personagem') trRefreshCharacterPreviewV1964();
+  let panes=[...side.querySelectorAll('.tabPane')];
+  let idx=panes.findIndex(p=>sectionMatchesV196(label,p));
+  if(idx<0 && n==='diario') idx=panes.findIndex(p=>sectionMatchesV196('Anotações da Mesa',p));
+  if(idx<0){
+    const sec=trEnsureToolPanelV1964(label);
+    initPanelTabs();
+    panes=[...side.querySelectorAll('.tabPane')];
+    idx=panes.indexOf(sec);
+  }
+  if(idx>=0){
+    const pane=panes[idx];
+    if(canOperateAsStaff() || !['central','eventos','biblioteca','bastidores','ia'].includes(n)) pane.classList.remove('hidden');
+    openPanelTab(idx);
+  }else{
+    alert('Não consegui abrir a seção: '+label);
+  }
+}
+function trWideOverlayShell(title, subtitle, body, extraClass=''){
+  const mapArea=qs('mapArea'); if(!mapArea) return;
+  document.getElementById('wideToolOverlay')?.remove();
+  const el=document.createElement('div');
+  el.id='wideToolOverlay';
+  el.className=`wideToolOverlay v1965 ${extraClass||''}`.trim();
+  el.innerHTML=`<div class="wideToolHeader"><div><h2>${esc(title)}</h2><p>${esc(subtitle||'')}</p></div><div class="grow"></div><button class="btn small ghost" onclick="trCloseWideOverlay()">Fechar e voltar ao mapa</button></div><div class="wideToolBody">${body||''}</div>`;
+  mapArea.appendChild(el);
+}
+function trWideRevokedCards(){
+  const revoked=(allAdventureCards||[]).filter(c=>c.revoked_at);
+  return `<div class="wideCardsGrid compact">${revoked.length?revoked.map(c=>trWideReceivedCardHTML(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Rever histórico</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta retirada ou cancelada ainda.</div>'}</div>`;
+}
+async function trOpenWideCards(){
+  await loadCardCatalog();
+  await fetchAdventureCards(false);
+  const staff=canOperateAsStaff();
+  const tabs=staff?[
+    ['personagem','Cartas de Personagem'],['jogo','Cartas de Jogo'],['usadas_personagem','Usadas: Personagem'],['usadas_jogo','Usadas: Jogo'],['retiradas','Retiradas/Canceladas']
+  ]:[['personagem','Personagem'],['jogo','Jogo'],['usadas','Usadas']];
+  if(!tabs.some(t=>t[0]===cardsPanelTab)) cardsPanelTab=tabs[0][0];
+  let body='';
+  if(staff){
+    if(cardsPanelTab==='personagem') body=trWideStaffCharacterCards();
+    else if(cardsPanelTab==='jogo') body=trWideStaffGameCards();
+    else if(cardsPanelTab==='usadas_personagem') body=trWideUsedCards('character');
+    else if(cardsPanelTab==='usadas_jogo') body=trWideUsedCards('map');
+    else body=trWideRevokedCards();
+  }else{
+    if(cardsPanelTab==='personagem') body=trWidePlayerCards('character');
+    else if(cardsPanelTab==='jogo') body=trWidePlayerCards('map');
+    else body=trWidePlayerUsedCards();
+  }
+  const tabBar=`<div class="wideTabs">${tabs.map(([k,l])=>`<button class="${cardsPanelTab===k?'on':''}" onclick="trSetWideTab('${k}')">${esc(l)}</button>`).join('')}</div>`;
+  trWideOverlayShell(staff?'Central de Cartas':'Minhas Cartas', staff?'Escolha em tela ampla, confira o efeito e confirme antes de enviar. Retire cartas enviadas por engano no histórico.':'Veja suas cartas recebidas, amplie, guarde e use.', tabBar+body, 'wideCardsOverlay');
+  updateVisualNavActive('Cartas');
+}
+function trWideEventPresetV1965(kind){
+  const meta=masterEventMeta(kind);
+  const mapName=state?.map?.name||'Terras Raras';
+  const selected=selectedNode?` no local ${selectedNode.name}`:'';
+  const presets={
+    susto:['Um sinal inesperado','Um som pequeno, leve e misterioso atravessa a cena. Nada é pesado demais, mas todas percebem que algo mudou.','Som baixo, luz tremendo e um detalhe brilhando no canto da visão.','Investigar o sinal, seguir juntas ou perguntar ao cenário o que ele quer mostrar.'],
+    descoberta:['Uma pista aparece','Um detalhe antes comum revela uma informação útil para o próximo passo da aventura.','Brilho dourado, marcas discretas e sensação de segredo revelado.','Olhar mais perto, guardar a pista ou dividir a descoberta com o grupo.'],
+    consequencia:['A escolha ecoa','A decisão anterior provoca uma resposta do mapa. O caminho não fecha, mas fica diferente.','Movimento lento, vento mudando e um som antigo respondendo.','Aceitar a consequência, contornar com criatividade ou pedir ajuda a uma personagem.'],
+    ambiente:['O ambiente se transforma','A luz, o cheiro e os sons mudam juntos, como se o mapa respirasse por um instante.','Mudança de cor, ar mais denso e silêncio atento.','Parar para observar, conversar com o local ou seguir em frente.'],
+    npc:['Uma presença observa','Uma presença surge no limite da cena. Ela não ataca; espera uma reação ou uma pergunta.','Passos leves, sombra curta e voz distante.','Chamar a presença, observar de longe ou oferecer ajuda.'],
+    portal:['O portal reage','O portal vibra por um segundo, como se reconhecesse uma verdade importante.','Luz dourada, calor leve e som de arco mágico.','Descobrir o que falta, reunir pistas ou tentar abrir com cuidado.'],
+    item:['Um objeto chama atenção','Um objeto próximo brilha e parece ter sido deixado ali para o grupo encontrar.','Reflexo dourado, textura estranha e pequeno som mágico.','Pegar, examinar, deixar no lugar ou perguntar quem o deixou.'],
+    perigo:['Perigo se aproxima','Algo se aproxima sem pressa. Não é hora de pânico, mas é hora de escolher com atenção.','Passos distantes, sombra longa e cheiro mais forte.','Correr, conversar, esconder-se ou criar um plano em grupo.'],
+    escolha:['Momento de escolha','A cena fica quieta. O jogo parece esperar uma decisão sincera do grupo.','Silêncio, olhar das personagens e sensação de caminho dividido.','Escolher juntas qual caminho seguir e por quê.'],
+    livre:['Evento livre','A Mestre pode adaptar este evento ao ritmo da mesa atual.','Detalhe visual, som curto e sensação de aventura.','Escolher uma ação clara para continuar.']
+  };
+  const p=presets[kind]||presets.livre;
+  if(qs('wideEventKind')) qs('wideEventKind').value=kind;
+  if(qs('wideEventTitle')) qs('wideEventTitle').value=p[0];
+  if(qs('wideEventText')) qs('wideEventText').value=`${p[1]}\n\nMapa: ${mapName}${selected}.`;
+  if(qs('wideEventSensory')) qs('wideEventSensory').value=p[2];
+  if(qs('wideEventChoice')) qs('wideEventChoice').value=p[3];
+  return meta;
+}
+async function trWideSendMasterEventV1965(visibility='public'){
+  const kind=qs('wideEventKind')?.value||'livre';
+  const title=(qs('wideEventTitle')?.value||'').trim();
+  const text=(qs('wideEventText')?.value||'').trim();
+  const sensory=(qs('wideEventSensory')?.value||'').trim();
+  const choice=(qs('wideEventChoice')?.value||'').trim();
+  if(!title||!text){ alert('Preencha o título e o que aconteceu.'); return; }
+  await api(`/rooms/${currentRoom}/master-events`,{method:'POST',body:JSON.stringify({kind,title,text,sensory,choice,visibility})});
+  await fetchMasterEvents(false);
+  alert(visibility==='public'?'Evento mostrado para as jogadoras.':'Evento salvo só para Mestre/Ajudante.');
+  trOpenWideEventsV1965();
+}
+function trWideEventToCardV1965(){
+  const title=(qs('wideEventTitle')?.value||'Evento revelado').trim()||'Evento revelado';
+  const text=(qs('wideEventText')?.value||'').trim();
+  const sensory=(qs('wideEventSensory')?.value||'').trim();
+  const choice=(qs('wideEventChoice')?.value||'').trim();
+  cardsPanelTab='jogo';
+  selectedGameTargetMode='game';
+  trOpenWideCards();
+  setTimeout(()=>alert('O evento foi preparado como referência. Use uma carta de jogo compatível ou envie para Jogo/Mesa após conferir.'),120);
+  if(qs('cardTitle')) qs('cardTitle').value=title;
+  if(qs('cardText')) qs('cardText').value=[text,sensory?`Como vocês percebem: ${sensory}`:'',choice?`Escolha aberta: ${choice}`:''].filter(Boolean).join('\n\n');
+}
+function trWideAskAIForEventV1965(){
+  const kind=qs('wideEventKind')?.value||'livre';
+  const title=(qs('wideEventTitle')?.value||'').trim();
+  const text=(qs('wideEventText')?.value||'').trim();
+  trCloseWideOverlay();
+  openPanelByLabel('IA');
+  showAIInnerTab('ask');
+  if(qs('aiAction')) qs('aiAction').value=`Crie um evento curto, seguro e cinematográfico para a Mestre usar agora no mapa ${state?.map?.name||'Terras Raras'}. Tipo: ${kind}. Ideia inicial: ${title} ${text}. Traga: título, o que aconteceu, como as jogadoras percebem e qual escolha isso abre.`;
+  requestAIAndShow('question');
+}
+async function trOpenWideEventsV1965(){
+  if(!canOperateAsStaff()) return openPanelByLabel('Eventos');
+  await fetchMasterEvents(false);
+  const kinds=['susto','descoberta','consequencia','ambiente','npc','portal','item','perigo','escolha'];
+  const quick=kinds.map(k=>{const m=masterEventMeta(k);return `<button class="btn small ghost" onclick="trWideEventPresetV1965('${k}')"><span>${m.icon}</span> ${esc(m.label)}</button>`;}).join('');
+  const recent=(masterEventsCache||[]).slice(0,10).map(e=>{const m=masterEventMeta(e.kind);return `<div class="wideEventRecentCard"><span>${m.icon} ${esc(m.label)} · ${e.visibility==='private'?'só bastidores':'público'}</span><b>${esc(e.title)}</b><p>${esc((e.text||'').slice(0,160))}${(e.text||'').length>160?'…':''}</p></div>`;}).join('') || '<div class="wideEmpty">Nenhum evento criado ainda.</div>';
+  const body=`<div class="wideEventComposer"><div class="wideEventColumn"><span class="wideStatusPill">Eventos rápidos</span><p style="color:var(--muted);line-height:1.45">Escolha um modelo, ajuste o texto e envie para as jogadoras ou salve apenas nos bastidores.</p><div class="wideEventQuickGrid">${quick}</div></div><div class="wideEventColumn"><label>Tipo do evento</label><select id="wideEventKind"><option value="susto">Susto leve</option><option value="descoberta">Descoberta</option><option value="consequencia">Consequência</option><option value="ambiente">Mudança de ambiente</option><option value="npc">NPC aparece</option><option value="portal">Portal reage</option><option value="item">Objeto brilha</option><option value="perigo">Perigo se aproxima</option><option value="escolha">Momento de escolha</option><option value="livre">Livre</option></select><label>Título do evento</label><input id="wideEventTitle" placeholder="Ex.: O cheiro de açúcar queimado aumentou"><label>O que aconteceu?</label><textarea id="wideEventText" placeholder="Descreva o acontecimento principal em poucas frases."></textarea><label>Como as jogadoras percebem?</label><textarea id="wideEventSensory" placeholder="Som, cheiro, luz, movimento, sensação..."></textarea><label>Qual escolha isso abre?</label><textarea id="wideEventChoice" placeholder="Ex.: investigar, seguir em frente, conversar, recuar..."></textarea><div class="wideEventActions"><button class="btn small" onclick="trWideSendMasterEventV1965('public')">Mostrar para jogadoras</button><button class="btn small ghost" onclick="trWideSendMasterEventV1965('private')">Salvar só bastidores</button><button class="btn small ghost" onclick="trWideEventToCardV1965()">Transformar em carta</button><button class="btn small ghost" onclick="trWideAskAIForEventV1965()">Pedir ajuda da IA</button></div></div></div><h3 class="title">Últimos eventos</h3><div class="wideEventRecent">${recent}</div>`;
+  trWideOverlayShell('Eventos da Mestre','Painel amplo sobre o mapa: criar, revisar e enviar eventos sem perder o foco visual.',body,'wideEventsOverlay');
+  updateVisualNavActive('Eventos');
+}
+function trOpenWideLibrary(kind='Biblioteca'){
+  if(!canOperateAsStaff()) return openPanelByLabel('Biblioteca');
+  loadCardCatalog().then(()=>{
+    const mapId=state?.map?.id||'floresta_negra';
+    let mapCards=catalogCards({category:'map',map_id:mapId});
+    if(!mapCards.length) mapCards=catalogCards({category:'map',map_id:'floresta_negra'});
+    const charCards=catalogCards({category:'character'});
+    const mapGrid=mapCards.map(c=>trWideCardHTML(c,`<button class="btn small" onclick="cardsPanelTab='jogo'; selectedGameTargetMode='game'; trSendCatalogCard('${esc(c.id)}','game',null)">Enviar para o jogo</button><button class="btn small ghost" onclick="cardsPanelTab='jogo'; trOpenWideCards()">Abrir em Cartas</button>`)).join('');
+    const charGrid=charCards.map(c=>trWideCardHTML(c,`<button class="btn small ghost" onclick="cardsPanelTab='personagem'; trOpenWideCards()">Escolher destinatário</button>`)).join('');
+    const top=`<div class="wideLibraryTop"><div class="wideLibraryBox"><h3 class="title">Biblioteca da Mestre</h3><p style="color:var(--muted);line-height:1.5">Material visual grande para escolher cartas, eventos e pistas com segurança. A biblioteca não substitui o mapa: ela abre por cima e fecha de volta para a mesa.</p><button class="btn small" onclick="trOpenWideEventsV1965()">Criar evento amplo</button><button class="btn small ghost" style="margin-left:8px" onclick="cardsPanelTab='jogo';trOpenWideCards()">Abrir Cartas</button></div><div class="wideLibraryBox"><h3 class="title">Mapa atual</h3><p style="color:var(--muted)">${esc(state?.map?.name||'Floresta Negra')}</p><span class="wideStatusPill">${mapCards.length} cartas de jogo</span> <span class="wideStatusPill">${charCards.length} cartas de personagem</span></div></div>`;
+    trWideOverlayShell('Biblioteca Visual da Mestre','Cartas e recursos aparecem grandes, legíveis e sem poluir a lateral.',`${top}<h3 class="title">Cartas de jogo / mapa</h3><div class="wideCardsGrid">${mapGrid||'<div class="wideEmpty">Nenhuma carta de mapa encontrada.</div>'}</div><h3 class="title" style="margin-top:24px">Cartas de personagem</h3><div class="wideCardsGrid">${charGrid||'<div class="wideEmpty">Nenhuma carta de personagem encontrada.</div>'}</div>`,'wideLibraryOverlay');
+    updateVisualNavActive(kind);
+  });
+}
+function openMesaTool(label){
+  const n=normalizeLabelV196(label);
+  if(n==='narrar'){
+    if(!hasNarrationPermission()){ alert('A narração oficial é exclusiva da Mestre.'); return; }
+    trCloseWideOverlay();
+    openPanelByLabel('IA');
+    showAIInnerTab('ask');
+    requestAIAndShow('narrative');
+    return;
+  }
+  if(n==='mapa') return openVisualMap();
+  if(n==='cartas') return trOpenWideCards();
+  if(n==='eventos') return trOpenWideEventsV1965();
+  if(n==='biblioteca') return trOpenWideLibrary('Biblioteca');
+  trCloseWideOverlay();
+  if(n==='ia'){ openPanelByLabel('IA'); showAIInnerTab('ask'); return; }
+  openPanelByLabel(label);
+}
+Object.assign(window,{trEnsureAISubsectionsV1965,showAIInnerTab,openPanelTab,openPanelByLabel,trWideOverlayShell,trOpenWideCards,trWideRevokedCards,trOpenWideEventsV1965,trWideEventPresetV1965,trWideSendMasterEventV1965,trWideEventToCardV1965,trWideAskAIForEventV1965,trOpenWideLibrary,openMesaTool});
+
+/* ===== v19.6.11 — Recuperação de jogabilidade, painéis e IA operacional ===== */
+const TR_VERSION_V1966 = 'v19.6.11';
+
+function trIsStaffV1966(){ return !!(me?.is_admin || state?.me?.role === 'mestre' || state?.me?.role === 'ajudante'); }
+function trIsMasterV1966(){ return !!(me?.is_admin || state?.me?.role === 'mestre'); }
+function trSafeCardImgV1966(ch){ return ch?.card_url ? `${esc(ch.card_url)}?v=19.6.11` : ''; }
+function trPlayerDisplayV1966(p){ return `${p?.username || 'Jogadora'}${p?.character?.name ? ' · '+p.character.name : ''}`; }
+function trCurrentLocationTextV1966(){
+  const n = selectedNode ? overrideFor(selectedNode) : null;
+  if(!n) return `Mapa atual: ${state?.map?.name || 'Terras Raras'}. Nenhum local selecionado.`;
+  return `Mapa atual: ${state?.map?.name || 'Terras Raras'}. Local selecionado: ${n.name}. Descrição: ${n.desc || ''}. Evento: ${n.event || ''}. Pista: ${n.clue || ''}. Escolhas possíveis: ${n.choices || ''}.`;
+}
+
+async function loadCardCatalog(force=false){
+  if(!force && cardCatalog && Array.isArray(cardCatalog.cards)) return cardCatalog;
+  try{
+    const r = await fetch(`/assets/cards/catalog.json?v=19.6.11&t=${Date.now()}`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    if(!data || !Array.isArray(data.cards)) throw new Error('catalog.json sem lista cards');
+    cardCatalog = data;
+  }catch(e){
+    console.warn('Falha ao carregar catalog.json; usando fallback visual mínimo.', e);
+    const fallback=[];
+    try{
+      (charsCache||[]).forEach(ch=>{
+        fallback.push({id:`${ch.id}_identidade_fallback`, title:ch.name, category:'character', type:'identity', character_id:ch.id, rarity:'common', image_path:ch.card_url||'', short_text:`${ch.role||'Personagem'} · ${ch.zone||''}`, effect_text:ch.ability||ch.description||'Carta de identidade da personagem.', flavor_text:''});
+      });
+      (cardTemplatesForMap(state?.map?.id)||[]).forEach((t,i)=>fallback.push({id:`${state?.map?.id||'mapa'}_${i}_fallback`, title:t.title, category:'map', type:t.kind||'pista', map_id:state?.map?.id||'floresta_negra', rarity:t.rarity||'common', image_path:t.image_path||'', short_text:t.text||'', effect_text:t.text||'', flavor_text:''}));
+    }catch(_e){}
+    cardCatalog = {version:'fallback-v19.6.11', cards:fallback};
+  }
+  return cardCatalog;
+}
+
+function trEnsureAISubsectionsV1966(){
+  let box = qs('localAIBox');
+  if(!box) return null;
+  box.classList.remove('hidden');
+  const oldAction = qs('aiAction')?.value || '';
+  const oldDetail = qs('masterFunctionDetail')?.value || '';
+  const oldMode = qs('aiMode')?.value || 'short';
+  const staff = trIsStaffV1966();
+  const master = trIsMasterV1966();
+  const locationText = selectedNode ? `Local selecionado: ${esc(overrideFor(selectedNode).name)}` : 'Nenhum local selecionado';
+  box.innerHTML = `<h3 class="title">IA Local · Conversa e Ferramentas</h3>
+    <p style="color:var(--muted);font-size:14px;line-height:1.45">Use a IA como conversa livre. Mestre e Ajudante também têm ferramentas de bastidor; narração oficial continua exclusiva da Mestre.</p>
+    <div class="aiTabs">
+      <button id="aiTabAsk" onclick="showAIInnerTab('ask')">Perguntar</button>
+      <button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções</button>
+      <button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button>
+      <button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button>
+    </div>
+    <div id="aiPaneAsk" class="aiPane">
+      <div class="aiFreeBox">
+        <label>Converse com a IA</label>
+        <textarea id="aiAction" placeholder="Digite sua dúvida, pedido de ideia, pedido de narração ou pergunta sobre a cena atual...">${esc(oldAction)}</textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn small" onclick="requestAIAndShow('question')">Enviar para IA</button>
+          ${master?`<button class="btn small ghost" onclick="requestAIAndShow('narrative')">Narrar cena oficial</button>`:''}
+          ${staff?`<button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir cena</button>`:''}
+        </div>
+        <div class="aiHelpText">${locationText}. A IA recebe o contexto da mesa pelo backend; você pode pedir ideias, perguntas, pistas, consequências e organização da cena.</div>
+      </div>
+    </div>
+    <div id="aiPaneFunctions" class="aiPane">
+      <div class="masterFunctionBox">
+        <label>Funções rápidas da IA</label>
+        <div class="aiFunctionGrid">
+          <button class="btn small ghost" onclick="trAIQuickV1966('opening')">Abertura</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('scene')">Narrar cena</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('location')">Narrar local</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('clue')">Criar pista</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('event')">Criar evento</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('consequence')">Consequência</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('card')">Ajudar com carta</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('mission')">Ajudar missão</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('diary')">Organizar diário</button>
+          <button class="btn small ghost" onclick="trAIQuickV1966('next')">Próximo passo</button>
+        </div>
+        <label>Detalhe opcional</label>
+        <textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Ponte Quebrada e ainda não sabem que a floresta está viva.">${esc(oldDetail)}</textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn small" onclick="generateMasterFunction()">Gerar com detalhe</button>
+          <button class="btn small ghost" onclick="showAIInnerTab('ask')">Voltar à conversa</button>
+        </div>
+      </div>
+    </div>
+    <div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div>
+    <div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short">Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelpText">Rápida para jogo ao vivo; detalhada para preparar bastidores. Jogadoras podem perguntar; Mestre publica narração oficial.</div><div class="row" style="margin-top:10px"><button class="btn small ghost" onclick="testLocalWorker()">Testar IA local</button><button class="btn small ghost" onclick="clearPendingAI()">Limpar pendentes</button><button class="btn small ghost" onclick="clearDoneAI()">Limpar concluídos</button></div></div></div>`;
+  if(qs('aiMode')) qs('aiMode').value = oldMode;
+  return box;
+}
+function trApplyAIInnerTabV1966(tab){
+  aiInnerTab = tab || 'ask';
+  ['ask','functions','responses','config'].forEach(t=>{
+    const suffix=t.charAt(0).toUpperCase()+t.slice(1);
+    qs('aiTab'+suffix)?.classList.toggle('on',t===aiInnerTab);
+    qs('aiPane'+suffix)?.classList.toggle('on',t===aiInnerTab);
+  });
+  if(aiInnerTab==='responses') renderAIJobs();
+  if(aiInnerTab==='config') renderWorkerStatus();
+}
+showAIInnerTab = function(tab){ trApplyAIInnerTabV1966(tab||'ask'); };
+function openAIAtV1966(tab='ask'){
+  trEnsureAISubsectionsV1966();
+  trApplyAIInnerTabV1966(tab);
+  const ai=qs('localAIBox');
+  if(ai){ ai.classList.remove('hidden'); }
+}
+trOpenAIResponses = function(){ openPanelByLabel('IA'); openAIAtV1966('responses'); };
+
+function trAIQuickPromptV1966(kind){
+  const detail = qs('masterFunctionDetail')?.value?.trim() || '';
+  const ctx = trCurrentLocationTextV1966();
+  const prompts = {
+    opening:'Crie uma abertura curta, cinematográfica e segura para iniciar a sessão. Termine perguntando o que as jogadoras fazem.',
+    scene:'Crie uma narração curta da cena atual, com visual forte, mistério leve e uma escolha clara.',
+    location:'Narre o local selecionado para as jogadoras, sem revelar segredo da Mestre diretamente. Termine com uma decisão objetiva.',
+    clue:'Crie uma pista útil, visual e infantil/familiar. Não entregue a solução completa.',
+    event:'Crie um evento rápido para acontecer agora, com título, percepção sensorial e escolha aberta.',
+    consequence:'Sugira uma consequência interessante para a última escolha, sem punir demais as jogadoras.',
+    card:'Ajude a transformar a situação atual em uma carta de jogo: título, tipo, efeito e texto curto.',
+    mission:'Sugira o próximo objetivo de missão para a mesa.',
+    diary:'Organize o que aconteceu em formato de diário da sessão.',
+    next:'Sugira três próximos passos possíveis para Mestre/Ajudante conduzir a mesa.'
+  };
+  return `${prompts[kind]||prompts.next}\n\nContexto: ${ctx}\n\nDetalhe opcional: ${detail || 'sem detalhe adicional'}`;
+}
+function trAIQuickV1966(kind){
+  openAIAtV1966('ask');
+  if(qs('aiAction')) qs('aiAction').value = trAIQuickPromptV1966(kind);
+  const masterOnly = ['scene','location'].includes(kind);
+  requestAIAndShow(masterOnly && trIsMasterV1966() ? 'narrative' : 'question');
+}
+generateMasterFunction = function(){
+  const detail = qs('masterFunctionDetail')?.value?.trim() || '';
+  if(qs('aiAction')) qs('aiAction').value = `${trAIQuickPromptV1966('next')}\n\nPedido específico da Mestre/Ajudante: ${detail}`;
+  requestAIAndShow('question');
+};
+requestAIAndShow = async function(kind){
+  openPanelByLabel('IA');
+  openAIAtV1966('responses');
+  if(kind==='narrative' && !hasNarrationPermission()){
+    if(qs('aiStatus')){ qs('aiStatus').textContent='A narração oficial é exclusiva da Mestre. Enviando como pergunta/bastidor.'; qs('aiStatus').className='msg err'; }
+    kind='question';
+  }
+  return requestAI(kind);
+};
+
+function trCatalogStatusBoxV1966(){
+  const total=(cardCatalog?.cards||[]).length;
+  if(total) return `<div class="wideStatusPill">Catálogo carregado · ${total} cartas</div>`;
+  return `<div class="wideEmpty"><b>Catálogo ainda não carregado.</b><br>Use o botão abaixo para tentar novamente. O painel não ficará vazio.<br><br><button class="btn small" onclick="loadCardCatalog(true).then(()=>trOpenWideCards())">Recarregar catálogo</button></div>`;
+}
+trWideOverlayShell = function(title, subtitle, body, extraClass=''){
+  document.getElementById('wideToolOverlay')?.remove();
+  const el=document.createElement('div');
+  el.id='wideToolOverlay';
+  el.className=`wideToolOverlay v1966 ${extraClass||''}`.trim();
+  el.innerHTML=`<div class="wideToolHeader"><div><h2>${esc(title)}</h2><p>${esc(subtitle||'')}</p></div><div class="grow"></div><button class="btn small ghost" onclick="trCloseWideOverlay()">Fechar e voltar ao mapa</button></div><div class="wideToolBody">${body||''}</div>`;
+  document.body.appendChild(el);
+};
+trCloseWideOverlay = function(){ document.getElementById('wideToolOverlay')?.remove(); updateVisualNavActive('Mapa'); };
+
+trOpenWideCards = async function(){
+  if(!trIsStaffV1966()) return openPanelByLabel('Cartas');
+  trWideOverlayShell('Central de Cartas','Carregando catálogo, cartas enviadas e histórico...',`<div class="wideEmpty">Carregando cartas...</div>`,'wideCardsOverlay');
+  await loadCardCatalog();
+  await fetchAdventureCards(false);
+  const tabs=[['personagem','Cartas de Personagem'],['jogo','Cartas de Jogo'],['usadas_personagem','Usadas: Personagem'],['usadas_jogo','Usadas: Jogo'],['retiradas','Retiradas/Canceladas']];
+  if(!tabs.some(t=>t[0]===cardsPanelTab)) cardsPanelTab='personagem';
+  let body='';
+  if(!(cardCatalog?.cards||[]).length) body += trCatalogStatusBoxV1966();
+  if(cardsPanelTab==='personagem') body+=trWideStaffCharacterCards();
+  else if(cardsPanelTab==='jogo') body+=trWideStaffGameCards();
+  else if(cardsPanelTab==='usadas_personagem') body+=trWideUsedCards('character');
+  else if(cardsPanelTab==='usadas_jogo') body+=trWideUsedCards('map');
+  else body+=trWideRevokedCards();
+  const tabBar=`<div class="wideTabs">${tabs.map(([k,l])=>`<button class="${cardsPanelTab===k?'on':''}" onclick="trSetWideTab('${k}')">${esc(l)}</button>`).join('')}</div>`;
+  trWideOverlayShell('Central de Cartas da Mestre/Ajudante','Visão ampla para escolher, enviar, revisar usadas e retirar cartas enviadas por engano.',tabBar+body,'wideCardsOverlay');
+  updateVisualNavActive('Cartas');
+};
+
+async function trOpenWideEventsV1966(){
+  if(!trIsStaffV1966()) return openPanelByLabel('Eventos');
+  await fetchMasterEvents(false);
+  const n = selectedNode ? overrideFor(selectedNode) : null;
+  const loc = n ? `Local selecionado: ${esc(n.name)}` : 'Nenhum local selecionado';
+  const recent=(masterEventsCache||[]).slice(0,8).map(e=>`<div class="wideEventRecentCard"><span>${esc(e.kind||'evento')} · ${e.visibility==='private'?'bastidores':'público'}</span><b>${esc(e.title||'Evento')}</b><p>${esc((e.text||'').slice(0,180))}${(e.text||'').length>180?'…':''}</p></div>`).join('') || '<div class="wideEmpty">Nenhum evento criado ainda. Use o painel ao lado para criar o primeiro.</div>';
+  const body=`<div class="wideEventComposer"><div class="wideEventColumn"><span class="wideStatusPill">${loc}</span><p style="color:var(--muted);line-height:1.5">Eventos são ferramentas da Mestre/Ajudante: podem ser públicos, secretos, individuais ou virar carta.</p><div class="wideEventQuickGrid"><button class="btn small ghost" onclick="trWideEventPresetV1965('susto')">Susto leve</button><button class="btn small ghost" onclick="trWideEventPresetV1965('descoberta')">Descoberta</button><button class="btn small ghost" onclick="trWideEventPresetV1965('consequencia')">Consequência</button><button class="btn small ghost" onclick="trWideEventPresetV1965('npc')">NPC aparece</button><button class="btn small ghost" onclick="trWideEventPresetV1965('item')">Item/objeto</button><button class="btn small ghost" onclick="trWideAskAIForEventV1965()">Gerar com IA</button></div></div><div class="wideEventColumn"><label>Tipo do evento</label><select id="wideEventKind"><option value="susto">Susto leve</option><option value="descoberta">Descoberta</option><option value="consequencia">Consequência</option><option value="ambiente">Mudança de ambiente</option><option value="npc">NPC aparece</option><option value="portal">Portal reage</option><option value="item">Objeto brilha</option><option value="perigo">Perigo se aproxima</option><option value="escolha">Momento de escolha</option><option value="livre">Livre</option></select><label>Título do evento</label><input id="wideEventTitle" placeholder="Ex.: O cheiro de açúcar queimado aumentou"><label>O que aconteceu?</label><textarea id="wideEventText" placeholder="Descreva o acontecimento principal."></textarea><label>Como as jogadoras percebem?</label><textarea id="wideEventSensory" placeholder="Som, cheiro, luz, movimento, sensação..."></textarea><label>Qual escolha isso abre?</label><textarea id="wideEventChoice" placeholder="Investigar, seguir, conversar, recuar..."></textarea><div class="wideEventActions"><button class="btn small" onclick="trWideSendMasterEventV1965('public')">Mostrar para jogadoras</button><button class="btn small ghost" onclick="trWideSendMasterEventV1965('private')">Salvar bastidores</button><button class="btn small ghost" onclick="trWideEventToCardV1965()">Transformar em carta</button><button class="btn small ghost" onclick="trWideAskAIForEventV1965()">Pedir ajuda da IA</button></div></div></div><h3 class="title">Últimos eventos</h3><div class="wideEventRecent">${recent}</div>`;
+  trWideOverlayShell('Eventos da Mestre','Criar, enviar, guardar e transformar eventos sem perder o foco no mapa.',body,'wideEventsOverlay');
+  updateVisualNavActive('Eventos');
+}
+trOpenWideEventsV1965 = trOpenWideEventsV1966;
+
+trOpenWideLibrary = async function(kind='Biblioteca'){
+  if(!trIsStaffV1966()) return openPanelByLabel('Biblioteca');
+  trWideOverlayShell('Biblioteca Visual da Mestre','Carregando recursos...',`<div class="wideEmpty">Carregando biblioteca...</div>`,'wideLibraryOverlay');
+  await loadCardCatalog();
+  const mapId=state?.map?.id||'floresta_negra';
+  let mapCards=catalogCards({category:'map',map_id:mapId});
+  if(!mapCards.length) mapCards=catalogCards({category:'map',map_id:'floresta_negra'});
+  const charCards=catalogCards({category:'character'});
+  const nodes=(graph()?.nodes||[]).map(n=>`<div class="wideEventRecentCard"><span>${esc(nodeTypeText(n.type))}</span><b>${esc(n.name)}</b><p>${esc((n.desc||'').slice(0,160))}${(n.desc||'').length>160?'…':''}</p><button class="btn small ghost" onclick="trCloseWideOverlay(); ${isVisualForestMap(state?.map)?'selectVisualNode':'selectMapNode'}('${esc(n.id)}')">Selecionar local</button></div>`).join('');
+  const mapGrid=mapCards.map(c=>trWideCardHTML(c,`<button class="btn small" onclick="cardsPanelTab='jogo'; selectedGameTargetMode='game'; trSendCatalogCard('${esc(c.id)}','game',null)">Enviar para jogo</button><button class="btn small ghost" onclick="cardsPanelTab='jogo'; trOpenWideCards()">Abrir em Cartas</button>`)).join('');
+  const charGrid=charCards.slice(0,24).map(c=>trWideCardHTML(c,`<button class="btn small ghost" onclick="cardsPanelTab='personagem'; trOpenWideCards()">Escolher destinatário</button>`)).join('');
+  const body=`<div class="wideLibraryTop"><div class="wideLibraryBox"><h3 class="title">Biblioteca da Mestre</h3><p style="color:var(--muted);line-height:1.5">Recursos prontos: cartas, locais, eventos, missões e pistas. Nada fica vazio: se faltar catálogo, aparece aviso e recarregar.</p>${trCatalogStatusBoxV1966()}<div style="margin-top:10px"><button class="btn small" onclick="trOpenWideEventsV1966()">Criar evento</button><button class="btn small ghost" onclick="trOpenWideCards()">Abrir cartas</button><button class="btn small ghost" onclick="loadCardCatalog(true).then(()=>trOpenWideLibrary())">Recarregar catálogo</button></div></div><div class="wideLibraryBox"><h3 class="title">Mapa atual</h3><p style="color:var(--muted)">${esc(state?.map?.name||'Floresta Negra')}</p><span class="wideStatusPill">${mapCards.length} cartas de mapa</span> <span class="wideStatusPill">${charCards.length} cartas de personagem</span> <span class="wideStatusPill">${(graph()?.nodes||[]).length} locais</span></div></div><h3 class="title">Locais do mapa</h3><div class="wideEventRecent">${nodes||'<div class="wideEmpty">Nenhum local encontrado.</div>'}</div><h3 class="title" style="margin-top:22px">Cartas de jogo / mapa</h3><div class="wideCardsGrid">${mapGrid||'<div class="wideEmpty">Nenhuma carta de mapa encontrada.</div>'}</div><h3 class="title" style="margin-top:22px">Cartas de personagem</h3><div class="wideCardsGrid">${charGrid||'<div class="wideEmpty">Nenhuma carta de personagem encontrada.</div>'}</div>`;
+  trWideOverlayShell(kind==='Eventos'?'Eventos e Biblioteca':'Biblioteca Visual da Mestre','Painel amplo com recursos reais da mesa.',body,'wideLibraryOverlay');
+  updateVisualNavActive(kind);
+};
+
+renderInventoryVisual = function(){
+  const box=qs('inventoryContent'); if(!box) return;
+  const staff=trIsStaffV1966();
+  const players=(state?.players||[]);
+  let selected = staff ? players.find(p=>String(p.id)===String(window.trInventoryPlayerIdV1966||'')) : myRoomPlayer();
+  if(staff && !selected) selected=players.find(p=>p.role==='participante') || players[0];
+  if(selected) window.trInventoryPlayerIdV1966=selected.id;
+  const opts=staff?`<label>Escolher jogadora</label><select onchange="window.trInventoryPlayerIdV1966=this.value; renderInventoryVisual()">${players.map(p=>`<option value="${p.id}" ${selected?.id===p.id?'selected':''}>${esc(trPlayerDisplayV1966(p))}</option>`).join('')}</select>`:'';
+  const ch=selected?.character;
+  const img=trSafeCardImgV1966(ch);
+  const items=inventoryItemsForPlayer(selected);
+  const cards=(selected?.user_id===myRoomPlayer()?.user_id?myAdventureCards:allAdventureCards||[]).filter(c=>!c.revoked_at && (c.recipient_user_id===selected?.user_id || c.recipient_username===selected?.username || selected?.user_id===myRoomPlayer()?.user_id));
+  box.innerHTML=`${opts}<div class="inventoryHero realCard"><div class="inventoryHeroCard">${img?`<img src="${img}" alt="${esc(ch?.name||selected?.username||'Personagem')}" onerror="this.parentElement.innerHTML='✦'">`:'✦'}</div><div><b>${esc(ch?.name||selected?.username||'Personagem')}</b><br><span>${esc(ch?.role||roleName(selected?.role)||'Jogadora')}</span><br><small>${esc(ch?.zone||'')}</small><div class="vtcStats" style="margin-top:8px"><span>❤️ ${selected?.hp??100}</span><span>✦ ${selected?.energy??80}</span><span>⚔️ ${selected?.strength??5}</span><span>🔑 ${selected?.skill??7}</span></div></div></div><h4>Itens</h4>${items.length?`<div class="notes">${items.map((it,i)=>`<div class="note">🎒 ${esc(it)}</div>`).join('')}</div>`:'<div class="permissionHint">Nenhum item no inventário ainda.</div>'}<h4>Cartas guardadas/ativas</h4><div class="adventureCardInbox">${cards.slice(0,8).map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>`)).join('') || '<div class="permissionHint">Nenhuma carta vinculada a este personagem.</div>'}</div>`;
+};
+
+renderPlayers = function(){
+  const box=qs('players'); if(!box)return;
+  const staff=trIsStaffV1966();
+  const canKick=trIsMasterV1966();
+  box.innerHTML=(state?.players||[]).map(p=>{
+    const ch=p.character; const img=trSafeCardImgV1966(ch);
+    const cardCount=(allAdventureCards||[]).filter(c=>c.recipient_user_id===p.user_id || c.recipient_username===p.username).length;
+    return `<div class="playerControlCard"><div class="playerControlTop"><div class="playerControlPortrait">${img?`<img src="${img}" alt="${esc(ch?.name||p.username)}" onerror="this.parentElement.innerHTML='<div class=&quot;placeholder&quot;>✦</div>'">`:'<div class="placeholder">✦</div>'}</div><div class="playerControlName"><b>${esc(p.username)}</b><span>${esc(roleName(p.role))}${ch?`<br>${esc(ch.name)} · ${esc(ch.role||'')}`:'<br>Sem personagem escolhido'}${p.current_node?`<br>Local: ${esc(p.current_node)}`:''}<br>Cartas: ${cardCount}</span></div></div><div class="playerStatsGrid"><label>HP<input id="hp_${p.id}" type="number" value="${p.hp??100}" ${staff?'':'disabled'}></label><label>Energia<input id="en_${p.id}" type="number" value="${p.energy??80}" ${staff?'':'disabled'}></label><label>Força<input id="str_${p.id}" type="number" value="${p.strength??5}" ${staff?'':'disabled'}></label><label>Habilidade<input id="skill_${p.id}" type="number" value="${p.skill??7}" ${staff?'':'disabled'}></label></div>${staff?`<label>Fraqueza</label><input id="weak_${p.id}" value="${esc(p.weakness||'')}"><label>Notas da Mestre/Ajudante</label><textarea id="pnotes_${p.id}">${esc(p.notes||'')}</textarea><label>Inventário</label><textarea id="inv_${p.id}">${esc(p.inventory||'')}</textarea><div class="playerActionGrid"><button class="btn small" onclick="saveStats(${p.id})">Salvar ficha</button><button class="btn small ghost" onclick="window.trInventoryPlayerIdV1966=${p.id}; openPanelByLabel('Inventário')">Ver inventário</button><button class="btn small ghost" onclick="cardsPanelTab='personagem'; selectedCardsPlayerId=${p.id}; trOpenWideCards()">Enviar carta</button><button class="btn small ghost" onclick="trOpenWideEventsV1966()">Criar evento</button><button class="btn small ghost" onclick="openPanelByLabel('Mapa')">Mover token</button><button class="btn small ghost" onclick="trPrepareMessageToPlayerV1966(${p.id})">Mensagem</button>${canKick && state?.me?.id!==p.id?`<button class="btn small danger" onclick="kickPlayer(${p.id},'${esc(String(p.username||'jogadora').replace(/'/g,'&#39;'))}')">Remover</button>`:''}</div>`:''}</div>`;
+  }).join('') || '<div class="permissionHint">Nenhuma jogadora na sala.</div>';
+};
+
+renderRolePanel = function(){
+  const side=qs('side'); if(!side)return;
+  let box=qs('rolePanel');
+  if(!box){ box=document.createElement('div'); box.id='rolePanel'; box.className='sideSection rolePanel'; side.prepend(box); }
+  const role=state?.me?.role || 'participante';
+  const totalCards=(cardCatalog?.cards||[]).length;
+  box.innerHTML=`<h3 class="title">Configurações da Mesa</h3><p style="color:var(--muted);line-height:1.45">Painel mínimo funcional para evitar botão vazio.</p><div class="configGridV1966"><div class="configCardV1966"><b>Versão</b>${TR_VERSION_V1966}</div><div class="configCardV1966"><b>Seu papel</b>${esc(roleName(role))}</div><div class="configCardV1966"><b>Mapa</b>${esc(state?.map?.name||'')}</div><div class="configCardV1966"><b>Catálogo</b>${totalCards||'não carregado'} cartas</div><div class="configCardV1966"><b>Permissões</b>${trIsMasterV1966()?'Mestre: narração oficial e controle completo':trIsStaffV1966()?'Ajudante: operação e bastidores, sem narração oficial':'Jogadora: cartas, chat e IA de perguntas'}</div><div class="configCardV1966"><b>Estado visual</b>Painel largo, mapa central e uma ferramenta aberta por vez.</div></div><div class="row" style="margin-top:12px"><button class="btn small ghost" onclick="loadCardCatalog(true).then(()=>renderRolePanel())">Recarregar catálogo</button><button class="btn small ghost" onclick="openAIAtV1966('config')">Status da IA</button><button class="btn small ghost" onclick="trCloseWideOverlay(); updateVisualNavActive('Mapa')">Voltar ao mapa</button></div>`;
+};
+
+function openVisualMapV1966(){
+  trCloseWideOverlay(); updateVisualNavActive('Mapa');
+  const side=qs('side'); const game=document.querySelector('.game');
+  if(side && window.innerWidth<980){ side.classList.add('closed'); game?.classList.add('panelClosed'); }
+}
+openPanelByLabel = function(label){
+  const n=normalizeLabelV196(label);
+  if(n==='ia'){
+    trCloseWideOverlay();
+    const side=qs('side'); side?.classList.remove('closed'); document.querySelector('.game')?.classList.remove('panelClosed');
+    const panes=[...document.querySelectorAll('.tabPane')]; const idx=panes.findIndex(x=>x.id==='localAIBox');
+    if(idx>=0) openPanelTab(idx);
+    qs('localAIBox')?.classList.remove('hidden');
+    openAIAtV1966(aiInnerTab||'ask'); updateVisualNavActive('IA'); return;
+  }
+  if(n==='configuracoes'){
+    trCloseWideOverlay(); renderRolePanel();
+    const panes=[...document.querySelectorAll('.tabPane')]; const idx=panes.findIndex(x=>x.id==='rolePanel');
+    if(idx>=0) openPanelTab(idx); updateVisualNavActive('Configurações'); return;
+  }
+  const side=qs('side'); if(!side)return;
+  const panes=[...document.querySelectorAll('.tabPane')];
+  let idx=panes.findIndex(p=>sectionMatchesV196(label,p));
+  if(idx<0 && n==='diario') idx=panes.findIndex(p=>sectionMatchesV196('Anotações da Mesa',p));
+  if(idx>=0){ panes[idx].classList.remove('hidden'); openPanelTab(idx); side.classList.remove('closed'); document.querySelector('.game')?.classList.remove('panelClosed'); updateVisualNavActive(label); return; }
+  let fallback=qs('toolFallbackV1966');
+  if(!fallback){ fallback=document.createElement('div'); fallback.id='toolFallbackV1966'; fallback.className='sideSection tabPane'; side.appendChild(fallback); initPanelTabs(); }
+  fallback.dataset.navLabel=label;
+  fallback.innerHTML=`<h3 class="title">${esc(label)}</h3><p style="color:var(--muted)">Ferramenta em estabilização. Este painel provisório existe para que nenhum botão fique morto.</p><div class="row"><button class="btn small ghost" onclick="openPanelByLabel('IA')">Pedir ajuda da IA</button><button class="btn small ghost" onclick="openPanelByLabel('Mapa')">Voltar ao mapa</button></div>`;
+  const p2=[...document.querySelectorAll('.tabPane')]; const i2=p2.indexOf(fallback); if(i2>=0) openPanelTab(i2); updateVisualNavActive(label);
+};
+
+openMesaTool = function(label){
+  const n=normalizeLabelV196(label);
+  if(n==='mapa') return openVisualMapV1966();
+  if(n==='cartas') return trIsStaffV1966()?trOpenWideCards():openPanelByLabel('Cartas');
+  if(n==='eventos') return trIsStaffV1966()?trOpenWideEventsV1966():openPanelByLabel('Eventos');
+  if(n==='biblioteca') return trIsStaffV1966()?trOpenWideLibrary('Biblioteca'):openPanelByLabel('Biblioteca');
+  if(n==='narrar'){
+    if(!hasNarrationPermission()){ alert('A narração oficial é exclusiva da Mestre.'); return; }
+    trCloseWideOverlay(); openPanelByLabel('IA'); openAIAtV1966('ask');
+    if(qs('aiAction')) qs('aiAction').value=`${trCurrentLocationTextV1966()}\n\nNarre a cena para as jogadoras com tom cinematográfico, infantil/familiar, sem terror pesado, terminando com uma escolha clara.`;
+    setTimeout(()=>requestAIAndShow('narrative'),80); return;
+  }
+  trCloseWideOverlay(); openPanelByLabel(label);
+};
+
+dynamicNavItemsV196 = function(){
+  const base=[['Mapa','🧭','mapa'],['Chat','💬','chat'],['Cartas','🃏','cartas'],['Inventário','🎒','inventario'],['Diário','📖','diario'],['Missões','📜','missoes'],['Jogadoras','👥','jogadoras'],['Personagem','🧍','personagem'],['Jornada','🗺️','jornada'],['IA','🤖','ia']];
+  if(trIsStaffV1966()) base.push(['Central','✦','central'],['Eventos','⚡','eventos'],['Biblioteca','📚','biblioteca'],['Bastidores','🔒','bastidores'],['Configurações','⚙','configuracoes']);
+  if(hasNarrationPermission()) base.push(['Narrar','🎙️','narrar']);
+  return base;
+};
+
+const trRenderGameOriginalV1966 = renderGame;
+renderGame = function(){
+  trRenderGameOriginalV1966();
+  try{
+    qs('localAIBox')?.classList.remove('hidden');
+    renderRolePanel();
+    if(qs('inventoryContent')) renderInventoryVisual();
+    if(qs('players')) renderPlayers();
+    if(qs('visualQuickNav') && typeof ensureVisualForestUI==='function') ensureVisualForestUI();
+  }catch(e){ console.warn('Pós-render v19.6.11 falhou', e); }
+};
+
+const trSelectVisualNodeOriginalV1966 = selectVisualNode;
+selectVisualNode = function(nodeId){
+  trSelectVisualNodeOriginalV1966(nodeId);
+  try{ renderLocationBox(); openPanelByLabel('Mapa'); updateVisualNavActive('Mapa'); }catch(e){}
+};
+
+const trSelectMapNodeOriginalV1966 = selectMapNode;
+selectMapNode = function(id){
+  trSelectMapNodeOriginalV1966(id);
+  try{ renderLocationBox(); updateVisualNavActive('Mapa'); }catch(e){}
+};
+
+
+function trPrepareMessageToPlayerV1966(playerId){
+  const p=(state?.players||[]).find(x=>Number(x.id)===Number(playerId));
+  if(qs('chatText')) qs('chatText').value = '@' + (p?.username || 'jogadora') + ' ';
+  openPanelByLabel('Chat');
+}
+
+Object.assign(window,{loadCardCatalog,openAIAtV1966,trEnsureAISubsectionsV1966,trApplyAIInnerTabV1966,trAIQuickV1966,showAIInnerTab,trOpenAIResponses,requestAIAndShow,trOpenWideCards,trOpenWideEventsV1966,trOpenWideEventsV1965,trOpenWideLibrary,trWideOverlayShell,trCloseWideOverlay,renderInventoryVisual,renderPlayers,renderRolePanel,openPanelByLabel,openMesaTool,dynamicNavItemsV196,selectVisualNode,selectMapNode,trPrepareMessageToPlayerV1966});
+
+
+/* ===== v19.6.7 — correção de fluxo real de mesa ===== */
+const TR_VERSION_V1967 = 'v19.6.7';
+let trNarrationPickModeV1967 = false;
+let trNarrationLastNodeV1967 = null;
+
+function trPatchForestHotspotsV1967(){
+  if(typeof FOREST_V19_VISUAL === 'undefined' || !Array.isArray(FOREST_V19_VISUAL.nodes)) return;
+  const coords={
+    entrada:{x:11.6,y:18.7,name:'Entrada da Floresta'},
+    trilha:{x:20.7,y:41.8,name:'Trilha das Folhas Altas'},
+    toca:{x:11.8,y:69.7,name:'Toca da Raposa de Névoa'},
+    jardim:{x:31.4,y:72.8,name:'Jardim das Pegadas'},
+    cabana:{x:41.6,y:25.2,name:'Cabana Vazia'},
+    lago:{x:64.0,y:25.0,name:'Lago do Espelho Quieto'},
+    arvore:{x:85.2,y:25.3,name:'Árvore dos Segredos'},
+    clareira:{x:51.5,y:47.8,name:'Clareira das Lanternas'},
+    ponte:{x:75.3,y:48.2,name:'Ponte dos Galhos'},
+    mirante:{x:50.2,y:73.4,name:'Mirante da Lua Baixa'},
+    coracao:{x:71.2,y:73.2,name:'Coração da Floresta'},
+    portal:{x:90.8,y:73.5,name:'Portal da Fábrica'}
+  };
+  FOREST_V19_VISUAL.nodes.forEach(n=>{ if(coords[n.id]) Object.assign(n, coords[n.id]); });
+}
+trPatchForestHotspotsV1967();
+
+function trAllPlayersV1967(){ return (state?.players||[]).filter(Boolean); }
+function trParticipantsV19611(){ return trAllPlayersV1967().filter(p=>String(p.role||'participante')==='participante'); }
+function trParticipantsWithCharacterV19611(){ return trParticipantsV19611().filter(p=>!!p.character); }
+function trStaffPlayersV19611(){ return trAllPlayersV1967().filter(p=>String(p.role||'participante')!=='participante'); }
+function trPlayablePlayersV1967(){ return trParticipantsWithCharacterV19611(); }
+function trPlayerUserTargetV1967(p){ return Number(p?.user_id || p?.id || 0); }
+function trPlayerRoomIdV1967(p){ return Number(p?.id || 0); }
+function trPlayerLabelV1967(p){ return `${p?.username || 'Jogadora'}${p?.character?.name ? ' · '+p.character.name : ' · sem personagem'}`; }
+function trCharacterCardPathV1967(ch){ return ch?.card_url || (ch?.id?`/assets/characters/${ch.id}_card.webp`:''); }
+function trCatalogByIdV1967(id){ return (cardCatalog?.cards||[]).find(c=>c.id===id)||null; }
+function trCatalogCardsV1967(filter={}){
+  const cards=(cardCatalog?.cards||[]);
+  return cards.filter(c=>Object.entries(filter).every(([k,v])=>v==null || c[k]===v));
+}
+function trCardImgHTMLV1967(c){
+  const img=c?.image_path || c?.card_url || '';
+  return img?`<img src="${esc(img)}" alt="${esc(c?.title||c?.name||'Carta')}" onerror="this.parentElement.innerHTML='<div class=&quot;wideCardMissing&quot;>✦</div>'">`:`<div class="wideCardMissing">✦</div>`;
+}
+function trWideCardHTMLV1967(c, actions=''){
+  return `<div class="wideCardTile"><div class="wideCardImgWrap">${trCardImgHTMLV1967(c)}</div><div class="wideCardBody"><div class="wideCardMeta">${esc(cardTypeLabelV196(c.type||c.kind))} · ${esc(c.rarity||'comum')}</div><b>${esc(c.title||c.name||'Carta')}</b><div class="wideCardText">${esc(c.short_text||c.effect_text||c.text||c.description||'')}</div><div class="wideCardActions">${actions||''}</div></div></div>`;
+}
+
+trWideOverlayShell = function(title, subtitle, body, extraClass=''){
+  document.getElementById('wideToolOverlay')?.remove();
+  const el=document.createElement('div');
+  el.id='wideToolOverlay';
+  el.className=`wideToolOverlay v1967 ${extraClass||''}`.trim();
+  el.innerHTML=`<div class="wideToolHeader"><div><h2>${esc(title)}</h2><p>${esc(subtitle||'')}</p></div><div class="grow"></div><button class="btn small ghost" onclick="trCloseWideOverlay()">Fechar</button><button class="btn small" onclick="trCloseWideOverlay()">Voltar ao mapa</button></div><div class="wideToolBody">${body||''}</div><div class="wideToolFooter"><button class="btn small ghost" onclick="trCloseWideOverlay()">Fechar aba</button><button class="btn small" onclick="trCloseWideOverlay()">Voltar para o jogo</button></div>`;
+  document.body.appendChild(el);
+};
+trCloseWideOverlay = function(){ document.getElementById('wideToolOverlay')?.remove(); updateVisualNavActive('Mapa'); };
+
+async function trSendCatalogCardV1967(catalogId,target='one',targetUserId=null){
+  const c=trCatalogByIdV1967(catalogId); if(!c) return alert('Carta não encontrada no catálogo.');
+  const t=templateFromCatalogCard(c);
+  const payload={kind:t.kind,title:t.title,text:t.text,origin:t.origin,target,target_user_id:target==='one'?Number(targetUserId||0):null,catalog_id:t.catalog_id,rarity:t.rarity,image_path:t.image_path};
+  if(target==='one' && !payload.target_user_id) return alert('Escolha a jogadora/personagem que receberá a carta.');
+  const destino=target==='one' ? ((state?.players||[]).find(p=>trPlayerUserTargetV1967(p)===payload.target_user_id)?.username||'jogadora') : ({all:'Todos',game:'Jogo / mesa',staff:'Mestre/Ajudante'}[target]||target);
+  if(!confirm(`Enviar esta carta?\n\nCarta: ${t.title}\nDestino: ${destino}\nTipo: ${cardTypeLabelV196(c.type||t.kind)}`)) return;
+  await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify(payload)});
+  await fetchAdventureCards(false);
+  alert('Carta enviada com sucesso.');
+  await trOpenWideCards();
+}
+window.sendCatalogCardV196 = trSendCatalogCardV1967;
+window.trSendCatalogCard = trSendCatalogCardV1967;
+
+function trSetWideTabV1967(tab){ cardsPanelTab=tab; trOpenWideCards(); }
+window.trSetWideTab = trSetWideTabV1967;
+function trSetWideRecipientV1967(playerId){ selectedCardsPlayerId=Number(playerId)||null; trOpenWideCards(); }
+function trSetWideTargetV1967(mode){ selectedGameTargetMode=mode; trOpenWideCards(); }
+function trSetWideTargetUserV1967(userId){ selectedGameTargetUserId=Number(userId)||null; trOpenWideCards(); }
+function trSetWideTypeV1967(t){ gameCardsTypeFilter=t||'all'; trOpenWideCards(); }
+Object.assign(window,{trSetWideRecipientV1967,trSetWideTargetV1967,trSetWideTargetUserV1967,trSetWideTypeV1967});
+
+function trRecipientGridV1967(players, selectedId){
+  if(!players.length) return `<div class="wideEmpty">Nenhuma jogadora encontrada na sala.</div>`;
+  return `<div class="cardsRecipientGridV1967">${players.map(p=>{const ch=p.character; const img=trCharacterCardPathV1967(ch); const on=Number(p.id)===Number(selectedId); return `<button class="recipientCardV1967 ${on?'on':''}" onclick="trSetWideRecipientV1967(${Number(p.id)})">${img?`<img src="${esc(img)}" alt="${esc(ch?.name||p.username)}">`:''}<b>${esc(p.username||'Jogadora')}</b><br><span>${esc(ch?.name||'Sem personagem escolhido')}<br>${esc(ch?.role||roleName(p.role)||'')}</span><div style="clear:both"></div></button>`;}).join('')}</div>`;
+}
+function trWideStaffCharacterCardsV1967(){
+  const players=trPlayablePlayersV1967();
+  if(!selectedCardsPlayerId || !players.some(p=>Number(p.id)===Number(selectedCardsPlayerId))) selectedCardsPlayerId=players[0]?.id||null;
+  const selected=players.find(p=>Number(p.id)===Number(selectedCardsPlayerId));
+  const charId=selected?.character?.id;
+  const cards=charId?trCatalogCardsV1967({category:'character',character_id:charId}):[];
+  const grid=cards.length?cards.map(c=>trWideCardHTMLV1967(c,`<button class="btn small" onclick="trSendCatalogCardV1967('${esc(c.id)}','one',${trPlayerUserTargetV1967(selected)})">Enviar para ${esc(selected?.username||'jogadora')}</button>`)).join(''):`<div class="wideEmpty">${selected?'Esta jogadora ainda não escolheu personagem. Use a aba Jogadoras para atribuir/escolher personagem.':'Escolha uma jogadora acima.'}</div>`;
+  return `<div class="cardsToolIntro"><b>1. Escolha a jogadora/personagem</b><span>Depois aparecem apenas as cartas daquele personagem.</span></div>${trRecipientGridV1967(players, selectedCardsPlayerId)}<h3 class="title">Cartas de ${esc(selected?.character?.name||selected?.username||'personagem')}</h3><div class="wideCardsGrid">${grid}</div>`;
+}
+function trWideStaffGameCardsV1967(){
+  const mapId=state?.map?.id||'floresta_negra';
+  let cards=trCatalogCardsV1967({category:'map',map_id:mapId});
+  if(!cards.length) cards=trCatalogCardsV1967({category:'map',map_id:'floresta_negra'});
+  const types=['all','pista','susto','item','evento','perigo','missao','especial'];
+  const filtered=gameCardsTypeFilter==='all'?cards:cards.filter(c=>c.type===gameCardsTypeFilter);
+  const players=trPlayablePlayersV1967();
+  if(!selectedGameTargetMode) selectedGameTargetMode='all';
+  if(!selectedGameTargetUserId && players[0]) selectedGameTargetUserId=trPlayerUserTargetV1967(players[0]);
+  const targetUsers=selectedGameTargetMode==='one'?`<label>Jogadora</label><select onchange="trSetWideTargetUserV1967(this.value)">${players.map(p=>`<option value="${trPlayerUserTargetV1967(p)}" ${trPlayerUserTargetV1967(p)===Number(selectedGameTargetUserId)?'selected':''}>${esc(trPlayerLabelV1967(p))}</option>`).join('')}</select>`:'';
+  return `<div class="cardsToolIntro"><b>Cartas de Jogo</b><span>A lista é rolável. Você pode fechar a aba sem escolher carta.</span></div><div class="wideFilterRow">${types.map(t=>`<button class="chipBtn ${gameCardsTypeFilter===t?'on':''}" onclick="trSetWideTypeV1967('${t}')">${esc(t==='all'?'Todos':cardTypeLabelV196(t))}</button>`).join('')}</div><label>Destino</label><div class="wideFilterRow"><button class="chipBtn ${selectedGameTargetMode==='all'?'on':''}" onclick="trSetWideTargetV1967('all')">Todos</button><button class="chipBtn ${selectedGameTargetMode==='one'?'on':''}" onclick="trSetWideTargetV1967('one')">Uma jogadora</button><button class="chipBtn ${selectedGameTargetMode==='game'?'on':''}" onclick="trSetWideTargetV1967('game')">Jogo / mesa</button><button class="chipBtn ${selectedGameTargetMode==='staff'?'on':''}" onclick="trSetWideTargetV1967('staff')">Mestre/Ajudante</button></div>${targetUsers}<div class="wideCardsGrid">${filtered.length?filtered.map(c=>trWideCardHTMLV1967(c,`<button class="btn small" onclick="trSendCatalogCardV1967('${esc(c.id)}','${selectedGameTargetMode}',${Number(selectedGameTargetUserId||0)})">Enviar carta</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta deste tipo.</div>'}</div>`;
+}
+function trWideUsedCardsV1967(category){
+  const cards=(allAdventureCards||[]).filter(c=>!c.revoked_at && (category==='all' || receivedCardCategoryV196(c)===category));
+  return `<div class="cardsToolIntro"><b>Cartas enviadas/usadas</b><span>Histórico e retirada de carta enviada por engano.</span></div><div class="wideCardsGrid compact">${cards.length?cards.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>${c.used_at?'':`<button class="btn small ghost" onclick="markAdventureCardUsed(${c.id})">Marcar usada</button>`}<button class="btn small danger" onclick="revokeAdventureCard(${c.id})">Retirar carta</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta enviada ainda.</div>'}</div>`;
+}
+function trWideRevokedCardsV1967(){
+  const cards=(allAdventureCards||[]).filter(c=>c.revoked_at);
+  return `<div class="cardsToolIntro"><b>Retiradas/Canceladas</b><span>A Mestre/Ajudante continuam vendo o histórico, mas a jogadora não deve usar a carta retirada.</span></div><div class="wideCardsGrid compact">${cards.length?cards.map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir histórico</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta retirada ou cancelada.</div>'}</div>`;
+}
+trOpenWideCards = async function(){
+  if(!trIsStaffV1966()) return openPanelByLabel('Cartas');
+  trWideOverlayShell('Central de Cartas','Escolha cartas de personagem ou jogo. A aba é rolável e sempre pode ser fechada.',`<div class="wideEmpty">Carregando cartas...</div>`,'wideCardsOverlay');
+  await loadCardCatalog(); await fetchAdventureCards(false);
+  const tabs=[['personagem','Cartas de Personagem'],['jogo','Cartas de Jogo'],['usadas_personagem','Enviadas/Usadas'],['retiradas','Retiradas/Canceladas']];
+  if(!tabs.some(t=>t[0]===cardsPanelTab)) cardsPanelTab='personagem';
+  let body='';
+  if(cardsPanelTab==='personagem') body=trWideStaffCharacterCardsV1967();
+  else if(cardsPanelTab==='jogo') body=trWideStaffGameCardsV1967();
+  else if(cardsPanelTab==='retiradas') body=trWideRevokedCardsV1967();
+  else body=trWideUsedCardsV1967('all');
+  const tabBar=`<div class="wideTabs">${tabs.map(([k,l])=>`<button class="${cardsPanelTab===k?'on':''}" onclick="trSetWideTab('${k}')">${esc(l)}</button>`).join('')}</div>`;
+  trWideOverlayShell('Central de Cartas','Mestre/Ajudante têm visão ampla; Jogadoras continuam com suas cartas no painel lateral.',tabBar+body,'wideCardsOverlay');
+  updateVisualNavActive('Cartas');
+};
+
+function trForestLocationsGridV1967(){
+  const nodes=(FOREST_V19_VISUAL?.nodes||[]);
+  return `<div class="locationGridV1967">${nodes.map(n=>`<button class="locationCardV1967 ${(selectedNode?.id===n.id)?'on':''}" onclick="trCloseWideOverlay();selectVisualNode('${esc(n.id)}')"><b>${n.icon||'✦'} ${esc(n.name)}</b><br><span>${esc((overrideFor(n)?.desc||'Clique para selecionar este ponto do mapa.').slice(0,110))}</span></button>`).join('')}</div>`;
+}
+trOpenWideEventsV1966 = async function(){
+  if(!trIsStaffV1966()) return openPanelByLabel('Eventos');
+  await fetchMasterEvents(false);
+  const recent=(masterEventsCache||[]).slice(0,12).map(e=>`<div class="wideEventRecentCard"><span>${esc(e.kind||'evento')} · ${esc(e.visibility||'')}</span><b>${esc(e.title)}</b><p>${esc((e.text||'').slice(0,180))}</p></div>`).join('') || '<div class="wideEmpty">Nenhum evento criado ainda.</div>';
+  const body=`<div class="cardsToolIntro"><b>Eventos da Mestre</b><span>Escolha um local, crie o evento e feche a aba quando quiser voltar ao jogo.</span></div><h3 class="title">Local do evento</h3>${trForestLocationsGridV1967()}<div class="wideEventComposer"><div class="wideEventColumn"><label>Tipo</label><select id="wideEventKind"><option value="descoberta">Descoberta</option><option value="susto">Susto leve</option><option value="consequencia">Consequência</option><option value="ambiente">Ambiente</option><option value="npc">NPC</option><option value="item">Item</option><option value="perigo">Perigo</option><option value="escolha">Escolha</option></select><label>Título</label><input id="wideEventTitle" value="${esc(selectedNode?.name?'Evento em '+selectedNode.name:'Novo evento')}"><label>O que acontece?</label><textarea id="wideEventText" placeholder="Descreva o acontecimento principal."></textarea><label>Como as jogadoras percebem?</label><textarea id="wideEventSensory" placeholder="Som, cheiro, luz, movimento..."></textarea><label>Qual escolha abre?</label><textarea id="wideEventChoice" placeholder="Investigar, seguir, conversar, recuar..."></textarea><div class="wideEventActions"><button class="btn small" onclick="trWideSendMasterEventV1965('public')">Mostrar para jogadoras</button><button class="btn small ghost" onclick="trWideSendMasterEventV1965('private')">Salvar bastidores</button><button class="btn small ghost" onclick="trWideAskAIForEventV1965()">Pedir ajuda da IA</button></div></div><div class="wideEventColumn"><h3 class="title">Últimos eventos</h3><div class="wideEventRecent">${recent}</div></div></div>`;
+  trWideOverlayShell('Eventos','Criação de eventos com botão de fechar e área rolável.',body,'wideEventsOverlay');
+  updateVisualNavActive('Eventos');
+};
+trOpenWideEventsV1965 = trOpenWideEventsV1966;
+
+trOpenWideLibrary = async function(kind='Biblioteca'){
+  if(!trIsStaffV1966()) return openPanelByLabel('Biblioteca');
+  await loadCardCatalog();
+  const mapCards=trCatalogCardsV1967({category:'map',map_id:state?.map?.id||'floresta_negra'}).concat((state?.map?.id==='floresta_negra')?[]:trCatalogCardsV1967({category:'map',map_id:'floresta_negra'}));
+  const charCards=trCatalogCardsV1967({category:'character'});
+  const locs=trForestLocationsGridV1967();
+  const body=`<div class="wideLibraryTop"><div class="wideLibraryBox"><h3 class="title">Biblioteca da Mestre</h3><p style="color:var(--muted)">Conteúdo amplo e rolável. Pode fechar sem escolher nada.</p><button class="btn small" onclick="trOpenWideCards()">Abrir Cartas</button><button class="btn small ghost" onclick="trOpenWideEventsV1966()">Abrir Eventos</button></div><div class="wideLibraryBox"><h3 class="title">Status</h3><span class="wideStatusPill">${mapCards.length} cartas de jogo</span> <span class="wideStatusPill">${charCards.length} cartas de personagem</span></div></div><h3 class="title">Locais do mapa</h3>${locs}<h3 class="title">Cartas de jogo</h3><div class="wideCardsGrid">${mapCards.length?mapCards.map(c=>trWideCardHTMLV1967(c,`<button class="btn small" onclick="cardsPanelTab='jogo';trOpenWideCards()">Abrir em Cartas</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta de mapa encontrada.</div>'}</div><h3 class="title">Cartas de personagem</h3><div class="wideCardsGrid">${charCards.length?charCards.map(c=>trWideCardHTMLV1967(c,`<button class="btn small ghost" onclick="cardsPanelTab='personagem';trOpenWideCards()">Escolher destinatário</button>`)).join(''):'<div class="wideEmpty">Nenhuma carta de personagem encontrada.</div>'}</div>`;
+  trWideOverlayShell('Biblioteca','Material da Mestre com botão de fechar e rolagem própria.',body,'wideLibraryOverlay');
+  updateVisualNavActive(kind);
+};
+
+renderInventoryVisual = function(){
+  const box=qs('inventoryContent'); if(!box||!state)return;
+  const staff=trIsStaffV1966();
+  const players=staff?trParticipantsV19611():[myRoomPlayer()].filter(p=>isParticipantPlayer(p));
+  if(!players.length){ box.innerHTML='<div class="permissionHint">Nenhum personagem encontrado.</div>'; return; }
+  let selected=players.find(p=>Number(p.id)===Number(window.trInventoryPlayerIdV1966))||players[0];
+  window.trInventoryPlayerIdV1966=selected.id;
+  const allGrid=staff?`<h4>Jogadoras/personagens</h4><div class="inventoryAllGridV1967">${players.map(p=>{const img=trCharacterCardPathV1967(p.character);return `<button class="inventoryPlayerCardV1967" onclick="window.trInventoryPlayerIdV1966=${Number(p.id)};renderInventoryVisual()">${img?`<img src="${esc(img)}">`:''}<b>${esc(p.username||'Jogadora')}</b><br><span>${esc(p.character?.name||'Sem personagem')}<br>${esc(p.character?.role||roleName(p.role)||'')}</span><div style="clear:both"></div></button>`}).join('')}</div>`:'';
+  const ch=selected.character; const img=trCharacterCardPathV1967(ch); const items=inventoryItemsForPlayer(selected); const cards=(allAdventureCards||myAdventureCards||[]).filter(c=>c.recipient_user_id===selected.user_id || (!staff && !c.recipient_user_id));
+  box.innerHTML=`${allGrid}<label>Ver inventário de</label><select onchange="window.trInventoryPlayerIdV1966=this.value;renderInventoryVisual()">${players.map(p=>`<option value="${p.id}" ${Number(p.id)===Number(selected.id)?'selected':''}>${esc(trPlayerLabelV1967(p))}</option>`).join('')}</select><div class="inventoryHero realCard" style="margin-top:12px"><div class="inventoryHeroCard">${img?`<img src="${esc(img)}" alt="${esc(ch?.name||selected.username)}">`:'<div class="placeholder">✦</div>'}</div><div><h3 class="title">${esc(ch?.name||selected.username||'Personagem')}</h3><p style="color:var(--muted)">${esc(ch?.role||roleName(selected.role)||'')} · ${esc(ch?.zone||'')}</p><p>❤️ ${selected.hp??100} · ✦ ${selected.energy??80} · ⚔️ ${selected.strength??5} · 🔑 ${selected.skill??7}</p></div></div><h4>Itens</h4>${items.length?`<div class="notes">${items.map(it=>`<div class="note">🎒 ${esc(it)}</div>`).join('')}</div>`:'<div class="permissionHint">Nenhum item no inventário.</div>'}<h4>Cartas vinculadas</h4><div class="adventureCardInbox">${cards.slice(0,12).map(c=>renderReceivedVisualCardV196(c,`<button class="btn small ghost" onclick="openAdventureCard(${c.id})">Abrir</button>`)).join('') || '<div class="permissionHint">Nenhuma carta vinculada.</div>'}</div>`;
+};
+
+async function assignCharacterToPlayerV1967(playerId, characterId){
+  if(!playerId||!characterId) return;
+  try{ await api(`/rooms/${currentRoom}/assign-character`,{method:'POST',body:JSON.stringify({player_id:Number(playerId),character_id:characterId})}); }
+  catch(e){ alert(e.message); }
+}
+function playerCharacterSelectV1967(p){
+  const used=new Set((state?.players||[]).filter(x=>Number(x.id)!==Number(p.id)).map(x=>x.character?.id).filter(Boolean));
+  return `<div class="playerAssignRowV1967"><label>Personagem<select onchange="assignCharacterToPlayerV1967(${Number(p.id)},this.value)">${(charsCache||[]).map(c=>`<option value="${c.id}" ${p.character?.id===c.id?'selected':''} ${used.has(c.id)?'disabled':''}>${esc(c.name)} · ${esc(c.role)}${used.has(c.id)?' — em uso':''}</option>`).join('')}</select></label><button class="btn small ghost" onclick="assignCharacterToPlayerV1967(${Number(p.id)},this.previousElementSibling.querySelector('select').value)">Aplicar</button></div>`;
+}
+renderPlayers = function(){
+  const box=qs('players'); if(!box)return;
+  const staff=trIsStaffV1966(); const canKick=trIsMasterV1966();
+  const team=trStaffPlayersV19611();
+  const jogadoras=trParticipantsV19611();
+  const chooseOwn=!staff?`<div class="playerControlCard"><h3 class="title">Escolher personagem</h3><p style="color:var(--muted)">Escolha sua personagem para entrar na aventura. Depois disso, seu token aparece no mapa. ${esc(tokenMovementNotice())}</p><label>Meu personagem</label><select id="charSelectPlayers">${(charsCache||[]).map(c=>`<option value="${c.id}">${esc(c.name)} · ${esc(c.role)}</option>`).join('')}</select><button class="btn small" style="margin-top:8px" onclick="if(qs('charSelect')) qs('charSelect').value=qs('charSelectPlayers').value; chooseChar();">Usar personagem</button></div>`:'';
+  const teamHTML=team.length?`<h3 class="title">Equipe de condução</h3>${team.map(p=>`<div class="playerControlCard staffOnly"><div class="playerControlName"><b>${esc(p.username||'Equipe')}</b><span>${esc(roleName(p.role))}<br>Sem personagem · sem token próprio</span></div></div>`).join('')}`:'';
+  const cards=jogadoras.map(p=>{const ch=p.character; const img=trCharacterCardPathV1967(ch); const cardCount=(allAdventureCards||[]).filter(c=>c.recipient_user_id===p.user_id).length; return `<div class="playerControlCard"><div class="playerControlTop"><div class="playerControlPortrait">${img?`<img src="${esc(img)}?v=19.6.11.14" alt="${esc(ch?.name||p.username)}">`:'<div class="placeholder">✦</div>'}</div><div class="playerControlName"><b>${esc(p.username)}</b><span>${esc(roleName(p.role))}<br>${esc(ch?.name||'Sem personagem escolhido')} ${ch?.role?'· '+esc(ch.role):''}<br>Token: ${ch?'aparece no mapa':'aguardando personagem'}<br>Cartas: ${cardCount}</span></div></div>${staff?playerCharacterSelectV1967(p):''}<div class="playerStatsGrid"><label>HP<input id="hp_${p.id}" type="number" value="${p.hp??100}" ${staff?'':'disabled'}></label><label>Energia<input id="en_${p.id}" type="number" value="${p.energy??80}" ${staff?'':'disabled'}></label><label>Força<input id="str_${p.id}" type="number" value="${p.strength??5}" ${staff?'':'disabled'}></label><label>Habilidade<input id="skill_${p.id}" type="number" value="${p.skill??7}" ${staff?'':'disabled'}></label></div>${staff?`<label>Fraqueza</label><input id="weak_${p.id}" value="${esc(p.weakness||'')}"><label>Notas</label><textarea id="pnotes_${p.id}">${esc(p.notes||'')}</textarea><label>Inventário</label><textarea id="inv_${p.id}">${esc(p.inventory||'')}</textarea><div class="playerActionGrid"><button class="btn small" onclick="saveStats(${p.id})">Salvar ficha</button><button class="btn small ghost" onclick="window.trInventoryPlayerIdV1966=${p.id};openPanelByLabel('Inventário')">Inventário</button>${ch?`<button class="btn small ghost" onclick="cardsPanelTab='personagem';selectedCardsPlayerId=${p.id};trOpenWideCards()">Enviar carta</button>`:''}<button class="btn small ghost" onclick="trOpenWideEventsV1966()">Evento</button><button class="btn small ghost" onclick="trPrepareMessageToPlayerV1966(${p.id})">Mensagem</button>${canKick&&state?.me?.id!==p.id?`<button class="btn small danger" onclick="kickPlayer(${p.id},'${esc(String(p.username||'jogadora').replace(/'/g,'&#39;'))}')">Remover</button>`:''}</div>`:''}</div>`;}).join('') || '<div class="permissionHint">Nenhuma jogadora participante na sala.</div>';
+  box.innerHTML=teamHTML+`<h3 class="title">Jogadoras</h3>`+chooseOwn+cards;
+};
+Object.assign(window,{assignCharacterToPlayerV1967});
+
+renderRolePanel = function(){
+  const side=qs('side'); if(!side)return;
+  let box=qs('rolePanel');
+  if(!box){ box=document.createElement('div'); box.id='rolePanel'; side.prepend(box); }
+  box.className='sideSection rolePanel tabPane'; box.dataset.navLabel='Configurações';
+  const role=state?.me?.role||'participante';
+  const room=state?.room||{};
+  const help=role==='mestre'?'Você é a Mestre. Você não tem personagem nem token. Você controla o mundo e move os tokens das jogadoras.':role==='ajudante'?'Você é Ajudante da Mestre. Você não tem personagem nem token. Você ajuda a conduzir a mesa e move os tokens das jogadoras.':'Você é Jogadora. Escolha uma personagem para participar. A movimentação dos tokens é feita pela Mestre/Ajudante.';
+  const codes=trIsStaffV1966()?`<div class="configCardV1966"><b>Código da Ajudante</b>${esc(room.helper_code||'-')}<br><button class="btn small ghost" onclick="copyText('${esc(room.helper_code||'')}')">Copiar</button></div><div class="configCardV1966"><b>Código das Jogadoras</b>${esc(room.player_code||room.code||'-')}<br><button class="btn small ghost" onclick="copyText('${esc(room.player_code||room.code||'')}')">Copiar</button></div>`:'';
+  const vis=trIsMasterV1966()?roomVisibilityControlHTML('room', room, 'sideVisibilityControls'):'';
+  box.innerHTML=`<h3 class="title">Configurações</h3><div class="forestCard"><b>${esc(roleName(role))}</b><br>${esc(help)}<br><span style="color:var(--muted)">${esc(tokenMovementNotice())}</span></div><div class="configGridV1966"><div class="configCardV1966"><b>Versão</b>v19.6.11</div><div class="configCardV1966"><b>Papel</b>${esc(roleName(role))}</div><div class="configCardV1966"><b>Mapa</b>${esc(state?.map?.name||'')}</div><div class="configCardV1966"><b>Catálogo</b>${(cardCatalog?.cards||[]).length||'não carregado'} cartas</div><div class="configCardV1966"><b>Tokens</b>Apenas Mestre/Ajudante movem</div>${codes}</div>${vis}<div class="row" style="margin-top:12px"><button class="btn small ghost" onclick="loadCardCatalog(true).then(()=>renderRolePanel())">Recarregar catálogo</button><button class="btn small ghost" onclick="openPanelByLabel('IA')">IA</button><button class="btn small ghost" onclick="trCloseWideOverlay();openVisualMapV1966()">Voltar ao mapa</button></div>`;
+  syncRoomVisibilityChoice('room'); toggleRoomStartControls('room'); toggleRoomStartAt('room');
+};
+
+centralOpenPanel = function(label){
+  const n=normalizeLabelV196(label);
+  if(n.includes('evento')) return trOpenWideEventsV1966();
+  if(n.includes('biblioteca')) return trOpenWideLibrary('Biblioteca');
+  if(n.includes('cartas')) return trOpenWideCards();
+  return openPanelByLabel(label);
+};
+centralActionEvent = function(kind='descoberta'){ trOpenWideEventsV1966(); };
+centralActionCard = function(){ cardsPanelTab='jogo'; trOpenWideCards(); };
+centralActionItem = function(){ openPanelByLabel('Inventário'); };
+centralActionMission = function(){ openPanelByLabel('Missões'); };
+centralActionDiary = function(){ openPanelByLabel('Diário'); };
+centralActionNote = function(){ openPanelByLabel('Diário'); setTimeout(()=>{ if(qs('noteText')) qs('noteText').focus(); },80); };
+centralActionAI = function(){ openPanelByLabel('IA'); openAIAtV1966('ask'); if(qs('aiAction')) qs('aiAction').value=`Ajude a conduzir a próxima cena. ${trCurrentLocationTextV1966()}`; };
+Object.assign(window,{centralOpenPanel,centralActionEvent,centralActionCard,centralActionItem,centralActionMission,centralActionDiary,centralActionNote,centralActionAI});
+
+function trStartNarrationModeV1967(){
+  trNarrationPickModeV1967=true;
+  trCloseWideOverlay();
+  openPanelByLabel('IA'); openAIAtV1966('ask');
+  if(qs('aiAction')) qs('aiAction').value='Modo Narrar ativado. Agora clique em um ponto/casa do mapa. Depois peça para narrar o local selecionado.';
+  const box=qs('aiPaneAsk');
+  if(box && !qs('narrationModeBannerV1967')) box.insertAdjacentHTML('afterbegin',`<div id="narrationModeBannerV1967" class="narrationModeBannerV1967"><b>🎙️ Modo Narrar aberto</b><br>1. Clique em uma casa/local do mapa. 2. Confira o texto no campo da IA. 3. Clique em narrar/perguntar.</div>`);
+  updateVisualNavActive('Narrar');
+}
+function trPrepareNarrationForNodeV1967(nodeId){
+  const n=visualNodeById(nodeId) || nodeById(nodeId); if(!n) return;
+  trNarrationLastNodeV1967=nodeId;
+  openPanelByLabel('IA'); openAIAtV1966('ask');
+  const g=overrideFor(n) || n;
+  if(qs('aiAction')) qs('aiAction').value=`Narre este local para a mesa.\n\nLocal: ${g.name}\nDescrição: ${g.desc||''}\nEvento possível: ${g.event||''}\nPista possível: ${g.clue||''}\nEscolhas possíveis: ${g.choices||''}\n\nTom: cinematográfico, infantil/familiar, dark fantasy dourado, sem terror pesado. Termine com uma escolha clara para as jogadoras.`;
+}
+const trSelectVisualNodePrevV1967 = selectVisualNode;
+selectVisualNode = function(nodeId){
+  trSelectVisualNodePrevV1967(nodeId);
+  if(trNarrationPickModeV1967) trPrepareNarrationForNodeV1967(nodeId);
+};
+const trSelectMapNodePrevV1967 = selectMapNode;
+selectMapNode = function(id){
+  trSelectMapNodePrevV1967(id);
+  if(trNarrationPickModeV1967) trPrepareNarrationForNodeV1967(id);
+};
+
+const trDynamicNavItemsPrevV1967 = dynamicNavItemsV196;
+dynamicNavItemsV196 = function(){
+  const base=trDynamicNavItemsPrevV1967();
+  if(!base.some(x=>x[2]==='narrar')) base.push(['Narrar','🎙️','narrar']);
+  return base;
+};
+openMesaTool = function(label){
+  const n=normalizeLabelV196(label);
+  if(n==='mapa') return openVisualMapV1966();
+  if(n==='cartas') return trIsStaffV1966()?trOpenWideCards():openPanelByLabel('Cartas');
+  if(n==='eventos') return trIsStaffV1966()?trOpenWideEventsV1966():openPanelByLabel('Eventos');
+  if(n==='biblioteca') return trIsStaffV1966()?trOpenWideLibrary('Biblioteca'):openPanelByLabel('Biblioteca');
+  if(n==='configuracoes') return openPanelByLabel('Configurações');
+  if(n==='central') return openPanelByLabel('Central');
+  if(n==='narrar') return trStartNarrationModeV1967();
+  trCloseWideOverlay(); openPanelByLabel(label);
+};
+
+const trRenderGamePrevV1967 = renderGame;
+renderGame = function(){
+  trPatchForestHotspotsV1967();
+  trRenderGamePrevV1967();
+  try{ renderRolePanel(); initPanelTabs(); if(qs('inventoryContent')) renderInventoryVisual(); if(qs('players')) renderPlayers(); }catch(e){ console.warn('Pós-render v19.6.7', e); }
+};
+
+Object.assign(window,{TR_VERSION_V1967,trPatchForestHotspotsV1967,trOpenWideCards,trOpenWideEventsV1966,trOpenWideEventsV1965,trOpenWideLibrary,trWideOverlayShell,trCloseWideOverlay,trSendCatalogCardV1967,trSetWideTab:trSetWideTabV1967,renderInventoryVisual,renderPlayers,renderRolePanel,openMesaTool,dynamicNavItemsV196,selectVisualNode,selectMapNode,trStartNarrationModeV1967,trPrepareNarrationForNodeV1967});
+
+
+/* ===== v19.6.8 — locais ilustrados e cartas cinematográficas ===== */
+const TR_VERSION_V1968 = 'v19.6.8';
+function trLocationThumbV1968(id){ return `/assets/locations/floresta_negra/${id}.webp`; }
+function trLocationNameToIdV1968(name=''){
+  const s=String(name||'').toLowerCase();
+  if(s.includes('entrada')) return 'entrada';
+  if(s.includes('folhas')) return 'trilha';
+  if(s.includes('raposa')) return 'toca';
+  if(s.includes('pegada')) return 'jardim';
+  if(s.includes('cabana')) return 'cabana';
+  if(s.includes('lago')) return 'lago';
+  if(s.includes('árvore')||s.includes('arvore')) return 'arvore';
+  if(s.includes('clareira')) return 'clareira';
+  if(s.includes('ponte')) return 'ponte';
+  if(s.includes('mirante')) return 'mirante';
+  if(s.includes('coração')||s.includes('coracao')) return 'coracao';
+  if(s.includes('portal')) return 'portal';
+  return '';
+}
+function trCardLocationIdV1968(c){
+  const id=String(c?.id||'').toLowerCase();
+  const title=String(c?.title||'').toLowerCase();
+  const origin=String(c?.origin||'').toLowerCase();
+  if(id.includes('pegadas') || title.includes('pegadas')) return 'jardim';
+  if(id.includes('sussurro') || title.includes('árvores') || title.includes('arvores')) return 'arvore';
+  if(id.includes('cabana') || title.includes('cabana')) return 'cabana';
+  if(id.includes('lago') || title.includes('lago')) return 'lago';
+  if(id.includes('lanterna') || title.includes('clareira')) return 'clareira';
+  if(id.includes('chave_de_raiz') || title.includes('raiz')) return 'coracao';
+  if(id.includes('raposa') || title.includes('raposa')) return 'toca';
+  if(id.includes('semente') || title.includes('luz verde')) return 'coracao';
+  if(id.includes('galho') || title.includes('galho')) return 'ponte';
+  if(id.includes('riso') || title.includes('folhas')) return 'trilha';
+  if(id.includes('vento') || title.includes('vento')) return 'mirante';
+  if(id.includes('névoa') || id.includes('nevoa') || title.includes('névoa') || title.includes('nevoa')) return 'entrada';
+  if(id.includes('olhos') || title.includes('escuro')) return 'portal';
+  if(id.includes('portal') || title.includes('portal')) return 'portal';
+  if(id.includes('coração')||id.includes('coracao')||title.includes('coração')||title.includes('coracao')) return 'coracao';
+  return trLocationNameToIdV1968(origin) || 'clareira';
+}
+function trCinematicCardVisualV1968(c){
+  const cat=(c?.category || (c?.character_id?'character':(c?.map_id?'map':'')) || (receivedCardCategoryV196?receivedCardCategoryV196(c):'')).toLowerCase();
+  if(cat==='character' || c?.character_id || ['identity','power','special'].includes(c?.type) || ['identity','power','special'].includes(c?.kind)){
+    const ch=(charsCache||[]).find(x=>String(x.id)===String(c.character_id)) || (state?.players||[]).map(p=>p.character).find(x=>x && String(x.id)===String(c.character_id));
+    const img=trCharacterCardPathV1967(ch||{});
+    return {img, cls:'cinematicCardArt portrait'};
+  }
+  const locId=trCardLocationIdV1968(c);
+  return {img:trLocationThumbV1968(locId), cls:'cinematicCardArt scene'};
+}
+trCardImgHTMLV1967 = function(c){
+  const vis=trCinematicCardVisualV1968(c);
+  const badge=esc(cardTypeLabelV196(c.type||c.kind));
+  return `<div class="cinematicCardFrame ${vis.cls.includes('portrait')?'portrait':'scene'}">${vis.img?`<img class="${vis.cls}" src="${esc(vis.img)}" alt="${esc(c?.title||c?.name||'Carta')}" onerror="this.style.display='none';this.parentElement.classList.add('missing');">`:''}<div class="cinematicCardShade"></div><div class="cinematicCardTop"><span class="cinematicPill">${badge}</span></div><div class="cinematicCardBottom"><b>${esc(c?.title||c?.name||'Carta')}</b><span>${esc(c?.origin||c?.map_id||c?.character_id||'Terras Raras')}</span></div></div>`;
+};
+trWideCardHTMLV1967 = function(c, actions=''){
+  return `<div class="wideCardTile cinematic"><div class="wideCardImgWrap">${trCardImgHTMLV1967(c)}</div><div class="wideCardBody"><div class="wideCardMeta">${esc(cardTypeLabelV196(c.type||c.kind))} · ${esc(c.rarity||'comum')}</div><b>${esc(c.title||c.name||'Carta')}</b><div class="wideCardText">${esc(c.short_text||c.effect_text||c.text||c.description||'')}</div><div class="wideCardActions">${actions||''}</div></div></div>`;
+};
+renderReceivedVisualCardV196 = function(c, actions=''){
+  const meta=cardKindMeta(c.kind);
+  const status=c.revoked_at?'retirada':(c.used_at?'usada':cardStatusText(c));
+  return `<div class="wideCardTile cinematic received ${c.revoked_at?'revoked':''}"><div class="wideCardImgWrap">${trCardImgHTMLV1967(c)}</div><div class="wideCardBody"><div class="wideCardMeta">${meta.icon} ${esc(meta.label)} · ${esc(c.origin||'')}</div><b>${esc(c.title)}</b><div class="wideCardText">${esc((c.text||'').slice(0,170))}${(c.text||'').length>170?'…':''}</div><span class="cardStatus ${status}">${status}</span><div class="wideCardActions">${actions||''}</div></div></div>`;
+};
+trForestLocationsGridV1967 = function(){
+  const nodes=(FOREST_V19_VISUAL?.nodes||[]);
+  return `<div class="locationGridV1967 illustrated">${nodes.map(n=>`<button class="locationCardV1967 illustrated ${(selectedNode?.id===n.id)?'on':''}" onclick="trCloseWideOverlay();selectVisualNode('${esc(n.id)}')"><div class="locationThumbWrap"><img class="locationThumb" src="${esc(trLocationThumbV1968(n.id))}" alt="${esc(n.name)}" onerror="this.style.display='none';this.parentElement.classList.add('missing');"><div class="locationThumbShade"></div><div class="locationThumbLabel">${n.icon||'✦'} ${esc(n.name)}</div></div><span>${esc((overrideFor(n)?.desc||'Clique para selecionar este ponto do mapa.').slice(0,110))}</span></button>`).join('')}</div>`;
+};
+Object.assign(window,{trLocationThumbV1968,trCardLocationIdV1968,trCinematicCardVisualV1968});
+
+
+/* ===== v19.6.9 — cartas de personagem com arte própria e retrato no canto ===== */
+const TR_VERSION_V1969 = 'v19.6.11';
+
+function trIsCharacterCardImageV1969(c){
+  const p = String(c?.image_path || '');
+  return p.includes('/assets/cards/characters_cinematic_v1969/');
+}
+function trCharacterFullCardImgHTMLV1969(c){
+  const img = c?.image_path || '';
+  return `<div class="characterFullCardFrame">${img ? `<img class="characterFullCardImg" src="${esc(img)}?v=19.6.11.14" alt="${esc(c?.title||'Carta de personagem')}" onerror="this.parentElement.innerHTML='<div class=&quot;wideCardMissing&quot;>✦</div>'">` : '<div class="wideCardMissing">✦</div>'}</div>`;
+}
+
+const trCardImgHTMLV1968Original = trCardImgHTMLV1967;
+trCardImgHTMLV1967 = function(c){
+  if(trIsCharacterCardImageV1969(c)) return trCharacterFullCardImgHTMLV1969(c);
+  return trCardImgHTMLV1968Original(c);
+};
+
+const trWideCardHTMLV1968Original = trWideCardHTMLV1967;
+trWideCardHTMLV1967 = function(c, actions=''){
+  if(trIsCharacterCardImageV1969(c)){
+    return `<div class="wideCardTile cinematic characterFullCardTile"><div class="wideCardImgWrap characterFullCardWrap">${trCharacterFullCardImgHTMLV1969(c)}</div><div class="wideCardBody compactBody"><div class="wideCardMeta">${esc(cardTypeLabelV196(c.type||c.kind))} · ${esc(c.rarity||'comum')}</div><b>${esc(c.title||c.name||'Carta')}</b><div class="wideCardActions">${actions||''}</div></div></div>`;
+  }
+  return trWideCardHTMLV1968Original(c, actions);
+};
+
+const renderReceivedVisualCardV1968Original = renderReceivedVisualCardV196;
+renderReceivedVisualCardV196 = function(c, actions=''){
+  if(trIsCharacterCardImageV1969(c)){
+    const meta=cardKindMeta(c.kind);
+    const status=c.revoked_at?'retirada':(c.used_at?'usada':cardStatusText(c));
+    return `<div class="wideCardTile cinematic received characterFullCardTile ${c.revoked_at?'revoked':''}"><div class="wideCardImgWrap characterFullCardWrap">${trCharacterFullCardImgHTMLV1969(c)}</div><div class="wideCardBody compactBody"><div class="wideCardMeta">${meta.icon} ${esc(meta.label)} · ${esc(c.origin||'')}</div><b>${esc(c.title)}</b><span class="cardStatus ${status}">${status}</span><div class="wideCardActions">${actions||''}</div></div></div>`;
+  }
+  return renderReceivedVisualCardV1968Original(c, actions);
+};
+
+Object.assign(window,{trIsCharacterCardImageV1969,trCharacterFullCardImgHTMLV1969});
+
+
+/* ===== v19.6.11 — hard refresh do catálogo de cartas ===== */
+async function trReloadCardCatalogV196101(){
+  cardCatalog = null;
+  try{
+    await loadCardCatalog(true);
+    if(typeof trRenderWideCards==='function') trRenderWideCards();
+    if(typeof renderCards==='function') renderCards();
+    if(typeof toast==='function') toast('Catálogo de cartas recarregado.'); else console.log('Catálogo de cartas recarregado.');
+  }catch(e){
+    console.warn('Falha ao recarregar catálogo v19.6.11', e);
+    if(typeof toast==='function') toast('Não consegui recarregar o catálogo.'); else console.warn('Não consegui recarregar o catálogo.');
+  }
+}
+Object.assign(window,{trReloadCardCatalogV196101});
+
+// landing-auth-escape-v196118
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLandingAuth?.(); });
