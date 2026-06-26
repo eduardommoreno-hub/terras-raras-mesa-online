@@ -4851,3 +4851,327 @@ Object.assign(window,{trReloadCardCatalogV196101});
 
 // landing-auth-escape-v196118
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLandingAuth?.(); });
+
+
+/* ===== v19.6.11.22 — mensagens cinematográficas do sistema ===== */
+(function(){
+  const TR_CINE_VERSION='v19.6.11.22';
+  let lastAuthCineMessage='';
+
+  function trEnsureCineUI(){
+    if(!document.getElementById('trCineToastStack')){
+      const stack=document.createElement('div');
+      stack.id='trCineToastStack';
+      stack.className='trCineToastStack';
+      document.body.appendChild(stack);
+    }
+    if(!document.getElementById('trCineModal')){
+      const modal=document.createElement('div');
+      modal.id='trCineModal';
+      modal.className='trCineModal hidden';
+      modal.setAttribute('aria-hidden','true');
+      modal.innerHTML=`<div class="trCineModalBackdrop" onclick="trCineCloseModal()"></div><div class="trCineModalPanel"><div id="trCineModalIcon" class="trCineModalIcon">✦</div><h2 id="trCineModalTitle" class="trCineModalTitle"></h2><p id="trCineModalText" class="trCineModalText"></p><div id="trCineModalActions" class="trCineActions"></div></div>`;
+      document.body.appendChild(modal);
+    }
+    if(!document.getElementById('trAiThinkingOrb')){
+      const orb=document.createElement('div');
+      orb.id='trAiThinkingOrb';
+      orb.className='trAiThinkingOrb hidden';
+      orb.innerHTML=`<div class="trAiThinkingSpinner"></div><div class="trAiThinkingText"><b>O Narrador está ouvindo as sombras...</b><span>A IA local está preparando a próxima página da aventura.</span></div>`;
+      document.body.appendChild(orb);
+    }
+  }
+
+  function trCinePreset(kind, rawText){
+    const text=String(rawText||'');
+    if(kind==='login_error' || /login inválido|senha|credenciais|unauthorized|forbidden/i.test(text)) return {icon:'🗝️',title:'A chave não abriu o portal',text:'Confira o nome e a senha. As Terras Raras só se abrem para quem recebeu autorização do Mestre.'};
+    if(kind==='pending' || /pendente|aprovação|autoriz|aguardando/i.test(text)) return {icon:'🦉',title:'Sua coruja ainda não retornou',text:'O pedido continua nas mãos do Mestre. Assim que ele autorizar, o portal se abrirá.'};
+    if(kind==='removed' || /remov|expuls|sala foi encerrada|encerrada/i.test(text)) return {icon:'🚪',title:'O Mestre fechou sua passagem',text:'Sua ligação com esta mesa foi encerrada. Volte ao Hub para encontrar outro caminho.'};
+    if(kind==='connection') return {icon:'🕯️',title:'O fio entre os mundos se rompeu',text:'A conexão com a mesa caiu por um instante. Estamos tentando reacender o portal.'};
+    if(kind==='connection_back') return {icon:'✨',title:'O portal voltou a brilhar',text:'A conexão com a mesa foi restaurada.'};
+    if(kind==='ai') return {icon:'🌘',title:'O Narrador está ouvindo as sombras...',text:'A IA local recebeu seu pedido e está preparando uma resposta para a Mestre.'};
+    if(kind==='ai_done') return {icon:'📜',title:'Uma nova página foi escrita',text:'A resposta da IA chegou. Abra a aba Respostas para revisar antes de publicar.'};
+    if(kind==='card') return {icon:'🃏',title:'Uma carta surgiu entre suas mãos',text:'Você recebeu uma nova carta da aventura. Abra com cuidado: ela pode mudar o rumo da sessão.'};
+    if(kind==='card_sent') return {icon:'✉️',title:'A carta foi enviada',text:'A mensagem atravessou a névoa e chegou ao destino escolhido.'};
+    if(kind==='mission_done') return {icon:'📜',title:'Mais uma página foi escrita',text:'Uma missão ou carta importante foi concluída nas Terras Raras.'};
+    if(kind==='saved') return {icon:'🎒',title:'Guardado no inventário',text:'A carta foi protegida junto aos seus achados da aventura.'};
+    return {icon:'✦',title:'Mensagem das Terras Raras',text:text||'Algo aconteceu na mesa.'};
+  }
+
+  window.trCineToast=function(kindOrTitle, text, ms=4200){
+    trEnsureCineUI();
+    let p=typeof kindOrTitle==='object'?kindOrTitle:trCinePreset(kindOrTitle,text);
+    if(text && !['login_error','pending','removed','connection','connection_back','ai','ai_done','card','card_sent','mission_done','saved'].includes(kindOrTitle)) p={icon:'✦',title:kindOrTitle,text};
+    const stack=document.getElementById('trCineToastStack');
+    const el=document.createElement('div');
+    el.className='trCineToast';
+    el.innerHTML=`<div class="trCineToastIcon">${p.icon||'✦'}</div><div class="trCineToastTitle">${esc(p.title||'Terras Raras')}</div><div class="trCineToastText">${esc(p.text||'')}</div>`;
+    stack.appendChild(el);
+    setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),260); }, ms);
+    return el;
+  };
+
+  window.trCineModal=function(kindOrOptions, maybeText){
+    trEnsureCineUI();
+    const p=typeof kindOrOptions==='object'?kindOrOptions:trCinePreset(kindOrOptions,maybeText);
+    const modal=document.getElementById('trCineModal');
+    document.getElementById('trCineModalIcon').textContent=p.icon||'✦';
+    document.getElementById('trCineModalTitle').textContent=p.title||'Terras Raras';
+    document.getElementById('trCineModalText').textContent=p.text||'';
+    const actions=document.getElementById('trCineModalActions');
+    actions.innerHTML='';
+    const buttons=p.buttons||[{label:'Entendido',className:'trCineBtn',action:()=>trCineCloseModal()}];
+    buttons.forEach(b=>{ const btn=document.createElement('button'); btn.className=b.className||'trCineBtn'; btn.textContent=b.label||'Entendido'; btn.onclick=b.action||(()=>trCineCloseModal()); actions.appendChild(btn); });
+    modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+  };
+  window.trCineCloseModal=function(){ const m=document.getElementById('trCineModal'); if(m){m.classList.add('hidden');m.setAttribute('aria-hidden','true');} };
+  window.trAiThinkingShow=function(){ trEnsureCineUI(); document.getElementById('trAiThinkingOrb')?.classList.remove('hidden'); };
+  window.trAiThinkingHide=function(){ document.getElementById('trAiThinkingOrb')?.classList.add('hidden'); };
+  window.trSyncAIThinking=function(){
+    const active=(state?.ai_jobs||[]).some(j=>['pending','processing'].includes(j.status));
+    if(active) trAiThinkingShow(); else trAiThinkingHide();
+  };
+
+  // Substitui alertas técnicos por aviso cinematográfico sem quebrar o fluxo.
+  const nativeAlert=window.alert.bind(window);
+  window.trNativeAlert=nativeAlert;
+  window.alert=function(message){
+    const text=String(message||'');
+    if(/A narração oficial é exclusiva/i.test(text)) return trCineModal({icon:'🎙️',title:'A voz oficial pertence à Mestre',text:'A Ajudante pode preparar ideias e bastidores, mas a narração pública continua sob controle da Mestre.'});
+    if(/Carta enviada com sucesso/i.test(text)) return trCineToast('card_sent');
+    if(/sala foi encerrada|remov/i.test(text)) return trCineModal('removed', text);
+    if(/login inválido|senha|erro/i.test(text)) return trCineModal('login_error', text);
+    return trCineModal({icon:'✦',title:'Mensagem das Terras Raras',text:text});
+  };
+
+  // Mensagens de autenticação viram linguagem do mundo.
+  if(typeof msg==='function'){
+    const oldMsg=msg;
+    msg=function(t,err=false){
+      oldMsg(t,err);
+      const text=String(t||'');
+      if(err && text && text!==lastAuthCineMessage){
+        lastAuthCineMessage=text;
+        if(/autoriz|aprova|pendente|aguardando/i.test(text)) trCineToast('pending', text, 5200);
+        else trCineToast('login_error', text, 5200);
+      }
+    };
+  }
+
+  // IA: mostrar estado cinematográfico enquanto o Ollama trabalha.
+  if(typeof requestAI==='function'){
+    requestAI=async function(kind){
+      const active=hasActiveAI(kind);
+      const st=qs('aiStatus');
+      if(active){
+        trOpenAIResponses();
+        const m=`Já existe o pedido #${active.id} (${labelJob(active.job_type)}) aguardando o worker. Processe, cancele ou limpe pendentes antes de criar outro.`;
+        if(st){st.textContent=m; st.className='msg err';}
+        trCineToast({icon:'⏳',title:'O Narrador ainda está escrevendo',text:'Há um pedido de IA em andamento. Aguarde a resposta ou cancele o pedido anterior.'},5200);
+        trSyncAIThinking();
+        return;
+      }
+      trOpenAIResponses();
+      const action=qs('aiAction')?.value.trim()||'Continue a cena atual com tensão e escolhas.';
+      trAiThinkingShow();
+      trCineToast('ai', '', 3600);
+      if(st){st.textContent='O Narrador está ouvindo as sombras...'; st.className='msg';}
+      try{
+        const d=await api(`/rooms/${currentRoom}/ai/request`,{method:'POST',body:JSON.stringify({action,job_type:kind,response_mode:aiMode()})});
+        if(st) st.textContent='Pedido #'+d.job.id+' entregue ao Narrador local.';
+        if(kind==='narrative'&&qs('aiAction')) qs('aiAction').value='';
+        setTimeout(async()=>{try{state=await api('/rooms/'+currentRoom);renderGame();trOpenAIResponses();trSyncAIThinking();}catch(e){}},900);
+      }catch(e){
+        trAiThinkingHide();
+        if(st){st.textContent=e.message; st.className='msg err';}
+        trCineModal({icon:'⚠️',title:'A voz do Narrador falhou',text:'Não consegui enviar o pedido para a IA local. Verifique se o worker e o Ollama estão ligados.'});
+      }
+    };
+  }
+  if(typeof requestAIAndShow==='function'){
+    requestAIAndShow=function(kind){
+      if(kind==='narrative' && !hasNarrationPermission()){
+        openPanelByLabel('IA'); showAIInnerTab('ask');
+        trCineModal({icon:'🎙️',title:'A voz oficial pertence à Mestre',text:'A narração pública é exclusiva da Mestre. A Ajudante pode usar Perguntar para preparar bastidores.'});
+        return;
+      }
+      trOpenAIResponses();
+      return requestAI(kind);
+    };
+  }
+  if(typeof renderAIJobs==='function'){
+    const oldRenderAIJobs=renderAIJobs;
+    renderAIJobs=function(){
+      const beforeDone=(state?.ai_jobs||[]).filter(j=>j.status==='done').length;
+      oldRenderAIJobs();
+      trSyncAIThinking();
+    };
+  }
+
+  // WebSocket: reconexão deixa de parecer erro técnico.
+  if(typeof connectWS==='function'){
+    connectWS=function(){
+      if(ws){ try{ws.onclose=null; ws.close()}catch(e){} }
+      const proto=location.protocol==='https:'?'wss':'ws';
+      ws=new WebSocket(`${proto}://${location.host}/ws/${currentRoom}`);
+      ws.onopen=()=>{ const p=qs('roomCode'); if(p&&p.dataset.baseCode) p.textContent=p.dataset.baseCode; trCineToast('connection_back','',2200); };
+      ws.onmessage=e=>{
+        const d=JSON.parse(e.data);
+        if(d.type==='state'){
+          if(typeof premiumDraggingPlayer !== 'undefined' && premiumDraggingPlayer){ pendingStateDuringPremiumDrag=d.state; }
+          else { state=d.state; renderRoom(); trSyncAIThinking(); }
+        }
+        else if(d.type==='staff_chat_updated'){ renderStaffChat(); }
+        else if(d.type==='cards_updated'){ fetchAdventureCards(true); }
+        else if(d.type==='master_events_updated'){ fetchMasterEvents(true); }
+        else if(d.type==='room_deleted'){ if(currentRoom){ trCineModal('removed'); currentRoom=null; show('hub'); loadHub(); } }
+      };
+      ws.onerror=()=>{ try{ws.close()}catch(e){} };
+      ws.onclose=()=>{
+        if(!currentRoom)return;
+        const p=qs('roomCode');
+        if(p){ p.dataset.baseCode=p.dataset.baseCode||p.textContent; p.textContent=(p.dataset.baseCode||'')+' · reconectando...'; }
+        trCineToast('connection','',4200);
+        setTimeout(()=>{ if(currentRoom) connectWS(); },3000);
+      };
+    };
+  }
+
+  // Cartas: aviso cinematográfico ao receber, guardar, usar e enviar.
+  let trKnownCardIds=new Set((myAdventureCards||[]).map(c=>Number(c.id)));
+  if(typeof fetchAdventureCards==='function'){
+    const oldFetchAdventureCards=fetchAdventureCards;
+    fetchAdventureCards=async function(openOverlay=true){
+      const before=new Set((myAdventureCards||[]).map(c=>Number(c.id)));
+      await oldFetchAdventureCards(openOverlay);
+      const after=(myAdventureCards||[]);
+      const added=after.filter(c=>!before.has(Number(c.id)) && !trKnownCardIds.has(Number(c.id)));
+      after.forEach(c=>trKnownCardIds.add(Number(c.id)));
+      if(openOverlay && added.length && !isStaff()) trCineToast('card','',5200);
+    };
+  }
+  if(typeof saveAdventureCard==='function'){
+    const oldSaveAdventureCard=saveAdventureCard;
+    saveAdventureCard=async function(id){ await oldSaveAdventureCard(id); trCineToast('saved','',3200); };
+  }
+  if(typeof markAdventureCardUsed==='function'){
+    const oldMarkAdventureCardUsed=markAdventureCardUsed;
+    markAdventureCardUsed=async function(id){
+      const card=(myAdventureCards||allAdventureCards||[]).find(c=>Number(c.id)===Number(id));
+      await oldMarkAdventureCardUsed(id);
+      if(String(card?.kind||card?.type||'').toLowerCase().includes('miss')) trCineToast('mission_done','',5200);
+      else trCineToast({icon:'✦',title:'A carta cumpriu seu destino',text:'O efeito foi registrado na aventura.'},3600);
+    };
+  }
+  if(typeof sendAdventureCard==='function'){
+    sendAdventureCard=async function(){
+      const kind=qs('cardKind')?.value||'pista';
+      const title=(qs('cardTitle')?.value||'').trim();
+      const text=(qs('cardText')?.value||'').trim();
+      const origin=(qs('cardOrigin')?.value||'').trim();
+      const target=qs('cardTargetMode')?.value||'all';
+      const target_user_id=target==='one'?Number(qs('cardTargetUser')?.value||0):null;
+      const catalog_id=qs('cardCatalogId')?.value||'';
+      const rarity=qs('cardRarity')?.value||'common';
+      const image_path=qs('cardImagePath')?.value||'';
+      if(!title||!text){ trCineModal({icon:'🃏',title:'A carta ainda está incompleta',text:'Preencha o título e o texto antes de enviar.'}); return; }
+      const res=await api(`/rooms/${currentRoom}/cards/send`,{method:'POST',body:JSON.stringify({kind,title,text,origin,target,target_user_id,catalog_id,rarity,image_path})});
+      if(qs('cardText')) qs('cardText').value='';
+      if(qs('cardTitle')) qs('cardTitle').value='';
+      if(qs('cardOrigin')) qs('cardOrigin').value=state?.map?.name||'';
+      await fetchAdventureCards(false);
+      trCineToast({icon:'✉️',title:'A carta foi enviada',text:`${res.count||1} jogadora(s) receberam a mensagem da aventura.`},4600);
+    };
+  }
+  if(typeof trSendCatalogCard==='function'){
+    const oldTrSendCatalogCard=trSendCatalogCard;
+    trSendCatalogCard=async function(catalogId,target='one',targetUserId=null){ await oldTrSendCatalogCard(catalogId,target,targetUserId); trCineToast('card_sent','',3600); };
+    window.trSendCatalogCard=trSendCatalogCard;
+  }
+  if(typeof sendCatalogCardV196==='function'){
+    const oldSendCatalogCardV196=sendCatalogCardV196;
+    sendCatalogCardV196=async function(catalogId,target='one',targetUserId=null){ await oldSendCatalogCardV196(catalogId,target,targetUserId); trCineToast('card_sent','',3600); };
+    window.sendCatalogCardV196=sendCatalogCardV196;
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{ trEnsureCineUI(); });
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape') trCineCloseModal(); });
+  Object.assign(window,{TR_CINE_VERSION,trEnsureCineUI});
+})();
+
+
+/* TERRAS RARAS v19.6.11.23 — Fábrica dos Doces Pesadelos completa
+   Biblioteca e 12 locais oficiais da zona. Não altera infraestrutura.
+*/
+window.TR_FABRICA_DOCES_PESADELOS = window.TR_FABRICA_DOCES_PESADELOS || (function () {
+  const node = document.getElementById("tr-fabrica-dos-doces-pesadelos-data");
+  if (!node) return null;
+  try { return JSON.parse(node.textContent); } catch (e) { return null; }
+})();
+
+window.getTerrasRarasZoneLore = window.getTerrasRarasZoneLore || function(zoneId) {
+  if (zoneId === "fabrica_dos_doces_pesadelos") return window.TR_FABRICA_DOCES_PESADELOS;
+  return null;
+};
+
+window.openFabricaLibrary = window.openFabricaLibrary || function() {
+  const z = window.TR_FABRICA_DOCES_PESADELOS;
+  if (!z) return alert("Biblioteca da Fábrica ainda não carregada.");
+  const locais = z.locations.map(l => `${l.n}. ${l.name} — ${l.tagline}`).join("\n");
+  const cartas = z.cards.map(c => `• ${c.name} (${c.type})`).join("\n");
+  alert(`Biblioteca da ${z.title}\n\n${z.tagline}\n\nLOCAIS:\n${locais}\n\nCARTAS:\n${cartas}`);
+};
+
+
+/* TERRAS RARAS v19.6.11.24 — Registro Canônico Fábrica dos Doces Pesadelos */
+window.TR_FABRICA_CANON_V24 = window.TR_FABRICA_CANON_V24 || (function () {
+  const node = document.getElementById("tr-fabrica-canon-v24");
+  if (!node) return null;
+  try { return JSON.parse(node.textContent); } catch (e) { return null; }
+})();
+
+window.getFabricaNarratorLocation = window.getFabricaNarratorLocation || function(locationId) {
+  const canon = window.TR_FABRICA_CANON_V24;
+  if (!canon || !Array.isArray(canon.locations)) return null;
+  return canon.locations.find(loc => loc.id === locationId) || null;
+};
+
+
+/* TERRAS RARAS v19.6.11.25 — Baralho oficial da Fábrica dos Doces Pesadelos */
+window.TR_FABRICA_DECK_V25 = window.TR_FABRICA_DECK_V25 || (function () {
+  const node = document.getElementById("tr-fabrica-deck-v25");
+  if (!node) return null;
+  try { return JSON.parse(node.textContent); } catch (e) { return null; }
+})();
+
+window.getFabricaCard = window.getFabricaCard || function(cardId) {
+  const deck = window.TR_FABRICA_DECK_V25;
+  if (!deck || !Array.isArray(deck.cards)) return null;
+  return deck.cards.find(card => card.id === cardId) || null;
+};
+
+window.getFabricaCardsByLocation = window.getFabricaCardsByLocation || function(locationId) {
+  const deck = window.TR_FABRICA_DECK_V25;
+  if (!deck || !Array.isArray(deck.cards)) return [];
+  return deck.cards.filter(card => card.location_id === locationId);
+};
+
+
+/* TERRAS RARAS v19.6.11.28 — Baralho Floresta Negra */
+window.TR_FLORESTA_DECK_V28 = window.TR_FLORESTA_DECK_V28 || (function () {
+  const node = document.getElementById("tr-floresta-deck-v28");
+  if (!node) return null;
+  try { return JSON.parse(node.textContent); } catch (e) { return null; }
+})();
+
+window.getFlorestaNegraCard = window.getFlorestaNegraCard || function(cardId) {
+  const deck = window.TR_FLORESTA_DECK_V28;
+  if (!deck || !Array.isArray(deck.cards)) return null;
+  return deck.cards.find(card => card.id === cardId || card.catalog_id === cardId) || null;
+};
+
+window.getFlorestaNegraCardsByLocation = window.getFlorestaNegraCardsByLocation || function(locationN) {
+  const deck = window.TR_FLORESTA_DECK_V28;
+  if (!deck || !Array.isArray(deck.cards)) return [];
+  return deck.cards.filter(card => Number(card.location_n) === Number(locationN));
+};

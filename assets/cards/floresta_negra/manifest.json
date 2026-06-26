@@ -1,0 +1,134 @@
+{
+  "version": "v19.6.11.28",
+  "zone_id": "floresta_negra",
+  "deck_file": "assets/cards/floresta_negra/baralho_floresta_negra.json",
+  "card_count": 18,
+  "cards": [
+    {
+      "id": "pegadas_na_nevoa",
+      "catalog_id": "pegadas_na_névoa",
+      "name": "Pegadas na Névoa",
+      "type": "pista",
+      "image": "assets/cards/floresta_negra/01_pegadas_na_nevoa.webp"
+    },
+    {
+      "id": "sussurro_das_arvores",
+      "catalog_id": "sussurro_das_árvores",
+      "name": "Sussurro das Árvores",
+      "type": "pista",
+      "image": "assets/cards/floresta_negra/02_sussurro_das_arvores.webp"
+    },
+    {
+      "id": "desenho_da_cabana_vazia",
+      "catalog_id": "desenho_da_cabana_vazia",
+      "name": "Desenho da Cabana Vazia",
+      "type": "pista",
+      "image": "assets/cards/floresta_negra/03_desenho_da_cabana_vazia.webp"
+    },
+    {
+      "id": "reflexo_no_lago_quieto",
+      "catalog_id": "reflexo_no_lago_quieto",
+      "name": "Reflexo no Lago Quieto",
+      "type": "pista",
+      "image": "assets/cards/floresta_negra/04_reflexo_no_lago_quieto.webp"
+    },
+    {
+      "id": "lanterna_da_clareira",
+      "catalog_id": "lanterna_da_clareira",
+      "name": "Lanterna da Clareira",
+      "type": "item",
+      "image": "assets/cards/floresta_negra/05_lanterna_da_clareira.webp"
+    },
+    {
+      "id": "chave_de_raiz",
+      "catalog_id": "chave_de_raiz",
+      "name": "Chave de Raiz",
+      "type": "item",
+      "image": "assets/cards/floresta_negra/06_chave_de_raiz.webp"
+    },
+    {
+      "id": "fita_da_raposa_de_nevoa",
+      "catalog_id": "fita_da_raposa_de_névoa",
+      "name": "Fita da Raposa de Névoa",
+      "type": "item",
+      "image": "assets/cards/floresta_negra/07_fita_da_raposa_de_nevoa.webp"
+    },
+    {
+      "id": "semente_de_luz_verde",
+      "catalog_id": "semente_de_luz_verde",
+      "name": "Semente de Luz Verde",
+      "type": "item",
+      "image": "assets/cards/floresta_negra/08_semente_de_luz_verde.webp"
+    },
+    {
+      "id": "galho_que_aponta",
+      "catalog_id": "galho_que_aponta",
+      "name": "Galho que Aponta",
+      "type": "evento",
+      "image": "assets/cards/floresta_negra/09_galho_que_aponta.webp"
+    },
+    {
+      "id": "riso_entre_as_folhas",
+      "catalog_id": "riso_entre_as_folhas",
+      "name": "Riso entre as Folhas",
+      "type": "evento",
+      "image": "assets/cards/floresta_negra/10_riso_entre_as_folhas.webp"
+    },
+    {
+      "id": "a_cabana_piscou",
+      "catalog_id": "a_cabana_piscou",
+      "name": "A Cabana Piscou",
+      "type": "evento",
+      "image": "assets/cards/floresta_negra/11_a_cabana_piscou.webp"
+    },
+    {
+      "id": "vento_sem_corpo",
+      "catalog_id": "vento_sem_corpo",
+      "name": "Vento sem Corpo",
+      "type": "evento",
+      "image": "assets/cards/floresta_negra/12_vento_sem_corpo.webp"
+    },
+    {
+      "id": "raiz_que_prende",
+      "catalog_id": "raiz_que_prende",
+      "name": "Raiz que Prende",
+      "type": "perigo",
+      "image": "assets/cards/floresta_negra/13_raiz_que_prende.webp"
+    },
+    {
+      "id": "nevoa_que_separa",
+      "catalog_id": "névoa_que_separa",
+      "name": "Névoa que Separa",
+      "type": "perigo",
+      "image": "assets/cards/floresta_negra/14_nevoa_que_separa.webp"
+    },
+    {
+      "id": "olhos_no_escuro",
+      "catalog_id": "olhos_no_escuro",
+      "name": "Olhos no Escuro",
+      "type": "perigo",
+      "image": "assets/cards/floresta_negra/15_olhos_no_escuro.webp"
+    },
+    {
+      "id": "encontrar_a_cabana_vazia",
+      "catalog_id": "encontrar_a_cabana_vazia",
+      "name": "Encontrar a Cabana Vazia",
+      "type": "missão",
+      "image": "assets/cards/floresta_negra/16_encontrar_a_cabana_vazia.webp"
+    },
+    {
+      "id": "abrir_o_portal_da_fabrica",
+      "catalog_id": "abrir_o_portal_da_fábrica",
+      "name": "Abrir o Portal da Fábrica",
+      "type": "missão",
+      "image": "assets/cards/floresta_negra/17_abrir_o_portal_da_fabrica.webp"
+    },
+    {
+      "id": "coracao_da_floresta",
+      "catalog_id": "coração_da_floresta",
+      "name": "Coração da Floresta",
+      "type": "especial",
+      "image": "assets/cards/floresta_negra/18_coracao_da_floresta.webp"
+    }
+  ]
+}

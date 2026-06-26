@@ -1,0 +1,87 @@
+{
+  "version": "v19.6.11.26",
+  "zone_id": "fabrica_dos_doces_pesadelos",
+  "deck_file": "assets/cards/fabrica_doces/baralho_fabrica_doces.json",
+  "cards": [
+    {
+      "id": "porta_do_confeiteiro",
+      "name": "Porta do Confeiteiro",
+      "type": "Portal",
+      "image": "assets/cards/fabrica_doces/01_porta_do_confeiteiro.webp"
+    },
+    {
+      "id": "brigadeiro_vigilante",
+      "name": "Brigadeiro Vigilante",
+      "type": "Ameaça",
+      "image": "assets/cards/fabrica_doces/02_brigadeiro_vigilante.webp"
+    },
+    {
+      "id": "bolha_da_risada_perdida",
+      "name": "Bolha da Risada Perdida",
+      "type": "Pista",
+      "image": "assets/cards/fabrica_doces/03_bolha_da_risada_perdida.webp"
+    },
+    {
+      "id": "mentira_amarga",
+      "name": "Mentira Amarga",
+      "type": "Pista",
+      "image": "assets/cards/fabrica_doces/04_mentira_amarga.webp"
+    },
+    {
+      "id": "calda_da_ilusao",
+      "name": "Calda da Ilusão",
+      "type": "Evento",
+      "image": "assets/cards/fabrica_doces/05_calda_da_ilusao.webp"
+    },
+    {
+      "id": "maos_mecanicas",
+      "name": "Mãos Mecânicas",
+      "type": "Desafio",
+      "image": "assets/cards/fabrica_doces/06_maos_mecanicas.webp"
+    },
+    {
+      "id": "criancas_perdidas",
+      "name": "Crianças Perdidas",
+      "type": "Evento",
+      "image": "assets/cards/fabrica_doces/07_criancas_perdidas.webp"
+    },
+    {
+      "id": "vela_sem_nome",
+      "name": "Vela sem Nome",
+      "type": "Revelação",
+      "image": "assets/cards/fabrica_doces/08_vela_sem_nome.webp"
+    },
+    {
+      "id": "receita_esquecida",
+      "name": "Receita Esquecida",
+      "type": "Revelação",
+      "image": "assets/cards/fabrica_doces/09_receita_esquecida.webp"
+    },
+    {
+      "id": "ponte_de_caramelo",
+      "name": "Ponte de Caramelo",
+      "type": "Desafio",
+      "image": "assets/cards/fabrica_doces/10_ponte_de_caramelo.webp"
+    },
+    {
+      "id": "diario_da_confeiteira",
+      "name": "Diário da Confeiteira",
+      "type": "Segredo",
+      "image": "assets/cards/fabrica_doces/11_diario_da_confeiteira.webp"
+    },
+    {
+      "id": "escolha_do_sabor",
+      "name": "Escolha do Sabor",
+      "type": "Decisão",
+      "image": "assets/cards/fabrica_doces/12_escolha_do_sabor.webp"
+    }
+  ],
+  "cinematic_art_status": {
+    "completed": 11,
+    "total": 12,
+    "pending": [
+      "12_escolha_do_sabor.webp"
+    ],
+    "note": "11 cartas cinematográficas aprovadas e integradas sem alteração de lógica."
+  }
+}

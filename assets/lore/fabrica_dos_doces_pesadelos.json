@@ -1,0 +1,203 @@
+{
+  "id": "fabrica_dos_doces_pesadelos",
+  "title": "Fábrica dos Doces Pesadelos",
+  "subtitle": "Mentira Amarga",
+  "tagline": "Onde os sonhos são adoçados, e a verdade derrete.",
+  "theme": "memória afetiva, celebração corrompida, alegria esquecida e mentira doce",
+  "danger": "alto",
+  "map_image": "assets/maps/fabrica_dos_doces_pesadelos_12_locais.png",
+  "unlocks_after": "floresta_negra",
+  "locations": [
+    {
+      "n": 1,
+      "id": "portao_do_confeiteiro",
+      "name": "Portão do Confeiteiro",
+      "tagline": "Nenhum doce vem de graça.",
+      "role": "entrada e primeiro pacto com a zona",
+      "narrator": "O portão parece feito para receber crianças, mas suas grades rangem como dentes. Do outro lado, o cheiro de açúcar quente promete acolhimento — e cobra atenção."
+    },
+    {
+      "n": 2,
+      "id": "esteira_dos_doces_vivos",
+      "name": "Esteira dos Doces Vivos",
+      "tagline": "Aqui o açúcar aprende a andar.",
+      "role": "fascínio e estranhamento",
+      "narrator": "Docinhos atravessam as esteiras com olhos brilhantes e passos pequenos. Alguns sorriem. Outros tentam fugir antes de serem embalados."
+    },
+    {
+      "n": 3,
+      "id": "tunel_das_bolhas_de_goma",
+      "name": "Túnel das Bolhas de Goma",
+      "tagline": "Cada bolha guarda uma risada perdida.",
+      "role": "memória encapsulada",
+      "narrator": "Bolhas gigantes flutuam em silêncio. Dentro delas, risadas antigas tremem como estrelas presas em vidro macio."
+    },
+    {
+      "n": 4,
+      "id": "sala_do_acucar_amargo",
+      "name": "Sala do Açúcar Amargo",
+      "tagline": "Toda doçura tem algo que apodreceu dentro.",
+      "role": "primeira percepção da corrupção",
+      "narrator": "O açúcar cobre tudo como neve dourada. Mas, quando toca a língua, deixa o gosto de uma verdade que ninguém quis dizer."
+    },
+    {
+      "n": 5,
+      "id": "caldeirao_da_ilusao",
+      "name": "Caldeirão da Ilusão",
+      "tagline": "O que brilha demais talvez esteja tentando esconder algo.",
+      "role": "distorção de desejo e tentação",
+      "narrator": "A calda roxa ferve sem fogo. Na superfície, cada pessoa vê aquilo que mais deseja — e aquilo que mais teme perder."
+    },
+    {
+      "n": 6,
+      "id": "oficina_das_maos_mecanicas",
+      "name": "Oficina das Mãos Mecânicas",
+      "tagline": "Continuam fazendo, mas ninguém sabe mais por quê.",
+      "role": "máquinas sem propósito",
+      "narrator": "Braços de bronze trabalham sem descanso. Montam o mesmo doce, repetem o mesmo gesto, obedecem a uma festa que já acabou há muito tempo."
+    },
+    {
+      "n": 7,
+      "id": "deposito_dos_brinquedos_quebrados",
+      "name": "Depósito dos Brinquedos Quebrados",
+      "tagline": "Nem todo abandono é silêncio.",
+      "role": "abandono e restos de infância",
+      "narrator": "Bonecos rasgados, cavalinhos sem roda e caixas de música partidas observam a passagem do grupo. Alguns ainda sabem nomes que o mundo esqueceu."
+    },
+    {
+      "n": 8,
+      "id": "capela_dos_aniversarios_esquecidos",
+      "name": "Capela dos Aniversários Esquecidos",
+      "tagline": "Cem bolos sob redomas, cem velas apagadas.",
+      "role": "coração emocional da memória perdida",
+      "narrator": "Sob redomas de vidro, bolos pequenos esperam por pessoas que ninguém chama mais. Cada vela apagada guarda um nome riscado."
+    },
+    {
+      "n": 9,
+      "id": "torre_da_receita_proibida",
+      "name": "Torre da Receita Proibida",
+      "tagline": "Algumas receitas não foram feitas para alimentar ninguém.",
+      "role": "conhecimento perigoso e revelação",
+      "narrator": "A torre cheira a papel velho, baunilha queimada e arrependimento. No alto, uma receita pulsa como se ainda estivesse viva."
+    },
+    {
+      "n": 10,
+      "id": "ponte_de_caramelo_derretido",
+      "name": "Ponte de Caramelo Derretido",
+      "tagline": "O caminho se desfaz atrás de quem hesita.",
+      "role": "tensão física e confiança do grupo",
+      "narrator": "A ponte estica sobre um rio quente de chocolate escuro. O caramelo range sob os pés, derretendo mais rápido quando alguém duvida."
+    },
+    {
+      "n": 11,
+      "id": "quarto_da_confeiteira",
+      "name": "Quarto da Confeiteira",
+      "tagline": "Onde alguém amou, antes de esquecer como se ama.",
+      "role": "humanização da antagonista",
+      "narrator": "No aposento empoeirado há um espelho rachado, um diário aberto e um bolo intacto sob redoma. Aqui, a ameaça tem rosto antes de ter culpa."
+    },
+    {
+      "n": 12,
+      "id": "coracao_da_fabrica",
+      "name": "Coração da Fábrica",
+      "tagline": "No centro, ainda pulsa aquilo que tentou virar para sempre.",
+      "role": "confronto emocional e desfecho",
+      "narrator": "O coração da fábrica pulsa em açúcar, sombra e saudade. Não basta vencer. É preciso decidir o que deve ser lembrado."
+    }
+  ],
+  "library": {
+    "historia": "A Fábrica dos Doces Pesadelos nasceu como um lugar de celebração. A Confeiteira criava doces para lembrar pessoas de que eram amadas. Com o tempo, uma mentira doce demais tomou o lugar da verdade: seria possível fabricar alegria sem lembrar de quem a alegria pertencia. A fábrica continuou funcionando, mas perdeu o motivo.",
+    "confeiteira": "Antes de ser ameaça, a Confeiteira foi alguém que amou comemorar os outros. Sua queda não veio de maldade pura, mas do medo de perder a alegria. Ao tentar conservar festas para sempre, ela aprisionou memórias dentro de doces, bolhas, brinquedos e receitas.",
+    "segredo_central": "A Fábrica não quer apenas devorar. Ela tenta recriar uma comemoração esquecida. Cada doce vivo é uma tentativa falha de devolver uma risada ao mundo.",
+    "tom_da_ia": "Narrar com beleza, estranheza e tristeza. A zona deve parecer encantadora à primeira vista, mas emocionalmente ferida. Evitar horror pesado; priorizar fantasia sombria adequada para 10 a 14 anos."
+  },
+  "cards": [
+    {
+      "id": "mentira_amarga",
+      "name": "Mentira Amarga",
+      "type": "pista",
+      "text": "Doce por fora, escuridão por dentro. Nem tudo o que brilha aqui é feito para adoçar."
+    },
+    {
+      "id": "brigadeiro_vigilante",
+      "name": "Brigadeiro Vigilante",
+      "type": "ameaça",
+      "text": "Ele sorri com olhos atentos. Enquanto observa, a esteira parece mudar de direção."
+    },
+    {
+      "id": "calda_da_ilusao",
+      "name": "Calda da Ilusão",
+      "type": "evento",
+      "text": "A calda mostra desejos impossíveis. Cada jogadora deve escolher entre ver, resistir ou revelar."
+    },
+    {
+      "id": "porta_do_confeiteiro",
+      "name": "Porta do Confeiteiro",
+      "type": "portal",
+      "text": "Nenhum doce vem de graça. Atravesse com cuidado... e com um sorriso."
+    },
+    {
+      "id": "receita_esquecida",
+      "name": "Receita Esquecida",
+      "type": "revelação",
+      "text": "Uma receita incompleta menciona nomes riscados, velas apagadas e uma festa que ninguém lembra."
+    },
+    {
+      "id": "criancas_perdidas",
+      "name": "Crianças Perdidas",
+      "type": "desafio",
+      "text": "Vozes pequenas chamam entre os corredores. Elas não pedem socorro; pedem para serem lembradas."
+    },
+    {
+      "id": "escolha_do_sabor",
+      "name": "Escolha do Sabor",
+      "type": "decisão",
+      "text": "Três caminhos se abrem. Tentação do Açúcar, Sabedoria do Cacau ou Risco da Guloseima."
+    },
+    {
+      "id": "bolha_da_risada",
+      "name": "Bolha da Risada Perdida",
+      "type": "pista",
+      "text": "Ao estourar, a bolha devolve uma gargalhada antiga e revela uma memória curta da Confeiteira."
+    },
+    {
+      "id": "maos_mecanicas",
+      "name": "Mãos Mecânicas",
+      "type": "desafio",
+      "text": "Os braços de bronze continuam trabalhando. Para passar, o grupo deve descobrir o motivo do gesto repetido."
+    },
+    {
+      "id": "vela_sem_nome",
+      "name": "Vela sem Nome",
+      "type": "revelação",
+      "text": "Quando acesa, devolve um nome ao mundo. Quando apagada, cobra uma lembrança em troca."
+    },
+    {
+      "id": "ponte_de_caramelo",
+      "name": "Ponte de Caramelo",
+      "type": "desafio",
+      "text": "O caminho derrete atrás de quem hesita. A travessia exige ritmo, confiança e coragem."
+    },
+    {
+      "id": "diario_da_confeiteira",
+      "name": "Diário da Confeiteira",
+      "type": "segredo",
+      "text": "As páginas mostram que ela não nasceu monstro. Ela esqueceu como celebrar alguém sem tentar possuí-lo para sempre."
+    }
+  ],
+  "canonical_version": "v19.6.11.24",
+  "canonical_register": "assets/lore/fabrica_doces/registro_canonico.md",
+  "guide_sentence": "A Fábrica não é um inferno. É uma festa que continuou depois que todos esqueceram por que estavam comemorando.",
+  "tripod": {
+    "confeiteira_nome": "Ofélia",
+    "silas_relacao": "aprendiz de Ofélia",
+    "coracao": "portal-coração aberto/libertado, não destruído"
+  },
+  "epigraphs": {
+    "act_1": "A doçura sem verdade se transforma em pesadelo.",
+    "act_2": "Memórias esquecidas alimentam o engano.",
+    "act_3": "Só quem lembra do amor, liberta o coração."
+  },
+  "narrator_locations_file": "assets/lore/fabrica_doces/narrador_ia_locais.json",
+  "location_assets_dir": "assets/locations/fabrica_doces/"
+}

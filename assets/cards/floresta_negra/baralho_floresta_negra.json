@@ -1,0 +1,213 @@
+{
+  "version": "v19.6.11.28",
+  "zone_id": "floresta_negra",
+  "zone_name": "Floresta Negra",
+  "deck_name": "Baralho da Floresta Negra",
+  "canonical_register": "assets/lore/floresta_negra/registro_canonico.md",
+  "card_count": 18,
+  "cinematic_art_status": {
+    "completed": 18,
+    "total": 18,
+    "description": "18 cartas cinematográficas aprovadas e integradas."
+  },
+  "cards": [
+    {
+      "n": 1,
+      "id": "pegadas_na_nevoa",
+      "catalog_id": "pegadas_na_névoa",
+      "name": "Pegadas na Névoa",
+      "type": "pista",
+      "location_name": "Trilha da Névoa Baixa",
+      "location_n": 2,
+      "image_src": "/mnt/data/pegadas_na_névoa_trilha_mística.png",
+      "image": "assets/cards/floresta_negra/01_pegadas_na_nevoa.webp"
+    },
+    {
+      "n": 2,
+      "id": "sussurro_das_arvores",
+      "catalog_id": "sussurro_das_árvores",
+      "name": "Sussurro das Árvores",
+      "type": "pista",
+      "location_name": "Galeria das Árvores",
+      "location_n": 7,
+      "image_src": "/mnt/data/sussurro_das_árvores_a_floresta_fala.png",
+      "image": "assets/cards/floresta_negra/02_sussurro_das_arvores.webp"
+    },
+    {
+      "n": 3,
+      "id": "desenho_da_cabana_vazia",
+      "catalog_id": "desenho_da_cabana_vazia",
+      "name": "Desenho da Cabana Vazia",
+      "type": "pista",
+      "location_name": "Cabana Vazia",
+      "location_n": 6,
+      "image_src": "/mnt/data/desenho_da_cabana_vazia.png",
+      "image": "assets/cards/floresta_negra/03_desenho_da_cabana_vazia.webp"
+    },
+    {
+      "n": 4,
+      "id": "reflexo_no_lago_quieto",
+      "catalog_id": "reflexo_no_lago_quieto",
+      "name": "Reflexo no Lago Quieto",
+      "type": "pista",
+      "location_name": "Lago Quieto",
+      "location_n": 4,
+      "image_src": "/mnt/data/reflexo_mágico_no_lago_misterioso.png",
+      "image": "assets/cards/floresta_negra/04_reflexo_no_lago_quieto.webp"
+    },
+    {
+      "n": 5,
+      "id": "lanterna_da_clareira",
+      "catalog_id": "lanterna_da_clareira",
+      "name": "Lanterna da Clareira",
+      "type": "item",
+      "location_name": "Clareira da Lanterna",
+      "location_n": 3,
+      "image_src": "/mnt/data/lanterna_mística_na_clareira_encantada.png",
+      "image": "assets/cards/floresta_negra/05_lanterna_da_clareira.webp"
+    },
+    {
+      "n": 6,
+      "id": "chave_de_raiz",
+      "catalog_id": "chave_de_raiz",
+      "name": "Chave de Raiz",
+      "type": "item",
+      "location_name": "Raízes que Prendem",
+      "location_n": 9,
+      "image_src": "/mnt/data/chave_mágica_da_floresta_encantada.png",
+      "image": "assets/cards/floresta_negra/06_chave_de_raiz.webp"
+    },
+    {
+      "n": 7,
+      "id": "fita_da_raposa_de_nevoa",
+      "catalog_id": "fita_da_raposa_de_névoa",
+      "name": "Fita da Raposa de Névoa",
+      "type": "item",
+      "location_name": "Toca da Raposa",
+      "location_n": 5,
+      "image_src": "/mnt/data/fita_da_raposa_de_névoa.png",
+      "image": "assets/cards/floresta_negra/07_fita_da_raposa_de_nevoa.webp"
+    },
+    {
+      "n": 8,
+      "id": "semente_de_luz_verde",
+      "catalog_id": "semente_de_luz_verde",
+      "name": "Semente de Luz Verde",
+      "type": "item",
+      "location_name": "Galeria das Árvores",
+      "location_n": 7,
+      "image_src": "/mnt/data/semente_de_luz_verde.png",
+      "image": "assets/cards/floresta_negra/08_semente_de_luz_verde.webp"
+    },
+    {
+      "n": 9,
+      "id": "galho_que_aponta",
+      "catalog_id": "galho_que_aponta",
+      "name": "Galho que Aponta",
+      "type": "evento",
+      "location_name": "Trilha da Névoa Baixa",
+      "location_n": 2,
+      "image_src": "/mnt/data/galho_que_aponta_na_floresta_encantada.png",
+      "image": "assets/cards/floresta_negra/09_galho_que_aponta.webp"
+    },
+    {
+      "n": 10,
+      "id": "riso_entre_as_folhas",
+      "catalog_id": "riso_entre_as_folhas",
+      "name": "Riso entre as Folhas",
+      "type": "evento",
+      "location_name": "Galeria das Árvores",
+      "location_n": 7,
+      "image_src": "/mnt/data/riso_entre_as_folhagens_misteriosas.png",
+      "image": "assets/cards/floresta_negra/10_riso_entre_as_folhas.webp"
+    },
+    {
+      "n": 11,
+      "id": "a_cabana_piscou",
+      "catalog_id": "a_cabana_piscou",
+      "name": "A Cabana Piscou",
+      "type": "evento",
+      "location_name": "Cabana Vazia",
+      "location_n": 6,
+      "image_src": "/mnt/data/a_floresta_encantada_da_cabana.png",
+      "image": "assets/cards/floresta_negra/11_a_cabana_piscou.webp"
+    },
+    {
+      "n": 12,
+      "id": "vento_sem_corpo",
+      "catalog_id": "vento_sem_corpo",
+      "name": "Vento sem Corpo",
+      "type": "evento",
+      "location_name": "Passagem do Portal",
+      "location_n": 11,
+      "image_src": "/mnt/data/vento_encantado_na_floresta_sombria.png",
+      "image": "assets/cards/floresta_negra/12_vento_sem_corpo.webp"
+    },
+    {
+      "n": 13,
+      "id": "raiz_que_prende",
+      "catalog_id": "raiz_que_prende",
+      "name": "Raiz que Prende",
+      "type": "perigo",
+      "location_name": "Raízes que Prendem",
+      "location_n": 9,
+      "image_src": "/mnt/data/raiz_que_prende_caminho_encantado.png",
+      "image": "assets/cards/floresta_negra/13_raiz_que_prende.webp"
+    },
+    {
+      "n": 14,
+      "id": "nevoa_que_separa",
+      "catalog_id": "névoa_que_separa",
+      "name": "Névoa que Separa",
+      "type": "perigo",
+      "location_name": "Trilha da Névoa Baixa",
+      "location_n": 2,
+      "image_src": "/mnt/data/névoa_que_separa_caminho_sombrio.png",
+      "image": "assets/cards/floresta_negra/14_nevoa_que_separa.webp"
+    },
+    {
+      "n": 15,
+      "id": "olhos_no_escuro",
+      "catalog_id": "olhos_no_escuro",
+      "name": "Olhos no Escuro",
+      "type": "perigo",
+      "location_name": "Olhos no Escuro",
+      "location_n": 10,
+      "image_src": "/mnt/data/olhos_no_escuro_na_floresta_encantada.png",
+      "image": "assets/cards/floresta_negra/15_olhos_no_escuro.webp"
+    },
+    {
+      "n": 16,
+      "id": "encontrar_a_cabana_vazia",
+      "catalog_id": "encontrar_a_cabana_vazia",
+      "name": "Encontrar a Cabana Vazia",
+      "type": "missão",
+      "location_name": "Cabana Vazia",
+      "location_n": 6,
+      "image_src": "/mnt/data/caminho_sombrio_para_a_cabana.png",
+      "image": "assets/cards/floresta_negra/16_encontrar_a_cabana_vazia.webp"
+    },
+    {
+      "n": 17,
+      "id": "abrir_o_portal_da_fabrica",
+      "catalog_id": "abrir_o_portal_da_fábrica",
+      "name": "Abrir o Portal da Fábrica",
+      "type": "missão",
+      "location_name": "Passagem do Portal",
+      "location_n": 11,
+      "image_src": "/mnt/data/portal_para_a_fábrica_mágica.png",
+      "image": "assets/cards/floresta_negra/17_abrir_o_portal_da_fabrica.webp"
+    },
+    {
+      "n": 18,
+      "id": "coracao_da_floresta",
+      "catalog_id": "coração_da_floresta",
+      "name": "Coração da Floresta",
+      "type": "especial",
+      "location_name": "Coração da Floresta",
+      "location_n": 12,
+      "image_src": "/mnt/data/coração_da_floresta_encantada.png",
+      "image": "assets/cards/floresta_negra/18_coracao_da_floresta.webp"
+    }
+  ]
+}

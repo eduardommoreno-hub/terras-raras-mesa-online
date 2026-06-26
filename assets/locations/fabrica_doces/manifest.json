@@ -1,0 +1,70 @@
+{
+  "zone_id": "fabrica_dos_doces_pesadelos",
+  "version": "v19.6.11.24",
+  "status": "prepared_waiting_for_individual_art",
+  "canonical_register": "assets/lore/fabrica_doces/registro_canonico.md",
+  "location_assets_dir": "assets/locations/fabrica_doces/",
+  "expected_files": [
+    {
+      "file": "01_portao_do_confeiteiro.webp",
+      "name": "Portão do Confeiteiro",
+      "status": "pending_art"
+    },
+    {
+      "file": "02_esteira_dos_doces_vivos.webp",
+      "name": "Esteira dos Doces Vivos",
+      "status": "pending_art"
+    },
+    {
+      "file": "03_tunel_das_bolhas_de_goma.webp",
+      "name": "Túnel das Bolhas de Goma",
+      "status": "pending_art"
+    },
+    {
+      "file": "04_sala_do_acucar_amargo.webp",
+      "name": "Sala do Açúcar Amargo",
+      "status": "pending_art"
+    },
+    {
+      "file": "05_caldeirao_da_ilusao.webp",
+      "name": "Caldeirão da Ilusão",
+      "status": "pending_art"
+    },
+    {
+      "file": "06_oficina_das_maos_mecanicas.webp",
+      "name": "Oficina das Mãos Mecânicas",
+      "status": "pending_art"
+    },
+    {
+      "file": "07_deposito_dos_brinquedos_quebrados.webp",
+      "name": "Depósito dos Brinquedos Quebrados",
+      "status": "pending_art"
+    },
+    {
+      "file": "08_capela_dos_aniversarios_esquecidos.webp",
+      "name": "Capela dos Aniversários Esquecidos",
+      "status": "pending_art"
+    },
+    {
+      "file": "09_torre_da_receita_proibida.webp",
+      "name": "Torre da Receita Proibida",
+      "status": "pending_art"
+    },
+    {
+      "file": "10_ponte_de_caramelo_derretido.webp",
+      "name": "Ponte de Caramelo Derretido",
+      "status": "pending_art"
+    },
+    {
+      "file": "11_quarto_da_confeiteira.webp",
+      "name": "Quarto da Confeiteira",
+      "status": "pending_art"
+    },
+    {
+      "file": "12_coracao_da_fabrica.webp",
+      "name": "Coração da Fábrica",
+      "status": "pending_art"
+    }
+  ],
+  "visual_prompt_base": "Ilustração no estilo da arte canônica do mapa Fábrica dos Doces Pesadelos. Paleta: púrpura profundo + dourado quente + chocolate iluminado por baixo. Moldura ornamental dourada, estilo barroco-confeitaria. Perspectiva interna do local específico, como se a jogadora estivesse entrando agora. Atmosfera: encantamento com desconforto. Sem rostos humanos nítidos visíveis. Estilo: livro infantojuvenil ilustrado, alta qualidade. Formato vertical 3:4. Pintura digital, textura de ilustração de livro, não fotorrealista."
+}
