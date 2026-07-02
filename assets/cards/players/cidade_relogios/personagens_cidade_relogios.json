@@ -1,0 +1,138 @@
+{
+  "version": "v21.1.1",
+  "map_id": "cidade_relogios",
+  "players": [
+    {
+      "n": 1,
+      "id": "katrina",
+      "name": "Katrina",
+      "role": "Guerreira",
+      "title": "A Guardiã dos Ecos",
+      "ability": "Fúria de Aço",
+      "origin": "Zona Diamante",
+      "text": "Ouve ecos presos em relógios, metais e paredes. Na Cidade dos Relógios Parados, protege o grupo quando uma lembrança tenta se repetir.",
+      "image_path": "cards/players/cidade_relogios/01_katrina_cidade_relogios.webp"
+    },
+    {
+      "n": 2,
+      "id": "lina",
+      "name": "Lina",
+      "role": "Estrategista",
+      "title": "A Tecelã de Instantes",
+      "ability": "Visão Tática",
+      "origin": "Zona Áurea",
+      "text": "Costura pistas, horários e decisões. Onde o tempo se quebra em pedaços, Lina organiza o caminho para que a verdade apareça.",
+      "image_path": "cards/players/cidade_relogios/02_lina_cidade_relogios.webp"
+    },
+    {
+      "n": 3,
+      "id": "mira",
+      "name": "Mira",
+      "role": "Caçadora",
+      "title": "A Desregistrada do Tempo",
+      "ability": "Olho de Águia",
+      "origin": "Picos Arcaicos",
+      "text": "Percebe registros falsos, rastros apagados e versões incompletas do passado. O tempo falha perto dela quando tenta mentir.",
+      "image_path": "cards/players/cidade_relogios/03_mira_cidade_relogios.webp"
+    },
+    {
+      "n": 4,
+      "id": "theo",
+      "name": "Theo",
+      "role": "Sábio",
+      "title": "O Cronista do Inacabado",
+      "ability": "Engrenagem Sábia",
+      "origin": "Zona Esmeralda",
+      "text": "Lê livros, mecanismos e confissões antigas. Sua função é impedir que a cidade transforme dor em lenda falsa.",
+      "image_path": "cards/players/cidade_relogios/04_theo_cidade_relogios.webp"
+    },
+    {
+      "n": 5,
+      "id": "naya",
+      "name": "Naya",
+      "role": "Curandeira",
+      "title": "A Curandeira das Horas Feridas",
+      "ability": "Cura da Raiz",
+      "origin": "Alexandria",
+      "text": "Cura memórias rachadas sem forçá-las a voltar. Suas raízes de luz fazem engrenagens cansadas respirarem outra vez.",
+      "image_path": "cards/players/cidade_relogios/05_naya_cidade_relogios.webp"
+    },
+    {
+      "n": 6,
+      "id": "cael",
+      "name": "Cael",
+      "role": "Explorador",
+      "title": "O Andarilho das Horas Vazias",
+      "ability": "Rastro do Gelo",
+      "origin": "Gelo Eterno",
+      "text": "Atravessa pausas, fissuras e segundos congelados. Quando o relógio prende a respiração, Cael encontra passagem.",
+      "image_path": "cards/players/cidade_relogios/06_cael_cidade_relogios.webp"
+    },
+    {
+      "n": 7,
+      "id": "selene",
+      "name": "Selene",
+      "role": "Cronista",
+      "title": "A Leitora do Pêndulo",
+      "ability": "Pêndulo da Memória",
+      "origin": "Cidade dos Relógios Parados",
+      "text": "Lê o tempo nos detalhes esquecidos. Pêndulos, correntes e sinos revelam para ela o que está prestes a ceder.",
+      "image_path": "cards/players/cidade_relogios/07_selene_cidade_relogios.webp"
+    },
+    {
+      "n": 8,
+      "id": "lyra",
+      "name": "Lyra",
+      "role": "Oraculista",
+      "title": "A Oraculista dos Ecos Futuros",
+      "ability": "Olho do Vazio",
+      "origin": "O Vazio",
+      "text": "Escuta ecos do que ainda não aconteceu. Em relógios sem hora, vê futuros possíveis antes que virem prisão.",
+      "image_path": "cards/players/cidade_relogios/08_lyra_cidade_relogios.webp"
+    },
+    {
+      "n": 9,
+      "id": "dorian",
+      "name": "Dorian",
+      "role": "Inventor",
+      "title": "O Leitor das Engrenagens",
+      "ability": "Engrenagem Mestra",
+      "origin": "Cidade dos Relógios Parados",
+      "text": "Conserta mecanismos e encontra saídas impossíveis. Para ele, toda máquina guarda uma intenção e toda intenção deixa marca.",
+      "image_path": "cards/players/cidade_relogios/09_dorian_cidade_relogios.webp"
+    },
+    {
+      "n": 10,
+      "id": "silas",
+      "name": "Silas",
+      "role": "Alquimista",
+      "title": "O Alquimista da Hora Amarga",
+      "ability": "Doce Ruptura",
+      "origin": "Fábrica dos Doces Pesadelos",
+      "text": "Mistura açúcar, veneno e verdade. Na Cidade dos Relógios Parados, transforma mentiras antigas em pistas úteis.",
+      "image_path": "cards/players/cidade_relogios/10_silas_cidade_relogios.webp"
+    },
+    {
+      "n": 11,
+      "id": "orion",
+      "name": "Orion",
+      "role": "Guardião",
+      "title": "O Guardião da Última Badalada",
+      "ability": "Escudo da Tempestade",
+      "origin": "Tempestade dos Deuses",
+      "text": "Enfrenta o caos sem recuar. Diante da Torre dos Sinos, segura a badalada errada até o grupo compreender a certa.",
+      "image_path": "cards/players/cidade_relogios/11_orion_cidade_relogios.webp"
+    },
+    {
+      "n": 12,
+      "id": "riven",
+      "name": "Riven",
+      "role": "Corredor",
+      "title": "O Corredor do Último Segundo",
+      "ability": "Sprint do Último Caminho",
+      "origin": "Correr ou Morrer",
+      "text": "Corre no instante em que todos hesitam. Seu dom lembra que chegar rápido não vale se alguém ficar para trás.",
+      "image_path": "cards/players/cidade_relogios/12_riven_cidade_relogios.webp"
+    }
+  ]
+}

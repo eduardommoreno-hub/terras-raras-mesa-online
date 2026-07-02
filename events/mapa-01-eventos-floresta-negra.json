@@ -1,0 +1,32 @@
+{
+  "map_id": "floresta_negra",
+  "version": "v22.0.2",
+  "event_count": 18,
+  "reaction_event_count": 4,
+  "events": [
+    "lanterna_apaga",
+    "trilha_fecha_atras",
+    "vozes_com_nomes_certos",
+    "desenho_inacabado",
+    "caneca_fria",
+    "lago_mostra_ausencia",
+    "nome_que_nao_some",
+    "primeira_cauda_prateada",
+    "pegadas_florescem",
+    "semente_duas_maos",
+    "promessa_acende_lanterna",
+    "ponte_recusa_pressa",
+    "mapa_move_lua",
+    "pergunta_da_raposa",
+    "coracao_respira_assustado",
+    "cabana_dentro_das_raizes",
+    "promessa_entre_arvores",
+    "cheiro_de_acucar_antigo"
+  ],
+  "reaction_events": [
+    "nevoa_separa_vozes",
+    "galho_devolve_objeto",
+    "raposa_ri_sem_alegria",
+    "trilha_volta_ao_inicio"
+  ]
+}

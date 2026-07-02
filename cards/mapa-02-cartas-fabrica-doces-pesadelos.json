@@ -1,0 +1,206 @@
+{
+  "version": "v23.0.1",
+  "zone_id": "fabrica_doces",
+  "zone_name": "Fábrica dos Doces Pesadelos",
+  "deck_name": "Baralho da Fábrica dos Doces Pesadelos",
+  "cards": [
+    {
+      "n": 1,
+      "id": "portao_de_acucar_quebrado",
+      "name": "Portão de Açúcar Quebrado",
+      "type": "pista",
+      "rarity": "comum",
+      "location_id": "portao_de_acucar_quebrado",
+      "text": "Um portão de açúcar cristalizado brilha por fora e cheira a queimado nas rachaduras.",
+      "effect": "Apresenta beleza externa e amargura escondida.",
+      "flavor": "Nem todo lugar bonito recebe você com verdade."
+    },
+    {
+      "n": 2,
+      "id": "entrem_sorrindo",
+      "name": "Entrem Sorrindo",
+      "type": "perigo",
+      "rarity": "comum",
+      "location_id": "portao_de_acucar_quebrado",
+      "text": "A placa muda para: ENTREM SORRINDO MESMO QUE NÃO QUEIRAM.",
+      "effect": "Mostra que a Fábrica impõe alegria falsa.",
+      "flavor": "Um sorriso obrigado também pode alimentar uma mentira."
+    },
+    {
+      "n": 3,
+      "id": "esteira_dos_doces_faceis",
+      "name": "Esteira dos Doces Fáceis",
+      "type": "desafio",
+      "rarity": "comum",
+      "location_id": "saguao_das_esteiras_doces",
+      "text": "Doces prometem esquecer, sorrir e não sentir.",
+      "effect": "Testa a tentação do caminho fácil.",
+      "flavor": "O caminho mais doce quase nunca é o mais verdadeiro."
+    },
+    {
+      "n": 4,
+      "id": "aroma_de_acucar_queimado",
+      "name": "Aroma de Açúcar Queimado",
+      "type": "revelacao",
+      "rarity": "incomum",
+      "location_id": "sala_dos_aromas_impossiveis",
+      "text": "Por baixo de chocolate e caramelo surge cheiro de açúcar queimado.",
+      "effect": "Introduz a pista sensorial da Mentira Amarga.",
+      "flavor": "O cheiro mais amargo é aquele que tenta parecer doce."
+    },
+    {
+      "n": 5,
+      "id": "pirulito_torto",
+      "name": "Pirulito Torto",
+      "type": "desafio",
+      "rarity": "incomum",
+      "location_id": "corredor_dos_pirulitos_tortos",
+      "text": "Um pirulito aponta para o caminho bonito; o reflexo aponta o contrário.",
+      "effect": "Ensina que a direção mais bonita pode ser falsa.",
+      "flavor": "Toda mentira aponta para onde parece mais fácil olhar."
+    },
+    {
+      "n": 6,
+      "id": "receita_incompleta",
+      "name": "Receita Incompleta",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "cozinha_das_receitas_esquecidas",
+      "text": "Um livro escreve uma receita, mas os ingredientes somem. Resta: faltou dizer a verdade.",
+      "effect": "Introduz a Receita Verdadeira.",
+      "flavor": "Toda receita sem verdade desanda no fim."
+    },
+    {
+      "n": 7,
+      "id": "caixa_sem_nome",
+      "name": "Caixa Sem Nome",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "deposito_das_caixas_sem_nome",
+      "text": "Uma caixa fica pesada quando forçada e leve quando alguém nomeia um sentimento.",
+      "effect": "Ensina nomeação emocional.",
+      "flavor": "O que não recebe nome aprende a se esconder."
+    },
+    {
+      "n": 8,
+      "id": "doce_perfeito_demais",
+      "name": "Doce Perfeito Demais",
+      "type": "perigo",
+      "rarity": "incomum",
+      "location_id": "vitrine_dos_doces_perfeitos",
+      "text": "Um doce sem defeitos reflete um sorriso que não pertence à pessoa.",
+      "effect": "Testa a perfeição falsa.",
+      "flavor": "A perfeição também pode ser uma embalagem."
+    },
+    {
+      "n": 9,
+      "id": "sonho_engarrafado",
+      "name": "Sonho Engarrafado",
+      "type": "item",
+      "rarity": "incomum",
+      "location_id": "sala_dos_sonhos_engarrafados",
+      "text": "Uma garrafa guarda um sonho colorido que pede ar.",
+      "effect": "Permite visualizar emoção escondida sem quebrá-la.",
+      "flavor": "Um sonho guardado tempo demais começa a pedir ar."
+    },
+    {
+      "n": 10,
+      "id": "recheio_de_sombra",
+      "name": "Recheio de Sombra",
+      "type": "revelacao",
+      "rarity": "rara",
+      "location_id": "linha_de_montagem_dos_pesadelos",
+      "text": "Balas coloridas recebem recheio escuro e saem em embalagens sorridentes.",
+      "effect": "Revela o funcionamento real da Fábrica.",
+      "flavor": "O pesadelo começa quando a tristeza vira recheio."
+    },
+    {
+      "n": 11,
+      "id": "avental_de_ofelia",
+      "name": "Avental de Ofélia",
+      "type": "pista",
+      "rarity": "rara",
+      "location_id": "escritorio_de_ofelia",
+      "text": "Um avental antigo guarda manchas de açúcar, calda e tinta de cartas nunca enviadas.",
+      "effect": "Humaniza Ofélia.",
+      "flavor": "Nem todo erro começou querendo machucar."
+    },
+    {
+      "n": 12,
+      "id": "bilhete_nunca_enviado",
+      "name": "Bilhete Nunca Enviado",
+      "type": "revelacao",
+      "rarity": "rara",
+      "location_id": "escritorio_de_ofelia",
+      "text": "O bilhete diz: Eu só queria que doesse menos.",
+      "effect": "Revela a motivação trágica de Ofélia.",
+      "flavor": "Às vezes, o cuidado se perde quando tenta apagar a dor."
+    },
+    {
+      "n": 13,
+      "id": "caldeira_da_mentira_amarga",
+      "name": "Caldeira da Mentira Amarga",
+      "type": "especial",
+      "rarity": "lendaria",
+      "location_id": "caldeira_da_mentira_amarga",
+      "text": "A Caldeira ferve calda brilhante por cima e escura por baixo.",
+      "effect": "Clímax emocional; deve desacelerar, não ser destruída.",
+      "flavor": "A Caldeira não ferve açúcar. Ferve tudo que ninguém quis dizer."
+    },
+    {
+      "n": 14,
+      "id": "colher_da_receita_verdadeira",
+      "name": "Colher da Receita Verdadeira",
+      "type": "item",
+      "rarity": "rara",
+      "location_id": "caldeira_da_mentira_amarga",
+      "text": "A colher só se move quando alguém diz algo verdadeiro sem disfarçar.",
+      "effect": "Ajuda a preparar a Receita Verdadeira.",
+      "flavor": "Algumas receitas só começam quando a verdade entra primeiro."
+    },
+    {
+      "n": 15,
+      "id": "crianca_do_ultimo_doce",
+      "name": "Criança do Último Doce",
+      "type": "revelacao",
+      "rarity": "lendaria",
+      "location_id": "caldeira_da_mentira_amarga",
+      "text": "A lembrança da criança surge segurando o último doce.",
+      "effect": "Figura emocional central; pede verdade, não vingança.",
+      "flavor": "O último doce não queria esconder a dor. Queria que alguém escutasse."
+    },
+    {
+      "n": 16,
+      "id": "receita_verdadeira",
+      "name": "Receita Verdadeira",
+      "type": "resolution_card",
+      "rarity": "lendaria",
+      "location_id": "caldeira_da_mentira_amarga",
+      "text": "A receita pede sentimento nomeado, lembrança aceita, promessa sem açúcar, escolha coletiva e verdade sem castigo.",
+      "effect": "Condição de resolução coletiva da Fábrica.",
+      "flavor": "Verdade difícil não precisa virar castigo para virar cura."
+    },
+    {
+      "n": 17,
+      "id": "relogio_de_bolso_na_caixa",
+      "name": "Relógio de Bolso na Caixa",
+      "type": "portal",
+      "rarity": "lendaria",
+      "location_id": "caixa_do_relogio_de_bolso",
+      "text": "Uma caixa simples traz um relógio de bolso parado entre papéis dourados e açúcar queimado.",
+      "effect": "Saída para a Cidade dos Relógios Parados.",
+      "flavor": "Quando a mentira para de ferver, o tempo volta a bater."
+    },
+    {
+      "n": 18,
+      "id": "primeiro_tic_tac_verdadeiro",
+      "name": "Primeiro Tic-Tac Verdadeiro",
+      "type": "carta_final",
+      "rarity": "lendaria",
+      "location_id": "caixa_do_relogio_de_bolso",
+      "text": "O relógio faz tic, depois tac. A Fábrica silencia e parece verdadeira.",
+      "effect": "Conclusão emocional e transição para a Cidade.",
+      "flavor": "O primeiro tic-tac verdadeiro nasce quando a Fábrica para de fingir."
+    }
+  ]
+}

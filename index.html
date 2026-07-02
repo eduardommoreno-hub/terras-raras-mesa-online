@@ -3344,6 +3344,2402 @@ input:focus,textarea:focus,select:focus{
 }
 </style>
 
+
+<style id="tr-v20-auth-billing-ui">
+.trGoogleBtn{
+  width:100%;
+  margin-top:12px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:12px;
+  background:linear-gradient(180deg,#ffffff,#e9e9e9);
+  color:#1b1b1b;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  padding:12px 14px;
+}
+.trGoogleBtn:hover{filter:brightness(1.06)}
+.trBillingBoxV20{
+  margin-top:18px;
+  border:1px solid rgba(241,207,120,.35);
+  border-radius:16px;
+  padding:16px;
+  background:linear-gradient(180deg,rgba(22,15,8,.92),rgba(6,4,2,.92));
+  box-shadow:0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(241,207,120,.05);
+}
+.trBillingBoxV20 h3{margin:0 0 8px;color:#f1cf78;letter-spacing:.08em}
+.trBillingPlanV20{display:grid;gap:8px;margin-top:10px}
+.trBillingPlanV20 .mini{color:var(--muted);font-size:13px;line-height:1.35}
+.trBillingPillV20{display:inline-block;border:1px solid rgba(241,207,120,.32);border-radius:999px;padding:4px 9px;color:#f1cf78;font-size:12px;margin-top:4px}
+</style>
+
+
+<style id="tr-v20-0-1-hub-tabs">
+/* v20.0.1 — Hub organizado em abas */
+#hub .hubTabsV201{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 14px;
+  padding:8px;
+  border:1px solid rgba(214,170,72,.34);
+  border-radius:18px;
+  background:rgba(3,9,10,.62);
+  box-shadow:inset 0 0 18px rgba(214,170,72,.05);
+}
+#hub .hubTabsV201 button{
+  flex:1 1 110px;
+  min-width:110px;
+  border:1px solid rgba(214,170,72,.35);
+  border-radius:999px;
+  padding:10px 10px;
+  background:rgba(2,6,7,.72);
+  color:#efd58d;
+  font-family:Georgia,serif;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-size:11px;
+  cursor:pointer;
+}
+#hub .hubTabsV201 button.on{
+  background:linear-gradient(180deg,#a67a27,#6c4315);
+  color:#fff1b7;
+  border-color:#e5bf61;
+  box-shadow:0 0 18px rgba(214,170,72,.22), inset 0 1px 0 rgba(255,255,255,.16);
+}
+#hub .hubTabPaneV201{display:none}
+#hub .hubTabPaneV201.on{display:block}
+#hub .hubAdminGridV201{
+  display:grid;
+  gap:10px;
+}
+#hub .hubUserRowV201{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  border:1px solid rgba(214,170,72,.26);
+  border-radius:14px;
+  padding:10px;
+  background:rgba(0,0,0,.22);
+}
+#hub .hubUserRowV201 b{color:#f1cf78}
+#hub .hubUserMetaV201{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.35;
+}
+#hub .hubGrantBoxV201{
+  display:grid;
+  gap:9px;
+  margin-top:12px;
+  border:1px solid rgba(214,170,72,.28);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(0,0,0,.18);
+}
+#hub .hubGrantBoxV201 .row{
+  display:grid;
+  grid-template-columns:1fr 92px;
+  gap:8px;
+}
+#hub .hubPlanStatusV201{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid rgba(214,170,72,.24);
+  border-radius:12px;
+  color:var(--muted);
+  background:rgba(0,0,0,.16);
+  font-size:14px;
+  line-height:1.45;
+}
+#hub .trBillingBoxV20{
+  margin-top:0!important;
+}
+#hub .securityLog{
+  border:1px solid rgba(214,170,72,.24);
+  border-radius:12px;
+  padding:10px;
+  background:rgba(0,0,0,.20);
+}
+@media(max-width:780px){
+  #hub .hubTabsV201 button{font-size:10px;min-width:96px}
+  #hub .hubUserRowV201{grid-template-columns:1fr}
+}
+</style>
+
+
+<style id="tr-v20-0-2-login-cinematico-google">
+/* v20.0.2 — Primeira tela limpa: um botão + modal cinematográfico Google */
+
+/* Esconde a entrada antiga da primeira tela sem remover o login legado do código. */
+#login #authBody,
+#login #loginBtn,
+#login #registerBtn{
+  display:none!important;
+}
+
+#login .landingStageV196118{
+  position:relative!important;
+}
+
+/* Único botão visível da primeira tela */
+.trLoginGateV202{
+  position:absolute;
+  left:50%;
+  bottom:7.5%;
+  transform:translateX(-50%);
+  z-index:8;
+  width:min(520px,44vw);
+  min-width:360px;
+  height:78px;
+  border:1px solid rgba(241,207,120,.74);
+  border-radius:20px;
+  background:
+    linear-gradient(180deg,rgba(121,84,23,.95),rgba(37,22,7,.96)),
+    radial-gradient(circle at 50% 0%,rgba(255,225,139,.25),transparent 55%);
+  color:#f7dc8c;
+  font-family:Georgia,serif;
+  font-size:27px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  text-shadow:0 2px 8px rgba(0,0,0,.8);
+  box-shadow:
+    0 0 28px rgba(219,166,61,.28),
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 0 24px rgba(0,0,0,.42);
+  cursor:pointer;
+}
+.trLoginGateV202:before,
+.trLoginGateV202:after{
+  content:"✦";
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  color:#ffe5a3;
+  font-size:18px;
+  opacity:.92;
+}
+.trLoginGateV202:before{left:24px}
+.trLoginGateV202:after{right:24px}
+.trLoginGateV202:hover{
+  filter:brightness(1.08);
+  box-shadow:
+    0 0 38px rgba(241,207,120,.36),
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 0 24px rgba(0,0,0,.36);
+}
+
+/* Modal cinematográfico */
+.trLoginModalV202{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:28px;
+}
+.trLoginModalV202.hidden{
+  display:none!important;
+}
+.trLoginBackdropV202{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(162,113,31,.24),transparent 34%),
+    rgba(0,0,0,.76);
+  backdrop-filter:blur(8px);
+}
+.trLoginPanelV202{
+  position:relative;
+  width:min(760px,92vw);
+  min-height:440px;
+  border:1px solid rgba(241,207,120,.78);
+  border-radius:28px;
+  background:
+    linear-gradient(180deg,rgba(11,18,14,.94),rgba(5,7,5,.98)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.16),transparent 44%);
+  box-shadow:
+    0 40px 110px rgba(0,0,0,.78),
+    0 0 0 1px rgba(255,236,172,.12) inset,
+    0 0 44px rgba(241,207,120,.18);
+  overflow:hidden;
+  padding:42px 52px 34px;
+}
+.trLoginPanelV202:before{
+  content:"";
+  position:absolute;
+  inset:16px;
+  border:1px solid rgba(241,207,120,.28);
+  border-radius:20px;
+  pointer-events:none;
+}
+.trLoginPanelV202:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg,transparent,rgba(241,207,120,.05),transparent),
+    radial-gradient(circle at 50% 12%,rgba(241,207,120,.13),transparent 24%);
+  pointer-events:none;
+}
+.trLoginCloseV202{
+  position:absolute;
+  top:20px;
+  right:22px;
+  z-index:2;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(241,207,120,.54);
+  border-radius:14px;
+  background:rgba(0,0,0,.34);
+  color:#f8d98d;
+  font-size:24px;
+  cursor:pointer;
+}
+.trLoginContentV202{
+  position:relative;
+  z-index:1;
+  text-align:center;
+}
+.trLoginCompassV202{
+  margin:0 auto 18px;
+  width:74px;
+  height:74px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1px solid rgba(241,207,120,.58);
+  color:#f8d98d;
+  font-size:42px;
+  background:radial-gradient(circle,rgba(241,207,120,.17),rgba(0,0,0,.16));
+  box-shadow:0 0 28px rgba(241,207,120,.18);
+}
+.trLoginTitleV202{
+  margin:0;
+  color:#f3d37a;
+  font-size:24px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+.trLoginBrandV202{
+  margin:6px 0 16px;
+  color:#f6d98a;
+  font-size:44px;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  text-shadow:0 3px 12px rgba(0,0,0,.86);
+}
+.trLoginSubtitleV202{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin:0 auto 22px;
+  color:#d8c6a1;
+  font-size:16px;
+}
+.trLoginSubtitleV202:before,
+.trLoginSubtitleV202:after{
+  content:"";
+  height:1px;
+  width:110px;
+  max-width:20vw;
+  background:linear-gradient(90deg,transparent,rgba(241,207,120,.55),transparent);
+}
+.trGoogleCinematicBtnV202{
+  width:min(520px,100%);
+  margin:0 auto 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  border:1px solid rgba(241,207,120,.64);
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(15,43,33,.94),rgba(5,16,13,.97)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.18),transparent 52%);
+  color:#f5d486;
+  padding:18px 22px;
+  font-family:Georgia,serif;
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  box-shadow:
+    0 16px 38px rgba(0,0,0,.38),
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 0 18px rgba(0,0,0,.34);
+  cursor:pointer;
+}
+.trGoogleCinematicBtnV202:hover{
+  filter:brightness(1.08);
+  border-color:#f4d47f;
+}
+.trGoogleIconV202{
+  width:34px;
+  height:34px;
+  display:inline-grid;
+  place-items:center;
+  border-radius:50%;
+  background:#fff;
+  color:#4285F4;
+  font-family:Arial,sans-serif;
+  font-weight:900;
+  font-size:23px;
+  flex:none;
+}
+.trLoginSafeV202{
+  color:#bca66f;
+  font-size:14px;
+  margin-top:8px;
+}
+.trLegacyToggleV202{
+  margin-top:22px;
+  border:0;
+  background:transparent;
+  color:#937b45;
+  text-decoration:underline;
+  cursor:pointer;
+  font-family:Georgia,serif;
+}
+.trLegacyBoxV202{
+  display:none;
+  margin:16px auto 0;
+  width:min(460px,100%);
+  padding:14px;
+  border:1px solid rgba(241,207,120,.24);
+  border-radius:16px;
+  background:rgba(0,0,0,.24);
+  text-align:left;
+}
+.trLegacyBoxV202.on{
+  display:block;
+}
+.trLegacyBoxV202 label{
+  color:#d9bc7a;
+  font-size:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.trLegacyBoxV202 input{
+  width:100%;
+  margin:6px 0 10px;
+  background:rgba(4,4,4,.58);
+  border:1px solid rgba(208,169,74,.26);
+  border-radius:12px;
+  padding:11px 12px;
+  color:#f2e8d7;
+}
+.trLegacyBoxV202 .passwordWrap{
+  display:flex;
+  gap:8px;
+}
+.trLegacyBoxV202 .passwordWrap input{
+  margin-bottom:0;
+}
+.trLegacyBoxV202 .eyeBtn{
+  min-width:70px;
+  margin:6px 0 10px;
+  border:1px solid rgba(208,169,74,.26);
+  border-radius:12px;
+  background:rgba(18,12,7,.9);
+  color:#f1d37b;
+}
+.trLegacyActionsV202{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.trLegacyActionsV202 button{
+  border-radius:12px;
+  padding:10px;
+}
+
+@media(max-width:780px){
+  .trLoginGateV202{
+    width:72vw;
+    min-width:260px;
+    height:62px;
+    font-size:17px;
+    bottom:8%;
+  }
+  .trLoginPanelV202{
+    padding:34px 22px 26px;
+    min-height:auto;
+  }
+  .trLoginBrandV202{
+    font-size:31px;
+  }
+  .trGoogleCinematicBtnV202{
+    font-size:16px;
+    padding:15px 16px;
+  }
+}
+</style>
+
+
+<style id="tr-v20-0-3-login-limpo-sem-painel-antigo">
+/* v20.0.3 — limpa definitivamente o painel antigo da primeira tela */
+
+/* Esconde qualquer card/formulário antigo da tela inicial, independentemente do nome usado nas versões anteriores. */
+#login .authCard,
+#login .authBox,
+#login .loginCard,
+#login .loginBox,
+#login .landingAuth,
+#login .landingLogin,
+#login .landingPanel,
+#login .landingLoginPanel,
+#login .landingForm,
+#login .authPanel,
+#login .formPanel,
+#login .loginPanel,
+#login .authBody,
+#login #authBody,
+#login #authCard,
+#login #loginPanel,
+#login #landingAuth,
+#login #landingLogin,
+#login #landingLoginPanel,
+#login .registerBox,
+#login #registerBox{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  visibility:hidden!important;
+}
+
+/* Esconde botões antigos soltos que ainda possam estar no stage. */
+#login button:not(#trLoginGateV202):not(.trLoginCloseV202):not(.trGoogleCinematicBtnV202):not(.trLegacyToggleV202):not(.eyeBtn):not(.btn):not(.ghost),
+#login .ctaBtn:not(#trLoginGateV202),
+#login .primaryBtn:not(#trLoginGateV202){
+  display:none!important;
+}
+
+/* Como o botão novo fica dentro do stage da landing, ele precisa permanecer visível. */
+#login #trLoginGateV202{
+  display:block!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  visibility:visible!important;
+}
+
+/* O modal precisa permanecer visível quando aberto. */
+#trLoginModalV202,
+#trLoginModalV202 *{
+  pointer-events:auto;
+}
+
+/* Ajuste fino do botão para não ficar sobre nenhum elemento antigo. */
+.trLoginGateV202{
+  bottom:7.8%!important;
+  z-index:50!important;
+}
+
+/* Se o card antigo ocupava espaço invisível, o stage não deve reservar layout para ele. */
+#login .landingStageV196118{
+  overflow:hidden!important;
+}
+</style>
+
+
+<style id="tr-v20-0-5-landing-antiga-botao-menor">
+/* v20.0.5 — volta ao fundo antigo e transforma o botão em chamada discreta */
+
+/* Garante que a imagem antiga volte a aparecer normalmente. */
+#login .landingStageV196118{
+  background-image:none!important;
+  overflow:hidden!important;
+}
+
+/* Se havia imagem da landing dentro do stage, ela volta a aparecer. */
+#login .landingStageV196118 > img,
+#login .landingStageV196118 picture{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+
+/* Camada nova de texto, usando o card antigo embutido como área de leitura.
+   Ela cobre a parte antiga sem destruir o fundo bonito. */
+.trLandingCopyV205{
+  position:absolute;
+  left:50%;
+  top:43.8%;
+  transform:translateX(-50%);
+  z-index:48;
+  width:min(560px,42vw);
+  min-width:360px;
+  padding:22px 24px 98px;
+  text-align:center;
+  border:1px solid rgba(241,207,120,.32);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.08),transparent 42%),
+    linear-gradient(180deg,rgba(5,13,12,.86),rgba(3,6,5,.92));
+  box-shadow:
+    0 22px 60px rgba(0,0,0,.50),
+    inset 0 0 30px rgba(0,0,0,.36),
+    inset 0 0 0 1px rgba(255,231,158,.05);
+  backdrop-filter:blur(3px);
+}
+.trLandingCopyV205:before{
+  content:"✦";
+  display:block;
+  color:#f4d17a;
+  font-size:20px;
+  margin-bottom:8px;
+  opacity:.92;
+}
+.trLandingCopyV205 .landingCopyTitle{
+  color:#f1cf78;
+  font-family:Georgia,serif;
+  font-size:17px;
+  font-weight:800;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.trLandingCopyV205 .landingCopyText{
+  color:#e6d6b0;
+  font-family:Georgia,serif;
+  font-size:15px;
+  line-height:1.45;
+  text-shadow:0 2px 8px rgba(0,0,0,.8);
+}
+.trLandingCopyV205 .landingCopyFeatures{
+  margin-top:12px;
+  color:#bfa365;
+  font-size:12px;
+  letter-spacing:.06em;
+}
+
+/* Botão bem menor, elegante, agora como gatilho do modal. */
+#login #trLoginGateV202{
+  position:absolute!important;
+  left:50%!important;
+  top:67.8%!important;
+  bottom:auto!important;
+  transform:translateX(-50%)!important;
+  z-index:80!important;
+
+  width:310px!important;
+  min-width:0!important;
+  max-width:70vw!important;
+  height:48px!important;
+
+  border-radius:15px!important;
+  border:1px solid rgba(241,207,120,.72)!important;
+  background:
+    linear-gradient(180deg,rgba(126,88,28,.92),rgba(42,25,8,.95)),
+    radial-gradient(circle at 50% 0%,rgba(255,230,150,.20),transparent 58%)!important;
+  color:#ffe39a!important;
+
+  font-size:14px!important;
+  font-weight:900!important;
+  letter-spacing:.13em!important;
+  text-transform:uppercase!important;
+  text-shadow:0 2px 7px rgba(0,0,0,.82)!important;
+  box-shadow:
+    0 0 20px rgba(241,207,120,.22),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 0 16px rgba(0,0,0,.42)!important;
+}
+#login #trLoginGateV202:before,
+#login #trLoginGateV202:after{
+  font-size:12px!important;
+}
+#login #trLoginGateV202:before{left:13px!important}
+#login #trLoginGateV202:after{right:13px!important}
+
+#login #trLoginGateV202:hover{
+  filter:brightness(1.10)!important;
+  box-shadow:
+    0 0 28px rgba(241,207,120,.34),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 0 16px rgba(0,0,0,.34)!important;
+}
+
+/* O login antigo continua escondido na landing; só aparece no modal legado. */
+#login .authCard,
+#login .authBox,
+#login .loginCard,
+#login .loginBox,
+#login .landingAuth,
+#login .landingLogin,
+#login .landingPanel,
+#login .landingLoginPanel,
+#login .landingForm,
+#login .authPanel,
+#login .formPanel,
+#login .loginPanel,
+#login .authBody,
+#login #authBody,
+#login #authCard,
+#login #loginPanel,
+#login #landingAuth,
+#login #landingLogin,
+#login #landingLoginPanel,
+#login .registerBox,
+#login #registerBox{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  visibility:hidden!important;
+}
+
+/* Mobile */
+@media(max-width:900px){
+  .trLandingCopyV205{
+    width:74vw;
+    min-width:0;
+    top:42%;
+    padding:18px 18px 84px;
+  }
+  .trLandingCopyV205 .landingCopyTitle{
+    font-size:13px;
+  }
+  .trLandingCopyV205 .landingCopyText{
+    font-size:12px;
+    line-height:1.35;
+  }
+  .trLandingCopyV205 .landingCopyFeatures{
+    font-size:10px;
+  }
+  #login #trLoginGateV202{
+    top:68.6%!important;
+    width:245px!important;
+    height:42px!important;
+    font-size:11px!important;
+  }
+}
+</style>
+
+
+<style id="tr-v20-0-6-landing-aprovada-modal-multilogin">
+/* v20.0.6 — Arte aprovada aplicada + modal multilogin */
+
+/* Usa diretamente a arte aprovada. */
+#login .landingStageV196118{
+  background-image:url('/assets/ui/landing_terras_raras_v20_0_6_aprovada.png')!important;
+  background-size:contain!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  overflow:hidden!important;
+}
+
+/* Esconde imagens antigas internas e qualquer overlay textual da v20.0.5. */
+#login .landingStageV196118 > img,
+#login .landingStageV196118 picture,
+#login #trLandingCopyV205,
+#login .trLandingCopyV205{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+/* O botão visual já está dentro da arte. Este botão vira apenas uma área clicável invisível sobre ele. */
+#login #trLoginGateV202{
+  position:absolute!important;
+  left:50%!important;
+  top:79.6%!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:340px!important;
+  height:60px!important;
+  min-width:0!important;
+  max-width:42vw!important;
+  z-index:90!important;
+  opacity:.01!important;
+  color:transparent!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  cursor:pointer!important;
+}
+#login #trLoginGateV202:before,
+#login #trLoginGateV202:after{
+  display:none!important;
+}
+#login #trLoginGateV202:hover{
+  opacity:.08!important;
+  background:rgba(241,207,120,.16)!important;
+  border-radius:16px!important;
+}
+
+/* Modal atualizado com botões múltiplos */
+.trLoginPanelV202{
+  width:min(680px,92vw)!important;
+  min-height:auto!important;
+  padding:38px 46px 32px!important;
+}
+.trLoginProvidersV206{
+  display:grid;
+  gap:10px;
+  width:min(500px,100%);
+  margin:0 auto;
+}
+.trProviderBtnV206{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  border:1px solid rgba(241,207,120,.46);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,rgba(16,38,31,.92),rgba(4,12,10,.96)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.13),transparent 52%);
+  color:#f5d486;
+  padding:14px 18px;
+  font-family:Georgia,serif;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.09);
+  cursor:pointer;
+}
+.trProviderBtnV206:hover{
+  filter:brightness(1.09);
+  border-color:#f1cf78;
+}
+.trProviderBtnV206.primary{
+  border-color:rgba(241,207,120,.70);
+  background:
+    linear-gradient(180deg,rgba(23,58,46,.96),rgba(5,19,15,.98)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.18),transparent 54%);
+}
+.trProviderIconV206{
+  width:30px;
+  height:30px;
+  display:inline-grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(255,255,255,.94);
+  color:#111;
+  font-family:Arial,sans-serif;
+  font-weight:900;
+  font-size:17px;
+  flex:none;
+}
+.trProviderIconV206.google{color:#4285F4}
+.trProviderIconV206.apple{background:#111;color:#fff;border:1px solid rgba(255,255,255,.24)}
+.trProviderIconV206.android{background:#3ddc84;color:#06220f}
+.trProviderIconV206.discord{background:#5865F2;color:#fff}
+.trProviderSepV206{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:#a89056;
+  font-size:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin:6px auto;
+  width:min(500px,100%);
+}
+.trProviderSepV206:before,
+.trProviderSepV206:after{
+  content:"";
+  height:1px;
+  flex:1;
+  background:linear-gradient(90deg,transparent,rgba(241,207,120,.34),transparent);
+}
+.trLegacyBoxV202{
+  width:min(500px,100%)!important;
+  margin-top:10px!important;
+}
+.trLoginSafeV202{
+  margin:12px 0 4px!important;
+}
+.trLegacyToggleV202{
+  margin-top:8px!important;
+}
+
+@media(max-width:780px){
+  #login #trLoginGateV202{
+    top:79.5%!important;
+    width:260px!important;
+    height:48px!important;
+    max-width:70vw!important;
+  }
+  .trLoginPanelV202{
+    padding:34px 22px 26px!important;
+  }
+  .trProviderBtnV206{
+    font-size:12px;
+    padding:12px 14px;
+  }
+}
+</style>
+
+
+<style id="tr-v20-0-7-fix-landing-aprovada-visivel">
+/* v20.0.7 — garante que a arte aprovada apareça como imagem real */
+
+/* Evita tela preta: o stage não depende mais apenas de background-image. */
+#login .landingStageV196118{
+  position:relative!important;
+  background:#000!important;
+  overflow:hidden!important;
+}
+
+/* A imagem aprovada é real e tem prioridade sobre os restos visuais antigos. */
+#login #trLandingApprovedImgV207{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:none!important;
+  z-index:5!important;
+}
+
+/* Esconde apenas imagens antigas, sem afetar a imagem aprovada nova. */
+#login .landingStageV196118 > img:not(#trLandingApprovedImgV207),
+#login .landingStageV196118 picture,
+#login #trLandingCopyV205,
+#login .trLandingCopyV205{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+/* Botão invisível/clicável sobre o botão já desenhado na imagem. */
+#login #trLoginGateV202{
+  position:absolute!important;
+  left:50%!important;
+  top:79.0%!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:330px!important;
+  height:58px!important;
+  min-width:0!important;
+  max-width:42vw!important;
+  z-index:95!important;
+  opacity:.01!important;
+  color:transparent!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  cursor:pointer!important;
+  display:block!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+#login #trLoginGateV202:before,
+#login #trLoginGateV202:after{
+  display:none!important;
+}
+#login #trLoginGateV202:hover{
+  opacity:.10!important;
+  background:rgba(241,207,120,.16)!important;
+  border-radius:16px!important;
+}
+
+/* Modal sempre acima da landing. */
+#trLoginModalV202{
+  z-index:10000!important;
+}
+
+@media(max-width:780px){
+  #login #trLoginGateV202{
+    width:250px!important;
+    height:48px!important;
+    max-width:70vw!important;
+    top:79.0%!important;
+  }
+}
+</style>
+
+
+<style id="tr-v20-0-8-fix-landing-modal-click">
+/* v20.0.8 — Landing aprovada sempre visível + modal próprio funcional */
+
+/* A tela inicial passa a ser controlada por uma camada única nova. */
+#login .landingStageV196118{
+  position:relative!important;
+  background:#000!important;
+  background-image:none!important;
+  overflow:hidden!important;
+}
+
+/* Esconde qualquer conteúdo antigo da landing, exceto as camadas v20.0.8. */
+#login .landingStageV196118 > *:not(#trLandingApprovedImgV208):not(#trLandingClickLayerV208){
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+/* Arte aprovada como imagem real, acima de tudo que existia antes. */
+#login #trLandingApprovedImgV208{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  pointer-events:none!important;
+  z-index:30!important;
+}
+
+/* Camada clicável transparente: qualquer clique na landing abre o modal. */
+#login #trLandingClickLayerV208{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  z-index:80!important;
+  border:0!important;
+  background:transparent!important;
+  cursor:pointer!important;
+}
+
+/* Brilho sutil apenas na região do botão desenhado, ao passar o mouse. */
+#login #trLandingClickLayerV208:after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:79%;
+  transform:translate(-50%,-50%);
+  width:330px;
+  height:58px;
+  border-radius:16px;
+  background:transparent;
+  transition:.18s;
+}
+#login #trLandingClickLayerV208:hover:after{
+  background:rgba(241,207,120,.12);
+  box-shadow:0 0 24px rgba(241,207,120,.22);
+}
+
+/* Modal v20.0.8, independente dos modais antigos. */
+#trLoginModalV208{
+  position:fixed;
+  inset:0;
+  z-index:20000;
+  display:none;
+  place-items:center;
+  padding:28px;
+}
+#trLoginModalV208.on{
+  display:grid;
+}
+.trLoginBackdropV208{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(162,113,31,.22),transparent 34%),
+    rgba(0,0,0,.78);
+  backdrop-filter:blur(8px);
+}
+.trLoginPanelV208{
+  position:relative;
+  width:min(660px,92vw);
+  border:1px solid rgba(241,207,120,.78);
+  border-radius:26px;
+  background:
+    linear-gradient(180deg,rgba(11,18,14,.96),rgba(5,7,5,.985)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.14),transparent 44%);
+  box-shadow:
+    0 40px 110px rgba(0,0,0,.78),
+    0 0 0 1px rgba(255,236,172,.12) inset,
+    0 0 44px rgba(241,207,120,.18);
+  overflow:hidden;
+  padding:36px 44px 30px;
+}
+.trLoginPanelV208:before{
+  content:"";
+  position:absolute;
+  inset:14px;
+  border:1px solid rgba(241,207,120,.25);
+  border-radius:20px;
+  pointer-events:none;
+}
+.trLoginCloseV208{
+  position:absolute;
+  top:18px;
+  right:20px;
+  z-index:3;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(241,207,120,.54);
+  border-radius:14px;
+  background:rgba(0,0,0,.34);
+  color:#f8d98d;
+  font-size:23px;
+  cursor:pointer;
+}
+.trLoginContentV208{
+  position:relative;
+  z-index:2;
+  text-align:center;
+}
+.trLoginCompassV208{
+  margin:0 auto 14px;
+  width:66px;
+  height:66px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1px solid rgba(241,207,120,.56);
+  color:#f8d98d;
+  font-size:34px;
+  background:radial-gradient(circle,rgba(241,207,120,.17),rgba(0,0,0,.16));
+  box-shadow:0 0 28px rgba(241,207,120,.16);
+}
+.trLoginTitleV208{
+  margin:0;
+  color:#f3d37a;
+  font-size:22px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+.trLoginBrandV208{
+  margin:4px 0 14px;
+  color:#f6d98a;
+  font-size:38px;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  text-shadow:0 3px 12px rgba(0,0,0,.86);
+}
+.trLoginSubtitleV208{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin:0 auto 18px;
+  color:#d8c6a1;
+  font-size:15px;
+}
+.trLoginSubtitleV208:before,
+.trLoginSubtitleV208:after{
+  content:"";
+  height:1px;
+  width:90px;
+  max-width:18vw;
+  background:linear-gradient(90deg,transparent,rgba(241,207,120,.52),transparent);
+}
+.trLoginProvidersV208{
+  display:grid;
+  gap:10px;
+  width:min(500px,100%);
+  margin:0 auto;
+}
+.trProviderBtnV208{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  border:1px solid rgba(241,207,120,.46);
+  border-radius:16px;
+  background:
+    linear-gradient(180deg,rgba(16,38,31,.92),rgba(4,12,10,.96)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.13),transparent 52%);
+  color:#f5d486;
+  padding:14px 18px;
+  font-family:Georgia,serif;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.09);
+  cursor:pointer;
+}
+.trProviderBtnV208:hover{
+  filter:brightness(1.09);
+  border-color:#f1cf78;
+}
+.trProviderBtnV208.primary{
+  border-color:rgba(241,207,120,.70);
+  background:
+    linear-gradient(180deg,rgba(23,58,46,.96),rgba(5,19,15,.98)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.18),transparent 54%);
+}
+.trProviderIconV208{
+  width:30px;
+  height:30px;
+  display:inline-grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(255,255,255,.94);
+  color:#111;
+  font-family:Arial,sans-serif;
+  font-weight:900;
+  font-size:17px;
+  flex:none;
+}
+.trProviderIconV208.google{color:#4285F4}
+.trProviderIconV208.apple{background:#111;color:#fff;border:1px solid rgba(255,255,255,.24)}
+.trProviderIconV208.android{background:#3ddc84;color:#06220f}
+.trProviderIconV208.discord{background:#5865F2;color:#fff}
+.trProviderSepV208{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:#a89056;
+  font-size:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin:10px auto;
+  width:min(500px,100%);
+}
+.trProviderSepV208:before,
+.trProviderSepV208:after{
+  content:"";
+  height:1px;
+  flex:1;
+  background:linear-gradient(90deg,transparent,rgba(241,207,120,.34),transparent);
+}
+.trNormalLoginToggleV208{
+  margin:2px auto 0;
+  border:0;
+  background:transparent;
+  color:#bfa365;
+  text-decoration:underline;
+  cursor:pointer;
+  font-family:Georgia,serif;
+}
+.trNormalLoginBoxV208{
+  display:none;
+  margin:14px auto 0;
+  width:min(500px,100%);
+  padding:14px;
+  border:1px solid rgba(241,207,120,.24);
+  border-radius:16px;
+  background:rgba(0,0,0,.24);
+  text-align:left;
+}
+.trNormalLoginBoxV208.on{
+  display:block;
+}
+.trNormalLoginBoxV208 label{
+  color:#d9bc7a;
+  font-size:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.trNormalLoginBoxV208 input{
+  width:100%;
+  margin:6px 0 10px;
+  background:rgba(4,4,4,.58);
+  border:1px solid rgba(208,169,74,.26);
+  border-radius:12px;
+  padding:11px 12px;
+  color:#f2e8d7;
+}
+.trNormalPasswordWrapV208{
+  display:flex;
+  gap:8px;
+}
+.trNormalPasswordWrapV208 input{
+  margin-bottom:0;
+}
+.trEyeBtnV208{
+  min-width:76px;
+  margin:6px 0 10px;
+  border:1px solid rgba(208,169,74,.26);
+  border-radius:12px;
+  background:rgba(18,12,7,.9);
+  color:#f1d37b;
+}
+.trNormalActionsV208{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.trMsgV208{
+  margin-top:10px;
+  color:#d8c6a1;
+  font-size:13px;
+}
+.trMsgV208.err{
+  color:#ffb0a8;
+}
+
+@media(max-width:780px){
+  .trLoginPanelV208{
+    padding:32px 20px 24px;
+  }
+  .trLoginBrandV208{
+    font-size:29px;
+  }
+  .trProviderBtnV208{
+    font-size:12px;
+    padding:12px 14px;
+  }
+  #login #trLandingClickLayerV208:after{
+    width:250px;
+    height:48px;
+  }
+}
+</style>
+
+
+<style id="tr-v20-0-9-oauth-sem-tela-branca">
+/* v20.0.9 — avisos OAuth dentro do modal, sem sair para tela branca */
+.trProviderMsgV209{
+  width:min(500px,100%);
+  margin:10px auto 0;
+  padding:10px 12px;
+  border:1px solid rgba(241,207,120,.25);
+  border-radius:12px;
+  background:rgba(0,0,0,.22);
+  color:#d8c6a1;
+  font-size:13px;
+  line-height:1.4;
+  display:none;
+}
+.trProviderMsgV209.on{
+  display:block;
+}
+.trProviderMsgV209.err{
+  color:#ffcfbd;
+  border-color:rgba(255,150,120,.35);
+}
+.trProviderBtnV208.disabledSoft{
+  opacity:.58;
+  filter:saturate(.65);
+}
+.trProviderBtnV208.disabledSoft:hover{
+  filter:saturate(.65);
+  border-color:rgba(241,207,120,.46);
+}
+</style>
+
+
+<style id="tr-v20-0-10-modal-login-compacto">
+/* v20.0.10 — Modal de login mais compacto e responsivo */
+
+/* O modal não pode ultrapassar a altura útil da tela. */
+#trLoginModalV208{
+  padding:18px!important;
+  align-items:center!important;
+}
+
+#trLoginModalV208 .trLoginPanelV208{
+  width:min(760px,92vw)!important;
+  max-height:calc(100vh - 56px)!important;
+  overflow-y:auto!important;
+  padding:26px 38px 22px!important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(241,207,120,.45) rgba(0,0,0,.2);
+}
+
+#trLoginModalV208 .trLoginPanelV208::-webkit-scrollbar{
+  width:8px;
+}
+#trLoginModalV208 .trLoginPanelV208::-webkit-scrollbar-thumb{
+  background:rgba(241,207,120,.38);
+  border-radius:999px;
+}
+#trLoginModalV208 .trLoginPanelV208::-webkit-scrollbar-track{
+  background:rgba(0,0,0,.22);
+}
+
+/* Cabeçalho menor, sem perder imponência. */
+#trLoginModalV208 .trLoginCompassV208{
+  width:54px!important;
+  height:54px!important;
+  font-size:28px!important;
+  margin-bottom:10px!important;
+}
+#trLoginModalV208 .trLoginTitleV208{
+  font-size:18px!important;
+}
+#trLoginModalV208 .trLoginBrandV208{
+  font-size:32px!important;
+  margin:2px 0 10px!important;
+}
+#trLoginModalV208 .trLoginSubtitleV208{
+  margin-bottom:14px!important;
+  font-size:14px!important;
+}
+
+/* No desktop, os provedores ficam em grade 2x2 para economizar altura. */
+#trLoginModalV208 .trLoginProvidersV208{
+  width:min(620px,100%)!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+}
+
+#trLoginModalV208 .trProviderBtnV208{
+  min-height:52px!important;
+  padding:11px 14px!important;
+  font-size:12px!important;
+  line-height:1.12!important;
+  letter-spacing:.055em!important;
+}
+
+#trLoginModalV208 .trProviderIconV208{
+  width:28px!important;
+  height:28px!important;
+  font-size:15px!important;
+}
+
+/* Mensagem de provedor mais compacta. */
+#trProviderMsgV209,
+#trLoginModalV208 .trProviderMsgV209{
+  width:min(620px,100%)!important;
+  margin:9px auto 0!important;
+  padding:8px 10px!important;
+  font-size:12px!important;
+  line-height:1.32!important;
+}
+
+/* Separador e link do login normal com menos altura. */
+#trLoginModalV208 .trProviderSepV208{
+  margin:8px auto!important;
+  width:min(620px,100%)!important;
+}
+
+#trLoginModalV208 .trNormalLoginToggleV208{
+  margin:0 auto 0!important;
+  font-size:14px!important;
+}
+
+/* Caixa do login normal mais compacta e sempre visível dentro da área rolável. */
+#trLoginModalV208 .trNormalLoginBoxV208{
+  width:min(620px,100%)!important;
+  margin:10px auto 0!important;
+  padding:12px!important;
+}
+
+#trLoginModalV208 .trNormalLoginBoxV208 label{
+  font-size:10px!important;
+}
+
+#trLoginModalV208 .trNormalLoginBoxV208 input{
+  margin:5px 0 8px!important;
+  padding:9px 10px!important;
+  min-height:38px!important;
+}
+
+#trLoginModalV208 .trEyeBtnV208{
+  margin:5px 0 8px!important;
+  min-width:70px!important;
+}
+
+#trLoginModalV208 .trNormalActionsV208 button{
+  padding:9px 10px!important;
+}
+
+/* Quando o login normal abre, o formulário sobe suavemente para dentro do modal. */
+#trLoginModalV208 .trNormalLoginBoxV208.on{
+  animation:trLoginOpenV2010 .16s ease-out;
+}
+
+@keyframes trLoginOpenV2010{
+  from{opacity:.4; transform:translateY(-4px)}
+  to{opacity:1; transform:translateY(0)}
+}
+
+/* Mobile: volta para uma coluna, mas cabe com scroll interno. */
+@media(max-width:780px){
+  #trLoginModalV208{
+    padding:10px!important;
+  }
+
+  #trLoginModalV208 .trLoginPanelV208{
+    width:96vw!important;
+    max-height:calc(100vh - 28px)!important;
+    padding:24px 18px 20px!important;
+  }
+
+  #trLoginModalV208 .trLoginProvidersV208{
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  #trLoginModalV208 .trLoginBrandV208{
+    font-size:26px!important;
+  }
+
+  #trLoginModalV208 .trProviderBtnV208{
+    min-height:46px!important;
+    font-size:11px!important;
+    padding:10px 12px!important;
+  }
+}
+</style>
+
+
+<style id="tr-v20-1-0-producao-google">
+/* v20.1.0 — landing otimizada por rota, sem depender de base64 pesado */
+#login .landingStageV196118{
+  background:#000!important;
+}
+#login #trLandingApprovedImgV208{
+  content:url('/tr-assets/landing?v=20.1.0')!important;
+}
+.trOauthDiagV210{
+  width:min(620px,100%);
+  margin:10px auto 0;
+  padding:10px 12px;
+  border:1px solid rgba(241,207,120,.25);
+  border-radius:12px;
+  background:rgba(0,0,0,.20);
+  color:#d8c6a1;
+  font-size:12px;
+  line-height:1.4;
+}
+.trOauthDiagV210 b{color:#f1cf78}
+.trOauthDiagV210 code{
+  color:#f6d98a;
+  font-family:Consolas,monospace;
+  font-size:11px;
+}
+.trProviderBtnV208.ready{
+  opacity:1!important;
+  filter:none!important;
+}
+.trProviderBtnV208.pending{
+  opacity:.62!important;
+}
+</style>
+
+
+<style id="tr-v20-1-2-oauth-aviso-unico">
+/* v20.1.2 — remove aviso duplicado de OAuth */
+
+/* O aviso antigo da v20.0.9 fica escondido.
+   Agora usamos apenas o diagnóstico elegante da v20.1.x. */
+#trProviderMsgV209{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+
+/* Aviso único e mais bonito */
+#trOauthDiagV210{
+  width:min(620px,100%)!important;
+  margin:10px auto 0!important;
+  padding:12px 14px!important;
+  border:1px solid rgba(241,207,120,.30)!important;
+  border-radius:14px!important;
+  background:
+    linear-gradient(180deg,rgba(31,20,8,.52),rgba(8,6,4,.74)),
+    radial-gradient(circle at 50% 0%,rgba(241,207,120,.08),transparent 50%)!important;
+  color:#dcc9a3!important;
+  font-size:12px!important;
+  line-height:1.42!important;
+  text-align:center!important;
+}
+
+#trOauthDiagV210 b{
+  color:#f3d37a!important;
+}
+
+#trOauthDiagV210 code{
+  display:inline-block;
+  margin-top:3px;
+  color:#ffe2a0!important;
+  font-family:Consolas,monospace!important;
+  font-size:11px!important;
+  background:rgba(0,0,0,.20);
+  border:1px solid rgba(241,207,120,.18);
+  border-radius:8px;
+  padding:2px 6px;
+}
+
+/* Como agora há só um aviso, o separador pode respirar melhor */
+#trLoginModalV208 .trProviderSepV208{
+  margin-top:10px!important;
+}
+</style>
+
+
+<style id="tr-v20-1-3-remove-aviso-antigo">
+/* v20.1.3 — remoção definitiva do aviso antigo duplicado */
+
+/* Esconde o aviso antigo por id e por classe. */
+#trProviderMsgV209,
+.trProviderMsgV209{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  height:0!important;
+  max-height:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+
+/* Mantém apenas o diagnóstico novo. */
+#trOauthDiagV210{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+</style>
+
+
+<style id="tr-v20-1-4-google-oauth-aprovado">
+/* v20.1.4 — Google OAuth local aprovado */
+#trOauthDiagV210.googleReadyV214{
+  border-color:rgba(92,214,137,.34)!important;
+  background:
+    linear-gradient(180deg,rgba(7,31,18,.58),rgba(4,10,6,.75)),
+    radial-gradient(circle at 50% 0%,rgba(92,214,137,.12),transparent 50%)!important;
+  color:#cfead7!important;
+}
+#trOauthDiagV210.googleReadyV214 b{color:#9ff0b8!important}
+#trLoginModalV208 [data-provider="google"].ready,
+#trLoginModalV208 [data-provider="android"].ready{
+  border-color:rgba(92,214,137,.52)!important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.30),
+    0 0 18px rgba(92,214,137,.10),
+    inset 0 1px 0 rgba(255,255,255,.09)!important;
+}
+#trLoginModalV208 [data-provider="google"].ready .trProviderIconV208,
+#trLoginModalV208 [data-provider="android"].ready .trProviderIconV208{
+  box-shadow:0 0 0 2px rgba(92,214,137,.18);
+}
+.trEnvHintV214{
+  width:min(620px,100%);
+  margin:8px auto 0;
+  color:#a89056;
+  font-size:11px;
+  text-align:center;
+  line-height:1.35;
+}
+</style>
+
+
+<style id="tr-v21-0-8-cidade-relogios-css">
+/* v21.0.8 — Cidade dos Relógios Parados */
+.cidadeRelogiosStageV2108{
+  position:relative;
+  width:100%;
+  height:100%;
+  min-height:min(78vh,780px);
+  overflow:hidden;
+  border-radius:26px;
+  background:#09111d;
+}
+.cidadeRelogiosStageV2108 .premiumForestMap{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  filter:saturate(1.04) contrast(1.03);
+}
+.cidadeRelogiosStageV2108 .premiumHotspots{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.cidadeRelogiosStageV2108 .premiumHotspot{
+  pointer-events:auto;
+  position:absolute;
+  transform:translate(-50%,-50%);
+}
+.cidadeRelogiosStageV2108 .premiumHotspot.portal span{
+  box-shadow:0 0 22px rgba(255,209,91,.78), inset 0 0 8px rgba(255,255,255,.35);
+}
+.cidadeRelogiosStageV2108 .premiumHotspot.danger span{
+  box-shadow:0 0 18px rgba(111,179,255,.46), inset 0 0 8px rgba(255,255,255,.25);
+}
+.cidadeRelogiosStageV2108 .premiumHotspot.secret span{
+  box-shadow:0 0 18px rgba(188,153,255,.42), inset 0 0 8px rgba(255,255,255,.24);
+}
+</style>
+
+
+<style id="tr-v21-1-2-clock-character-layout-css">
+/* v21.1.2 — correção segura de cache/layout Personagens / Cartas do Mapa 03 */
+#mapArea.trClockLayoutMode{
+  background:#05080c!important;
+  overflow:hidden!important;
+}
+#mapArea.trClockLayoutMode #visualQuickNav,
+#mapArea.trClockLayoutMode .mapHint,
+#mapArea.trClockLayoutMode .premiumHotspots,
+#mapArea.trClockLayoutMode .premiumTokens{
+  display:none!important;
+}
+.trClockLayout{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:grid;
+  grid-template-columns:300px 1fr;
+  grid-template-rows:58px 1fr 92px;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(226,180,74,.16),transparent 34%),
+    linear-gradient(180deg,rgba(5,9,14,.94),rgba(3,5,7,.98)),
+    url('/tr-assets/cidade-relogios-map.webp?v=21.1.2');
+  background-size:cover;
+  background-position:center;
+  color:#f6dfaa;
+  font-family:Georgia, 'Times New Roman', serif;
+}
+.trClockLayout::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(2,4,6,.92) 0%,rgba(6,10,14,.72) 23%,rgba(5,8,12,.58) 57%,rgba(2,4,6,.86) 100%);
+  pointer-events:none;
+}
+.trClockTopNav{
+  position:relative;
+  z-index:2;
+  grid-column:1/3;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 22px;
+  border-bottom:1px solid rgba(216,164,67,.26);
+  background:linear-gradient(180deg,rgba(10,12,14,.9),rgba(4,5,7,.66));
+}
+.trClockBrand{
+  width:300px;
+  font-weight:900;
+  color:#f5cf7b;
+  font-size:24px;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  line-height:.9;
+}
+.trClockBrand small{display:block;font-size:10px;color:#b99b63;letter-spacing:.18em;margin-top:7px;}
+.trClockTopNav button{
+  height:38px;
+  min-width:105px;
+  padding:0 16px;
+  border-radius:0;
+  border:1px solid rgba(209,156,54,.28);
+  background:linear-gradient(180deg,rgba(20,20,20,.85),rgba(8,8,8,.7));
+  color:#d8bd7b;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  cursor:pointer;
+}
+.trClockTopNav button.on{
+  color:#ffe6a5;
+  border-color:rgba(241,198,92,.78);
+  background:linear-gradient(180deg,rgba(32,24,10,.94),rgba(10,10,12,.84));
+  box-shadow:0 0 18px rgba(229,172,67,.18);
+}
+.trClockCurrency{
+  margin-left:auto;
+  display:flex;
+  gap:12px;
+  color:#f4d78e;
+  font-size:15px;
+}
+.trClockCurrency span{
+  border:1px solid rgba(215,170,73,.24);
+  border-radius:14px;
+  padding:8px 12px;
+  background:rgba(0,0,0,.32);
+}
+.trClockLeft{
+  position:relative;
+  z-index:2;
+  grid-row:2/3;
+  padding:22px 24px;
+  border-right:1px solid rgba(216,164,67,.18);
+  background:linear-gradient(180deg,rgba(5,9,12,.72),rgba(2,5,8,.88));
+}
+.trClockSideBadge{
+  text-align:center;
+  border:1px solid rgba(218,169,74,.52);
+  border-radius:16px;
+  padding:18px 14px;
+  background:linear-gradient(180deg,rgba(13,21,28,.72),rgba(2,4,7,.55));
+  box-shadow:inset 0 0 24px rgba(229,174,65,.06);
+  text-transform:uppercase;
+}
+.trClockSideBadge small{
+  display:inline-block;
+  transform:translateY(-30px);
+  padding:5px 14px;
+  border:1px solid rgba(218,169,74,.55);
+  background:#0b1720;
+  border-radius:12px;
+  font-size:11px;
+  letter-spacing:.12em;
+}
+.trClockSideBadge h2{
+  margin:-10px 0 4px;
+  font-size:28px;
+  color:#f4cf7d;
+  line-height:1.05;
+}
+.trClockSideText{
+  margin:20px 8px;
+  color:#f2e7c8;
+  font-size:16px;
+  line-height:1.45;
+}
+.trClockPanelButton{
+  width:100%;
+  height:44px;
+  margin:12px 0;
+  border:1px solid rgba(222,176,80,.6);
+  border-radius:14px;
+  background:linear-gradient(180deg,#12304a,#091622);
+  color:#f5d28b;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  cursor:pointer;
+}
+.trClockProgress{
+  margin-top:28px;
+  border-top:1px solid rgba(218,169,74,.18);
+  padding-top:18px;
+}
+.trClockProgress h3{
+  color:#e7bd62;
+  margin:0 0 12px;
+  font-size:17px;
+  text-transform:uppercase;
+}
+.trClockBar{
+  height:8px;
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid rgba(220,170,69,.38);
+  background:#0b1418;
+  margin:12px 0 6px;
+}
+.trClockBar span{
+  display:block;
+  height:100%;
+  width:46%;
+  background:linear-gradient(90deg,#ba741e,#f5d17b);
+  box-shadow:0 0 14px rgba(243,199,93,.5);
+}
+.trClockMain{
+  position:relative;
+  z-index:2;
+  grid-row:2/3;
+  padding:26px 28px 10px;
+  overflow:auto;
+}
+.trClockTitle{
+  margin:0 0 18px;
+  text-align:center;
+  font-size:30px;
+  letter-spacing:.08em;
+  color:#f4cf84;
+  text-transform:uppercase;
+  text-shadow:0 2px 0 #000;
+}
+.trClockCharacterGrid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(135px,1fr));
+  gap:14px;
+}
+.trClockCard{
+  position:relative;
+  min-height:272px;
+  border:1px solid rgba(226,177,69,.56);
+  border-radius:10px;
+  overflow:hidden;
+  background:#0b0b0d;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,235,170,.06);
+  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.trClockCard:hover,.trClockCard.selected{
+  transform:translateY(-3px);
+  border-color:rgba(255,214,117,.9);
+  box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 22px rgba(230,177,63,.22);
+}
+.trClockCard img{
+  width:100%;
+  height:100%;
+  min-height:272px;
+  object-fit:cover;
+  display:block;
+}
+.trClockCard .num{
+  position:absolute;
+  left:8px;
+  top:8px;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(11,13,16,.82);
+  border:1px solid rgba(255,215,111,.75);
+  color:#f8d37d;
+  font-weight:bold;
+}
+.trClockCard .name{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  text-align:center;
+  padding:10px 4px 12px;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.95) 40%);
+  color:#f6d081;
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.trClockInfo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin:24px auto 0;
+  max-width:980px;
+  color:#f3e4c2;
+}
+.trClockInfoIcon{
+  width:62px;
+  height:62px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(230,178,65,.6);
+  background:rgba(0,0,0,.36);
+  font-size:34px;
+}
+.trClockInfoText{flex:1;font-size:15px;line-height:1.45;}
+.trClockConfirm{
+  min-width:240px;
+  height:54px;
+  border-radius:14px;
+  border:1px solid rgba(229,177,69,.8);
+  background:linear-gradient(180deg,#123755,#071827);
+  color:#ffd98d;
+  font-size:17px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.trClockBottom{
+  position:relative;
+  z-index:2;
+  grid-column:1/3;
+  display:grid;
+  grid-template-columns:150px 170px 160px 1fr 150px 180px 150px;
+  align-items:center;
+  gap:14px;
+  padding:14px 28px;
+  border-top:1px solid rgba(216,164,67,.28);
+  background:linear-gradient(180deg,rgba(4,5,7,.62),rgba(0,0,0,.9));
+}
+.trClockBottom button{
+  height:50px;
+  border-radius:11px;
+  border:1px solid rgba(205,154,58,.36);
+  background:linear-gradient(180deg,rgba(38,31,19,.9),rgba(8,8,9,.88));
+  color:#d8bd7a;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  cursor:pointer;
+}
+.trClockBottom button.on{
+  border-color:rgba(0,158,255,.8);
+  background:linear-gradient(180deg,#0b304f,#06121f);
+  color:#ffe1a0;
+}
+.trClockBottom .play{
+  height:62px;
+  font-size:26px;
+  color:#ffe4a5;
+  border-color:rgba(226,177,69,.84);
+  background:linear-gradient(180deg,#4c3212,#110b04);
+}
+.trClockCardsLayout .trClockCharacterGrid{
+  grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+}
+.trClockCardsLayout .trClockCard{min-height:295px;}
+.trClockCardsLayout .trClockCard img{min-height:295px;}
+.trClockSectionTitle{
+  margin:4px 0 14px;
+  color:#ffd98d;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:20px;
+}
+.trClockDeckDivider{
+  margin:24px 0 14px;
+  border-top:1px solid rgba(226,177,69,.22);
+}
+@media(max-width:1200px){
+  .trClockLayout{grid-template-columns:240px 1fr;grid-template-rows:54px 1fr 78px;}
+  .trClockBrand{width:210px;font-size:20px}
+  .trClockTopNav button{min-width:auto;padding:0 10px;font-size:12px}
+  .trClockCharacterGrid{grid-template-columns:repeat(3,minmax(120px,1fr));}
+  .trClockBottom{grid-template-columns:repeat(4,1fr);overflow:auto}
+}
+</style>
+
+
+
+<style id="tr-v21-1-3-layout-azul-aprovado-css">
+/* v21.1.3 — referência visual aprovada pelo usuário: layout azul cinematográfico, botões arredondados e grid 6x2 elegante. */
+#mapArea.trClockLayoutMode{
+  background:#06111d!important;
+  overflow:hidden!important;
+}
+#mapArea.trClockLayoutMode #visualQuickNav,
+#mapArea.trClockLayoutMode .mapHint,
+#mapArea.trClockLayoutMode .premiumHotspots,
+#mapArea.trClockLayoutMode .premiumTokens{
+  display:none!important;
+}
+.trClockLayout{
+  grid-template-columns:clamp(248px,19vw,310px) minmax(0,1fr)!important;
+  grid-template-rows:64px minmax(0,1fr) 88px!important;
+  background:
+    linear-gradient(90deg,rgba(3,10,18,.95) 0%,rgba(5,23,38,.80) 28%,rgba(4,19,34,.58) 55%,rgba(3,10,18,.92) 100%),
+    radial-gradient(circle at 50% 14%,rgba(67,159,210,.28),transparent 33%),
+    radial-gradient(circle at 84% 50%,rgba(21,76,114,.38),transparent 42%),
+    url('/tr-assets/cidade-relogios-map.webp?v=21.1.3')!important;
+  background-size:cover!important;
+  background-position:center!important;
+  color:#f8df9a!important;
+  letter-spacing:.01em;
+}
+.trClockLayout::before{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.055),transparent 12%,rgba(0,0,0,.10) 55%,rgba(0,0,0,.36)),
+    repeating-linear-gradient(120deg,rgba(255,255,255,.018) 0 1px,transparent 1px 18px)!important;
+  opacity:.95!important;
+}
+.trClockTopNav{
+  padding:10px 22px!important;
+  gap:12px!important;
+  border-bottom:1px solid rgba(122,190,239,.22)!important;
+  background:linear-gradient(180deg,rgba(4,13,23,.92),rgba(4,12,20,.64))!important;
+  box-shadow:0 12px 36px rgba(0,0,0,.32)!important;
+}
+.trClockBrand{
+  width:clamp(230px,19vw,310px)!important;
+  color:#f9d982!important;
+  font-size:22px!important;
+  letter-spacing:.09em!important;
+  text-shadow:0 2px 14px rgba(0,0,0,.85)!important;
+}
+.trClockBrand small{
+  color:#7fb7dc!important;
+  letter-spacing:.22em!important;
+}
+.trClockTopNav button{
+  height:40px!important;
+  min-width:102px!important;
+  border-radius:999px!important;
+  border:1px solid rgba(112,184,236,.42)!important;
+  background:linear-gradient(180deg,rgba(18,61,91,.76),rgba(6,20,34,.92))!important;
+  color:#d9ecff!important;
+  font-size:12px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.26)!important;
+}
+.trClockTopNav button:hover{
+  transform:translateY(-1px);
+  border-color:rgba(255,218,132,.74)!important;
+  color:#ffe9ad!important;
+}
+.trClockTopNav button.on{
+  color:#fff0b8!important;
+  border-color:rgba(255,218,132,.88)!important;
+  background:linear-gradient(180deg,rgba(22,90,135,.92),rgba(8,33,55,.95))!important;
+  box-shadow:0 0 24px rgba(60,158,224,.34),inset 0 1px 0 rgba(255,255,255,.16)!important;
+}
+.trClockCurrency span{
+  border:1px solid rgba(124,194,241,.34)!important;
+  border-radius:999px!important;
+  background:rgba(3,14,24,.72)!important;
+  color:#ffe2a0!important;
+}
+.trClockLeft{
+  padding:22px 22px!important;
+  border-right:1px solid rgba(113,180,230,.20)!important;
+  background:linear-gradient(180deg,rgba(6,28,47,.80),rgba(3,13,23,.92))!important;
+  box-shadow:18px 0 42px rgba(0,0,0,.30)!important;
+}
+.trClockSideBadge{
+  border:1px solid rgba(244,204,105,.66)!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,rgba(18,65,98,.82),rgba(6,24,42,.62))!important;
+  box-shadow:inset 0 0 30px rgba(73,166,225,.10),0 12px 32px rgba(0,0,0,.28)!important;
+}
+.trClockSideBadge small{
+  border-color:rgba(244,204,105,.65)!important;
+  background:#071b2c!important;
+  color:#d8ecff!important;
+  border-radius:999px!important;
+}
+.trClockSideBadge h2{
+  color:#ffe08e!important;
+  text-shadow:0 3px 18px rgba(0,0,0,.85)!important;
+}
+.trClockSideText,
+.trClockProgress p{
+  color:#d5e9f5!important;
+}
+.trClockPanelButton,
+.trClockConfirm{
+  border-radius:999px!important;
+  border:1px solid rgba(244,204,105,.78)!important;
+  background:linear-gradient(180deg,#1e6a9a,#08253d)!important;
+  color:#ffe3a1!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.14)!important;
+}
+.trClockPanelButton:hover,
+.trClockConfirm:hover{
+  filter:brightness(1.08);
+  transform:translateY(-1px);
+}
+.trClockProgress{
+  border-top:1px solid rgba(124,194,241,.22)!important;
+}
+.trClockProgress h3,
+.trClockSectionTitle{
+  color:#ffe08e!important;
+}
+.trClockBar{
+  border-color:rgba(118,190,239,.36)!important;
+  background:#061726!important;
+}
+.trClockBar span{
+  background:linear-gradient(90deg,#146da4,#ffe08e)!important;
+  box-shadow:0 0 16px rgba(72,174,239,.58)!important;
+}
+.trClockMain{
+  padding:24px 30px 10px!important;
+  min-width:0!important;
+}
+.trClockTitle{
+  margin:0 0 16px!important;
+  color:#ffe09a!important;
+  font-size:clamp(24px,2.1vw,34px)!important;
+  letter-spacing:.10em!important;
+  text-shadow:0 3px 18px rgba(0,0,0,.92),0 0 18px rgba(76,163,220,.24)!important;
+}
+.trClockCharacterGrid{
+  grid-template-columns:repeat(6,minmax(112px,1fr))!important;
+  gap:14px!important;
+  align-items:stretch!important;
+}
+.trClockCard{
+  min-height:0!important;
+  height:clamp(188px,24vh,258px)!important;
+  border-radius:18px!important;
+  border:1px solid rgba(244,205,111,.62)!important;
+  background:#071522!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.46),inset 0 0 0 1px rgba(255,255,255,.06)!important;
+}
+.trClockCard:hover,
+.trClockCard.selected{
+  transform:translateY(-4px)!important;
+  border-color:rgba(255,227,152,.96)!important;
+  box-shadow:0 16px 32px rgba(0,0,0,.54),0 0 28px rgba(64,169,232,.34)!important;
+}
+.trClockCard.selected::after{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border:1px solid rgba(111,194,250,.82);
+  border-radius:14px;
+  pointer-events:none;
+  box-shadow:0 0 18px rgba(83,185,255,.34);
+}
+.trClockCard img{
+  min-height:0!important;
+  height:100%!important;
+  filter:saturate(1.03) contrast(1.04)!important;
+}
+.trClockCard .num{
+  left:10px!important;
+  top:10px!important;
+  width:30px!important;
+  height:30px!important;
+  background:rgba(3,15,27,.86)!important;
+  border-color:rgba(255,225,142,.86)!important;
+  color:#ffe08e!important;
+  box-shadow:0 4px 16px rgba(0,0,0,.34)!important;
+}
+.trClockCard .name{
+  padding:28px 6px 11px!important;
+  background:linear-gradient(180deg,transparent,rgba(2,8,14,.86) 36%,rgba(1,5,9,.98) 100%)!important;
+  color:#ffe09a!important;
+  font-size:clamp(14px,1.35vw,21px)!important;
+  text-shadow:0 2px 8px #000!important;
+}
+.trClockInfo{
+  margin:18px auto 0!important;
+  padding:12px 14px!important;
+  max-width:1040px!important;
+  min-height:76px!important;
+  border:1px solid rgba(118,190,239,.26)!important;
+  border-radius:20px!important;
+  background:linear-gradient(180deg,rgba(5,24,41,.70),rgba(2,9,16,.74))!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.28)!important;
+}
+.trClockInfoIcon{
+  width:56px!important;
+  height:56px!important;
+  border-color:rgba(244,205,111,.7)!important;
+  background:linear-gradient(180deg,rgba(19,72,106,.78),rgba(4,20,34,.82))!important;
+  color:#ffe08e!important;
+}
+.trClockInfoText{
+  color:#e5f2fb!important;
+}
+.trClockInfoText b{
+  color:#ffe08e!important;
+}
+.trClockConfirm{
+  min-width:230px!important;
+  height:50px!important;
+}
+.trClockBottom{
+  grid-template-columns:150px 180px 160px minmax(190px,1fr) 140px 190px 130px!important;
+  gap:12px!important;
+  padding:13px 28px!important;
+  border-top:1px solid rgba(122,190,239,.22)!important;
+  background:linear-gradient(180deg,rgba(3,15,26,.72),rgba(0,3,7,.94))!important;
+  box-shadow:0 -12px 36px rgba(0,0,0,.28)!important;
+}
+.trClockBottom button{
+  height:50px!important;
+  border-radius:999px!important;
+  border:1px solid rgba(112,184,236,.36)!important;
+  background:linear-gradient(180deg,rgba(18,61,91,.78),rgba(6,20,34,.94))!important;
+  color:#d9ecff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 8px 20px rgba(0,0,0,.28)!important;
+}
+.trClockBottom button:hover{
+  border-color:rgba(255,222,143,.78)!important;
+  color:#ffe6a5!important;
+  transform:translateY(-1px);
+}
+.trClockBottom button.on{
+  border-color:rgba(255,222,143,.82)!important;
+  background:linear-gradient(180deg,#1f78ad,#092946)!important;
+  color:#fff0b8!important;
+}
+.trClockBottom .play{
+  height:62px!important;
+  font-size:24px!important;
+  border-color:rgba(255,221,139,.92)!important;
+  background:linear-gradient(180deg,#2a84b8,#082a47)!important;
+  color:#ffe9ae!important;
+  box-shadow:0 0 28px rgba(62,169,236,.28), inset 0 1px 0 rgba(255,255,255,.18)!important;
+}
+.trClockCardsLayout .trClockCard{
+  height:clamp(220px,31vh,315px)!important;
+}
+.trClockDeckDivider{
+  border-top-color:rgba(118,190,239,.24)!important;
+}
+@media(max-width:1300px){
+  .trClockLayout{grid-template-columns:235px minmax(0,1fr)!important;grid-template-rows:58px minmax(0,1fr) 78px!important;}
+  .trClockBrand{width:220px!important;font-size:19px!important;}
+  .trClockTopNav{gap:8px!important;padding:9px 14px!important;}
+  .trClockTopNav button{min-width:auto!important;padding:0 10px!important;font-size:11px!important;}
+  .trClockLeft{padding:18px 16px!important;}
+  .trClockCharacterGrid{gap:10px!important;}
+  .trClockCard{height:clamp(165px,22vh,226px)!important;}
+  .trClockBottom{grid-template-columns:repeat(7,minmax(92px,1fr))!important;gap:8px!important;padding:10px 14px!important;}
+  .trClockBottom button{font-size:11px!important;}
+  .trClockBottom .play{font-size:20px!important;}
+  .trClockInfo{margin-top:12px!important;}
+}
+@media(max-width:950px){
+  .trClockLayout{grid-template-columns:1fr!important;grid-template-rows:64px auto minmax(0,1fr) 88px!important;overflow:auto!important;}
+  .trClockTopNav{grid-column:1!important;overflow:auto!important;}
+  .trClockLeft{grid-row:2!important;border-right:0!important;border-bottom:1px solid rgba(122,190,239,.20)!important;}
+  .trClockMain{grid-row:3!important;}
+  .trClockBottom{grid-column:1!important;grid-row:4!important;position:sticky!important;bottom:0!important;overflow:auto!important;}
+  .trClockCharacterGrid{grid-template-columns:repeat(3,minmax(100px,1fr))!important;}
+}
+</style>
+
+
+<style id="tr-v21-1-8-fix-corte-mapa-cartas-assets">
+/* v21.1.8 — correção cirúrgica: nada de layout global. Só corrige corte e área útil. */
+
+/* Quando abre Personagens/Cartas da Cidade, ocupar a sessão inteira e não ficar espremido pelo painel direito antigo. */
+.game.trClockLayoutPageV2118{
+  grid-template-columns:1fr!important;
+  height:calc(100vh - 64px)!important;
+  overflow:hidden!important;
+}
+.game.trClockLayoutPageV2118 > .side{
+  display:none!important;
+}
+.game.trClockLayoutPageV2118 > .mapArea{
+  min-height:calc(100vh - 64px)!important;
+  height:calc(100vh - 64px)!important;
+  overflow:hidden!important;
+}
+.game.trClockLayoutPageV2118 #mapSvg{
+  inset:0!important;
+  height:100%!important;
+  width:100%!important;
+  padding:0!important;
+}
+.game.trClockLayoutPageV2118 .trClockLayout{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  grid-template-columns:300px minmax(0,1fr)!important;
+  grid-template-rows:56px minmax(0,1fr) 76px!important;
+  overflow:hidden!important;
+}
+.game.trClockLayoutPageV2118 .trClockTopNav{
+  padding:8px 20px!important;
+}
+.game.trClockLayoutPageV2118 .trClockTopNav button{
+  height:36px!important;
+  border-radius:18px!important;
+}
+.game.trClockLayoutPageV2118 .trClockMain{
+  overflow:auto!important;
+  min-width:0!important;
+  padding:18px 24px 10px!important;
+}
+.game.trClockLayoutPageV2118 .trClockTitle{
+  font-size:27px!important;
+  margin:0 0 14px!important;
+}
+.game.trClockLayoutPageV2118 .trClockCharacterGrid{
+  grid-template-columns:repeat(6,minmax(132px,1fr))!important;
+  gap:12px!important;
+}
+.game.trClockLayoutPageV2118 .trClockCard{
+  min-height:238px!important;
+}
+.game.trClockLayoutPageV2118 .trClockCard img{
+  min-height:238px!important;
+}
+.game.trClockLayoutPageV2118 .trClockCardsLayout .trClockCharacterGrid{
+  grid-template-columns:repeat(auto-fill,minmax(145px,1fr))!important;
+}
+.game.trClockLayoutPageV2118 .trClockCardsLayout .trClockCard{
+  min-height:250px!important;
+}
+.game.trClockLayoutPageV2118 .trClockCardsLayout .trClockCard img{
+  min-height:250px!important;
+}
+.game.trClockLayoutPageV2118 .trClockBottom{
+  grid-template-columns:145px 165px 150px minmax(220px,1fr) 140px 175px 140px!important;
+  gap:11px!important;
+  padding:10px 24px!important;
+}
+.game.trClockLayoutPageV2118 .trClockBottom button{
+  height:46px!important;
+  border-radius:17px!important;
+}
+.game.trClockLayoutPageV2118 .trClockBottom .play{
+  height:58px!important;
+  font-size:24px!important;
+}
+
+/* No mapa normal, manter a interface funcional e impedir que a arte fique cortada por baixo da barra de botões. */
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium #mapSvg{
+  inset:0!important;
+  height:100%!important;
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:8px 10px 96px!important;
+  overflow:hidden!important;
+}
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium .premiumForestStage{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  max-width:calc((100vh - 184px) * 1.7777778)!important;
+  height:auto!important;
+  aspect-ratio:16/9!important;
+  max-height:calc(100vh - 184px)!important;
+  overflow:visible!important;
+  margin:0 auto!important;
+}
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium .premiumForestMap{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+#game:not(.trClockFullAppModeV2114) .visualForestPremium #visualQuickNav.mesaBottomNav,
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium #visualQuickNav.mesaBottomNav{
+  bottom:8px!important;
+  max-height:82px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:none!important;
+}
+#game:not(.trClockFullAppModeV2114) .visualForestPremium #visualQuickNav.mesaBottomNav::-webkit-scrollbar,
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium #visualQuickNav.mesaBottomNav::-webkit-scrollbar{
+  display:none!important;
+}
+#game:not(.trClockFullAppModeV2114) .visualForestPremium #visualQuickNav.mesaBottomNav button,
+#game:not(.trClockFullAppModeV2114) .mapArea.visualForestPremium #visualQuickNav.mesaBottomNav button{
+  min-width:82px!important;
+  height:34px!important;
+  padding:6px 10px!important;
+  font-size:9.8px!important;
+  line-height:1!important;
+  border-radius:18px!important;
+}
+
+/* Painel lateral funcional um pouco menos largo para aumentar o mapa sem sumir botões. */
+@media(min-width:1281px){
+  #game:not(.trClockFullAppModeV2114) .game.visualForestShell{
+    grid-template-columns:minmax(720px,1fr) minmax(430px,29vw)!important;
+  }
+  #game:not(.trClockFullAppModeV2114) .game.visualForestShell .side{
+    min-width:430px!important;
+    max-width:520px!important;
+  }
+}
+@media(max-width:1280px){
+  .game.trClockLayoutPageV2118 .trClockCharacterGrid{grid-template-columns:repeat(3,minmax(120px,1fr))!important;}
+  .game.trClockLayoutPageV2118 .trClockLayout{grid-template-columns:240px minmax(0,1fr)!important;}
+  .game.trClockLayoutPageV2118 .trClockBottom{grid-template-columns:repeat(4,1fr)!important;overflow:auto!important;}
+}
+</style>
+
 </head><body><div class="app">
 <section id="login" class="screen on"><div class="center"><div class="landingStageV196118"><img src="assets/ui/landing_oficial_v196118.png?v=19.6.11.9" alt="Terras Raras" class="landingArtV196118" draggable="false"><div id="authBody" class="landingInlineAuthV196119"><label>Usuário</label><input id="u" autocomplete="username" placeholder="Digite seu usuário"><label>Senha</label><div class="passwordWrap"><input id="p" type="password" autocomplete="current-password" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="eyeBtn" onclick="togglePassword()">Ver</button></div><div id="authMsg" class="msg"></div></div><button id="loginBtn" class="landingHotspotV196118 landingEnterHotspotV196118" aria-label="Entrar" title="Entrar" onclick="doLogin()"></button><button id="registerBtn" class="landingHotspotV196118 landingRegisterHotspotV196118" aria-label="Pedir entrada" title="Pedir entrada" onclick="doRegister()"></button></div></div></section>
 
@@ -3450,7 +5846,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 </section>
 <section id="game" class="screen"><div class="top"><button class="btn small ghost" onclick="show('hub');loadHub()">← Hub</button><button class="btn small danger" onclick="leaveCurrentRoom()">Sair da sala</button><div class="brand" id="gameTitle">Mesa</div><span class="pill" id="roomCode"></span><div class="grow"></div><button class="btn small ghost" onclick="toggleSide()">Painel</button></div><div class="game"><div id="mapArea" class="mapArea"><div id="mapSvg" class="mapSvg"></div><svg id="pathLayer" class="pathLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="mapNodes" class="mapNodes"></div><div class="mapShade"></div><div id="tokens"></div><div class="mapHint">Clique nos pontos do mapa para revelar locais, mover tokens e gerar narração com IA local.</div></div><aside id="side" class="side"><div class="sideSection"><h3 class="title" id="mapName">Mapa</h3><p id="mapDesc" style="color:var(--muted)"></p><div id="masterMapControls" class="hidden"><label>Mudar zona/mapa</label><select id="mapSelect"></select><button class="btn small" style="margin-top:8px" onclick="changeMap()">Alterar mapa</button></div><div class="legend"><span>● local</span><span>● perigo</span><span>● portal</span><span>linha = caminho</span></div><div id="locationBox" class="locationBox"><b>Nenhum local selecionado</b><div class="locationMeta">Clique em um ponto do mapa para ver descrição, mover personagens e gerar narrativa daquele local.</div></div></div><div class="sideSection"><h3 class="title">Jogadoras</h3><div id="players" class="players"></div></div><div class="sideSection"><h3 class="title">Escolher personagem</h3><select id="charSelect"></select><button class="btn small" style="margin-top:8px" onclick="chooseChar()">Usar personagem</button></div><div class="sideSection"><h3 class="title">Chat</h3><div id="chat" class="chat"></div><div class="row" style="margin-top:8px"><input id="chatText" placeholder="Mensagem..."><button class="btn small" onclick="sendChat()">Enviar</button></div></div><div class="sideSection"><h3 class="title">Anotações da Mesa</h3><div id="notes" class="notes"></div><div id="masterNotes" class="hidden"><label>Título</label><input id="noteTitle" value="Resumo da sessão"><label>Texto</label><textarea id="noteText" placeholder="Eventos importantes, fraquezas, itens, localização, pendências..."></textarea><button class="btn small" style="margin-top:8px" onclick="addNote()">Salvar nota</button></div></div><div class="sideSection hidden" id="localAIBox"><h3 class="title">IA Local · Zero API</h3><p style="color:var(--muted);font-size:14px;line-height:1.35">Ollama roda no seu computador. Mestre e Ajudante usam a IA em bastidor e publicam só o que aprovarem.</p><div class="aiTabs"><button id="aiTabAsk" class="on" onclick="showAIInnerTab('ask')">Perguntar</button><button id="aiTabFunctions" onclick="showAIInnerTab('functions')">Funções da Mestre</button><button id="aiTabResponses" onclick="showAIInnerTab('responses')">Respostas</button><button id="aiTabConfig" onclick="showAIInnerTab('config')">Configuração</button></div><div id="aiPaneAsk" class="aiPane on"><label>Pergunta / ação livre</label><textarea id="aiAction" placeholder="Ex.: O que devo falar para as participantes no início do jogo?"></textarea><div class="row" style="margin-top:8px"><button class="btn small" onclick="requestAIAndShow('narrative')">Narrar cena</button><button class="btn small ghost" onclick="requestAIAndShow('question')">Perguntar</button></div><div class="aiHelp">Use <b>Narrar cena</b> para texto pronto de jogo. Use <b>Perguntar</b> para pedir orientação, ideias, pistas e condução.</div></div><div id="aiPaneFunctions" class="aiPane"><div class="masterFunctionBox"><label>Escolha uma função</label><select id="masterFunction"><option value="opening">Início da sessão</option><option value="tension">Cena de tensão</option><option value="discovery">Cena de descoberta</option><option value="clue">Criar pista</option><option value="scare">Criar susto leve</option><option value="consequence">Criar consequência</option><option value="npc">Fala de NPC</option><option value="catchup">Resumo para quem chegou atrasada</option><option value="ending">Encerrar sessão com gancho</option><option value="improvise">Improvisar fuga do plano</option><option value="riddle">Criar enigma simples</option><option value="reward">Criar recompensa</option></select><label>Detalhe opcional para a IA considerar</label><textarea id="masterFunctionDetail" placeholder="Ex.: Elas estão na Ponte Quebrada e ainda não sabem que a floresta está viva."></textarea><button class="btn small" style="margin-top:8px;width:100%" onclick="generateMasterFunction()">Gerar função</button><div class="aiHelp">A função usa o modo de velocidade escolhido em Configuração. Por padrão fica rápido e curto.</div></div></div><div id="aiPaneResponses" class="aiPane"><div id="aiStatus" class="msg" style="font-size:14px"></div><h3 class="title" style="font-size:18px;margin-top:16px">Respostas da IA</h3><div id="aiJobs" class="aiJobs"></div></div><div id="aiPaneConfig" class="aiPane"><div class="aiConfigBox"><label>Velocidade / tamanho</label><select id="aiMode"><option value="short" selected>Rápida — curta</option><option value="normal">Normal</option><option value="detailed">Detalhada</option></select><div class="aiHelp">Modo <b>Rápida</b> usa prompt menor e limita a resposta para acelerar no seu PC.</div><div class="row" style="margin-top:8px"><button class="btn small ghost" onclick="requestAIAndShow('summary')">Resumir</button><button class="btn small ghost" onclick="requestAIAndShow('image_prompt')">Criar prompt de imagem</button></div></div></div></div></aside></div></section>
-</div><script src="/script.js?v=19.6.11.22"></script>
+</div><script src="/script.js?v=21.1.9"></script>
 <!-- TERRAS RARAS v19.6.11.23 — Fábrica dos Doces Pesadelos completa -->
 <script id="tr-fabrica-dos-doces-pesadelos-data" type="application/json">
 {"id": "fabrica_dos_doces_pesadelos", "title": "Fábrica dos Doces Pesadelos", "subtitle": "Mentira Amarga", "tagline": "Onde os sonhos são adoçados, e a verdade derrete.", "theme": "memória afetiva, celebração corrompida, alegria esquecida e mentira doce", "danger": "alto", "map_image": "assets/maps/fabrica_dos_doces_pesadelos_12_locais.png", "unlocks_after": "floresta_negra", "locations": [{"n": 1, "id": "portao_do_confeiteiro", "name": "Portão do Confeiteiro", "tagline": "Nenhum doce vem de graça.", "role": "entrada e primeiro pacto com a zona", "narrator": "O portão parece feito para receber crianças, mas suas grades rangem como dentes. Do outro lado, o cheiro de açúcar quente promete acolhimento — e cobra atenção."}, {"n": 2, "id": "esteira_dos_doces_vivos", "name": "Esteira dos Doces Vivos", "tagline": "Aqui o açúcar aprende a andar.", "role": "fascínio e estranhamento", "narrator": "Docinhos atravessam as esteiras com olhos brilhantes e passos pequenos. Alguns sorriem. Outros tentam fugir antes de serem embalados."}, {"n": 3, "id": "tunel_das_bolhas_de_goma", "name": "Túnel das Bolhas de Goma", "tagline": "Cada bolha guarda uma risada perdida.", "role": "memória encapsulada", "narrator": "Bolhas gigantes flutuam em silêncio. Dentro delas, risadas antigas tremem como estrelas presas em vidro macio."}, {"n": 4, "id": "sala_do_acucar_amargo", "name": "Sala do Açúcar Amargo", "tagline": "Toda doçura tem algo que apodreceu dentro.", "role": "primeira percepção da corrupção", "narrator": "O açúcar cobre tudo como neve dourada. Mas, quando toca a língua, deixa o gosto de uma verdade que ninguém quis dizer."}, {"n": 5, "id": "caldeirao_da_ilusao", "name": "Caldeirão da Ilusão", "tagline": "O que brilha demais talvez esteja tentando esconder algo.", "role": "distorção de desejo e tentação", "narrator": "A calda roxa ferve sem fogo. Na superfície, cada pessoa vê aquilo que mais deseja — e aquilo que mais teme perder."}, {"n": 6, "id": "oficina_das_maos_mecanicas", "name": "Oficina das Mãos Mecânicas", "tagline": "Continuam fazendo, mas ninguém sabe mais por quê.", "role": "máquinas sem propósito", "narrator": "Braços de bronze trabalham sem descanso. Montam o mesmo doce, repetem o mesmo gesto, obedecem a uma festa que já acabou há muito tempo."}, {"n": 7, "id": "deposito_dos_brinquedos_quebrados", "name": "Depósito dos Brinquedos Quebrados", "tagline": "Nem todo abandono é silêncio.", "role": "abandono e restos de infância", "narrator": "Bonecos rasgados, cavalinhos sem roda e caixas de música partidas observam a passagem do grupo. Alguns ainda sabem nomes que o mundo esqueceu."}, {"n": 8, "id": "capela_dos_aniversarios_esquecidos", "name": "Capela dos Aniversários Esquecidos", "tagline": "Cem bolos sob redomas, cem velas apagadas.", "role": "coração emocional da memória perdida", "narrator": "Sob redomas de vidro, bolos pequenos esperam por pessoas que ninguém chama mais. Cada vela apagada guarda um nome riscado."}, {"n": 9, "id": "torre_da_receita_proibida", "name": "Torre da Receita Proibida", "tagline": "Algumas receitas não foram feitas para alimentar ninguém.", "role": "conhecimento perigoso e revelação", "narrator": "A torre cheira a papel velho, baunilha queimada e arrependimento. No alto, uma receita pulsa como se ainda estivesse viva."}, {"n": 10, "id": "ponte_de_caramelo_derretido", "name": "Ponte de Caramelo Derretido", "tagline": "O caminho se desfaz atrás de quem hesita.", "role": "tensão física e confiança do grupo", "narrator": "A ponte estica sobre um rio quente de chocolate escuro. O caramelo range sob os pés, derretendo mais rápido quando alguém duvida."}, {"n": 11, "id": "quarto_da_confeiteira", "name": "Quarto da Confeiteira", "tagline": "Onde alguém amou, antes de esquecer como se ama.", "role": "humanização da antagonista", "narrator": "No aposento empoeirado há um espelho rachado, um diário aberto e um bolo intacto sob redoma. Aqui, a ameaça tem rosto antes de ter culpa."}, {"n": 12, "id": "coracao_da_fabrica", "name": "Coração da Fábrica", "tagline": "No centro, ainda pulsa aquilo que tentou virar para sempre.", "role": "confronto emocional e desfecho", "narrator": "O coração da fábrica pulsa em açúcar, sombra e saudade. Não basta vencer. É preciso decidir o que deve ser lembrado."}], "library": {"historia": "A Fábrica dos Doces Pesadelos nasceu como um lugar de celebração. A Confeiteira criava doces para lembrar pessoas de que eram amadas. Com o tempo, uma mentira doce demais tomou o lugar da verdade: seria possível fabricar alegria sem lembrar de quem a alegria pertencia. A fábrica continuou funcionando, mas perdeu o motivo.", "confeiteira": "Antes de ser ameaça, a Confeiteira foi alguém que amou comemorar os outros. Sua queda não veio de maldade pura, mas do medo de perder a alegria. Ao tentar conservar festas para sempre, ela aprisionou memórias dentro de doces, bolhas, brinquedos e receitas.", "segredo_central": "A Fábrica não quer apenas devorar. Ela tenta recriar uma comemoração esquecida. Cada doce vivo é uma tentativa falha de devolver uma risada ao mundo.", "tom_da_ia": "Narrar com beleza, estranheza e tristeza. A zona deve parecer encantadora à primeira vista, mas emocionalmente ferida. Evitar horror pesado; priorizar fantasia sombria adequada para 10 a 14 anos."}, "cards": [{"id": "mentira_amarga", "name": "Mentira Amarga", "type": "pista", "text": "Doce por fora, escuridão por dentro. Nem tudo o que brilha aqui é feito para adoçar."}, {"id": "brigadeiro_vigilante", "name": "Brigadeiro Vigilante", "type": "ameaça", "text": "Ele sorri com olhos atentos. Enquanto observa, a esteira parece mudar de direção."}, {"id": "calda_da_ilusao", "name": "Calda da Ilusão", "type": "evento", "text": "A calda mostra desejos impossíveis. Cada jogadora deve escolher entre ver, resistir ou revelar."}, {"id": "porta_do_confeiteiro", "name": "Porta do Confeiteiro", "type": "portal", "text": "Nenhum doce vem de graça. Atravesse com cuidado... e com um sorriso."}, {"id": "receita_esquecida", "name": "Receita Esquecida", "type": "revelação", "text": "Uma receita incompleta menciona nomes riscados, velas apagadas e uma festa que ninguém lembra."}, {"id": "criancas_perdidas", "name": "Crianças Perdidas", "type": "desafio", "text": "Vozes pequenas chamam entre os corredores. Elas não pedem socorro; pedem para serem lembradas."}, {"id": "escolha_do_sabor", "name": "Escolha do Sabor", "type": "decisão", "text": "Três caminhos se abrem. Tentação do Açúcar, Sabedoria do Cacau ou Risco da Guloseima."}, {"id": "bolha_da_risada", "name": "Bolha da Risada Perdida", "type": "pista", "text": "Ao estourar, a bolha devolve uma gargalhada antiga e revela uma memória curta da Confeiteira."}, {"id": "maos_mecanicas", "name": "Mãos Mecânicas", "type": "desafio", "text": "Os braços de bronze continuam trabalhando. Para passar, o grupo deve descobrir o motivo do gesto repetido."}, {"id": "vela_sem_nome", "name": "Vela sem Nome", "type": "revelação", "text": "Quando acesa, devolve um nome ao mundo. Quando apagada, cobra uma lembrança em troca."}, {"id": "ponte_de_caramelo", "name": "Ponte de Caramelo", "type": "desafio", "text": "O caminho derrete atrás de quem hesita. A travessia exige ritmo, confiança e coragem."}, {"id": "diario_da_confeiteira", "name": "Diário da Confeiteira", "type": "segredo", "text": "As páginas mostram que ela não nasceu monstro. Ela esqueceu como celebrar alguém sem tentar possuí-lo para sempre."}]}
@@ -3473,5 +5869,29 @@ input:focus,textarea:focus,select:focus{
 <script id="tr-floresta-deck-v28" type="application/json">
 {"version": "v19.6.11.28", "zone_id": "floresta_negra", "zone_name": "Floresta Negra", "deck_name": "Baralho da Floresta Negra", "canonical_register": "assets/lore/floresta_negra/registro_canonico.md", "card_count": 18, "cinematic_art_status": {"completed": 18, "total": 18, "description": "18 cartas cinematográficas aprovadas e integradas."}, "cards": [{"n": 1, "id": "pegadas_na_nevoa", "catalog_id": "pegadas_na_névoa", "name": "Pegadas na Névoa", "type": "pista", "location_name": "Trilha da Névoa Baixa", "location_n": 2, "image_src": "/mnt/data/pegadas_na_névoa_trilha_mística.png", "image": "assets/cards/floresta_negra/01_pegadas_na_nevoa.webp"}, {"n": 2, "id": "sussurro_das_arvores", "catalog_id": "sussurro_das_árvores", "name": "Sussurro das Árvores", "type": "pista", "location_name": "Galeria das Árvores", "location_n": 7, "image_src": "/mnt/data/sussurro_das_árvores_a_floresta_fala.png", "image": "assets/cards/floresta_negra/02_sussurro_das_arvores.webp"}, {"n": 3, "id": "desenho_da_cabana_vazia", "catalog_id": "desenho_da_cabana_vazia", "name": "Desenho da Cabana Vazia", "type": "pista", "location_name": "Cabana Vazia", "location_n": 6, "image_src": "/mnt/data/desenho_da_cabana_vazia.png", "image": "assets/cards/floresta_negra/03_desenho_da_cabana_vazia.webp"}, {"n": 4, "id": "reflexo_no_lago_quieto", "catalog_id": "reflexo_no_lago_quieto", "name": "Reflexo no Lago Quieto", "type": "pista", "location_name": "Lago Quieto", "location_n": 4, "image_src": "/mnt/data/reflexo_mágico_no_lago_misterioso.png", "image": "assets/cards/floresta_negra/04_reflexo_no_lago_quieto.webp"}, {"n": 5, "id": "lanterna_da_clareira", "catalog_id": "lanterna_da_clareira", "name": "Lanterna da Clareira", "type": "item", "location_name": "Clareira da Lanterna", "location_n": 3, "image_src": "/mnt/data/lanterna_mística_na_clareira_encantada.png", "image": "assets/cards/floresta_negra/05_lanterna_da_clareira.webp"}, {"n": 6, "id": "chave_de_raiz", "catalog_id": "chave_de_raiz", "name": "Chave de Raiz", "type": "item", "location_name": "Raízes que Prendem", "location_n": 9, "image_src": "/mnt/data/chave_mágica_da_floresta_encantada.png", "image": "assets/cards/floresta_negra/06_chave_de_raiz.webp"}, {"n": 7, "id": "fita_da_raposa_de_nevoa", "catalog_id": "fita_da_raposa_de_névoa", "name": "Fita da Raposa de Névoa", "type": "item", "location_name": "Toca da Raposa", "location_n": 5, "image_src": "/mnt/data/fita_da_raposa_de_névoa.png", "image": "assets/cards/floresta_negra/07_fita_da_raposa_de_nevoa.webp"}, {"n": 8, "id": "semente_de_luz_verde", "catalog_id": "semente_de_luz_verde", "name": "Semente de Luz Verde", "type": "item", "location_name": "Galeria das Árvores", "location_n": 7, "image_src": "/mnt/data/semente_de_luz_verde.png", "image": "assets/cards/floresta_negra/08_semente_de_luz_verde.webp"}, {"n": 9, "id": "galho_que_aponta", "catalog_id": "galho_que_aponta", "name": "Galho que Aponta", "type": "evento", "location_name": "Trilha da Névoa Baixa", "location_n": 2, "image_src": "/mnt/data/galho_que_aponta_na_floresta_encantada.png", "image": "assets/cards/floresta_negra/09_galho_que_aponta.webp"}, {"n": 10, "id": "riso_entre_as_folhas", "catalog_id": "riso_entre_as_folhas", "name": "Riso entre as Folhas", "type": "evento", "location_name": "Galeria das Árvores", "location_n": 7, "image_src": "/mnt/data/riso_entre_as_folhagens_misteriosas.png", "image": "assets/cards/floresta_negra/10_riso_entre_as_folhas.webp"}, {"n": 11, "id": "a_cabana_piscou", "catalog_id": "a_cabana_piscou", "name": "A Cabana Piscou", "type": "evento", "location_name": "Cabana Vazia", "location_n": 6, "image_src": "/mnt/data/a_floresta_encantada_da_cabana.png", "image": "assets/cards/floresta_negra/11_a_cabana_piscou.webp"}, {"n": 12, "id": "vento_sem_corpo", "catalog_id": "vento_sem_corpo", "name": "Vento sem Corpo", "type": "evento", "location_name": "Passagem do Portal", "location_n": 11, "image_src": "/mnt/data/vento_encantado_na_floresta_sombria.png", "image": "assets/cards/floresta_negra/12_vento_sem_corpo.webp"}, {"n": 13, "id": "raiz_que_prende", "catalog_id": "raiz_que_prende", "name": "Raiz que Prende", "type": "perigo", "location_name": "Raízes que Prendem", "location_n": 9, "image_src": "/mnt/data/raiz_que_prende_caminho_encantado.png", "image": "assets/cards/floresta_negra/13_raiz_que_prende.webp"}, {"n": 14, "id": "nevoa_que_separa", "catalog_id": "névoa_que_separa", "name": "Névoa que Separa", "type": "perigo", "location_name": "Trilha da Névoa Baixa", "location_n": 2, "image_src": "/mnt/data/névoa_que_separa_caminho_sombrio.png", "image": "assets/cards/floresta_negra/14_nevoa_que_separa.webp"}, {"n": 15, "id": "olhos_no_escuro", "catalog_id": "olhos_no_escuro", "name": "Olhos no Escuro", "type": "perigo", "location_name": "Olhos no Escuro", "location_n": 10, "image_src": "/mnt/data/olhos_no_escuro_na_floresta_encantada.png", "image": "assets/cards/floresta_negra/15_olhos_no_escuro.webp"}, {"n": 16, "id": "encontrar_a_cabana_vazia", "catalog_id": "encontrar_a_cabana_vazia", "name": "Encontrar a Cabana Vazia", "type": "missão", "location_name": "Cabana Vazia", "location_n": 6, "image_src": "/mnt/data/caminho_sombrio_para_a_cabana.png", "image": "assets/cards/floresta_negra/16_encontrar_a_cabana_vazia.webp"}, {"n": 17, "id": "abrir_o_portal_da_fabrica", "catalog_id": "abrir_o_portal_da_fábrica", "name": "Abrir o Portal da Fábrica", "type": "missão", "location_name": "Passagem do Portal", "location_n": 11, "image_src": "/mnt/data/portal_para_a_fábrica_mágica.png", "image": "assets/cards/floresta_negra/17_abrir_o_portal_da_fabrica.webp"}, {"n": 18, "id": "coracao_da_floresta", "catalog_id": "coração_da_floresta", "name": "Coração da Floresta", "type": "especial", "location_name": "Coração da Floresta", "location_n": 12, "image_src": "/mnt/data/coração_da_floresta_encantada.png", "image": "assets/cards/floresta_negra/18_coracao_da_floresta.webp"}]}
 </script>
+
+
+<!-- TERRAS RARAS v21.0.8 — Cidade dos Relógios Parados integrada -->
+<script id="tr-cidade-relogios-data-v2108" type="application/json">
+{"id": "cidade_relogios", "canonical_id": "cidade_dos_relogios_parados", "version": "v21.0.8", "title": "Cidade dos Relógios Parados", "subtitle": "Onde o tempo cansou de obedecer.", "tagline": "Nem todo atraso é perda. Às vezes, o tempo para para que alguém consiga lembrar.", "theme": "medo da mudança", "threat": "Estagnação", "antagonist": {"name": "Horácio Vellum", "title": "Relojoeiro-Mor", "role": "antagonista trágico"}, "emotional_figure": {"name": "Amélia Vellum", "relation": "filha de Horácio", "role": "centro emocional"}, "heart": {"name": "Relógio-Coração", "canonical_solution": "destravar", "bad_solution": "destruir"}, "entry": "Relógio de bolso encontrado dentro de uma caixa de doces antigos na Fábrica dos Doces Pesadelos.", "exit": {"name": "Trem das Horas Perdidas", "next_map": "Picos Arcaicos"}, "map_image": "assets/maps/cidade_dos_relogios_parados_widescreen.png", "map_image_webp": "assets/maps/cidade_dos_relogios_parados_widescreen.webp", "locations": [{"n": 1, "id": "portao_horas_imoveis", "name": "Portão das Horas Imóveis", "type": "normal", "x": 16, "y": 83, "tagline": "Onde ninguém entra no momento certo.", "role": "entrada do mapa e primeira distorção temporal", "desc": "Grande arco de pedra e bronze com dezenas de relógios parados marcando horas diferentes. Ao passar, as sombras das jogadoras chegam atrasadas.", "event": "Todos ouvem um tic-tac que não vem de relógio nenhum.", "clue": "A cidade não está morta. Está lembrando errado.", "choices": "Observar os relógios; atravessar juntas; procurar pegadas; abrir o Relógio Sem Ponteiros."}, {"n": 2, "id": "praca_meio_dia_eterno", "name": "Praça do Meio-Dia Eterno", "type": "normal", "x": 28, "y": 65, "tagline": "O festival começou. O futuro não.", "role": "mostrar a cidade congelada durante uma celebração", "desc": "Praça circular com festival suspenso: bandeiras paradas, músicos imóveis, mesa de doces, crianças congeladas brincando e o sol preso no alto.", "event": "A praça avança por um segundo: risos, badaladas e o nome de Amélia sendo chamado.", "clue": "Tudo aconteceu ao meio-dia, mas terminou à meia-noite.", "choices": "Tocar uma fita; investigar a mesa; ouvir os músicos; procurar quem chamou Amélia."}, {"n": 3, "id": "rua_ponteiros_tortos", "name": "Rua dos Ponteiros Tortos", "type": "secret", "x": 30, "y": 44, "tagline": "Aqui, direção é lembrança.", "role": "desafio de orientação e repetição", "desc": "Rua estreita onde placas apontam para lugares impossíveis e ponteiros gigantes atravessam fachadas como se relógios invisíveis crescessem dentro das casas.", "event": "A rua se repete, mas uma estátua muda uma lágrima de ferrugem no rosto.", "clue": "Direção não depende de espaço. Depende de lembrança.", "choices": "Seguir o Ponteiro Torto; procurar a diferença; falar sobre perda; usar o Relógio Sem Ponteiros."}, {"n": 4, "id": "oficina_minutos_quebrados", "name": "Oficina dos Minutos Quebrados", "type": "secret", "x": 14, "y": 48, "tagline": "Nem todo conserto devolve o que foi perdido.", "role": "revelar Horácio e sua obsessão pelo minuto anterior", "desc": "Oficina antiga iluminada por luz âmbar, cheia de relógios desmontados, engrenagens, molas, diários e desenhos do Relógio-Coração.", "event": "Um Minuto Quebrado prende uma frase em repetição até alguém falar uma verdade.", "clue": "Horácio não construiu uma arma. Construiu uma tentativa desesperada de despedida.", "choices": "Ler os diários; tocar a engrenagem; procurar a Chave do Relojoeiro; entender o minuto quebrado."}, {"n": 5, "id": "fonte_segundos_suspensos", "name": "Fonte dos Segundos Suspensos", "type": "secret", "x": 47, "y": 62, "tagline": "A água caiu, mas esqueceu de chegar ao chão.", "role": "mostrar visões fragmentadas do passado", "desc": "Fonte circular com gotas de água suspensas no ar. Cada gota reflete uma cena: Amélia correndo, Horácio procurando, sinos vibrando.", "event": "Uma gota mostra Horácio olhando para a Torre dos Sinos tarde demais.", "clue": "Amélia caminhou em direção à Torre dos Sinos. Ninguém a puxou.", "choices": "Tocar uma gota; olhar o reflexo; procurar Amélia; perguntar qual segundo faltou."}, {"n": 6, "id": "biblioteca_dias_repetidos", "name": "Biblioteca dos Dias Repetidos", "type": "secret", "x": 62, "y": 49, "tagline": "Toda repetição tenta esconder uma diferença.", "role": "revelar versões alternativas do mesmo dia", "desc": "Prédio alto com vitrais e páginas flutuando. Cada livro conta o mesmo dia com pequenas diferenças, como se a cidade tentasse reescrever o impossível.", "event": "Um livro escreve o futuro do grupo e deixa uma frase incompleta para ser respondida.", "clue": "O tempo parado mente por repetição.", "choices": "Ler o livro; procurar a palavra que mudou; chamar Dona Merídia; comparar versões do Festival."}, {"n": 7, "id": "teatro_ultima_badalada", "name": "Teatro da Última Badalada", "type": "secret", "x": 66, "y": 70, "tagline": "A peça nunca termina porque ninguém aceitou o final.", "role": "encenar o trauma central da cidade", "desc": "Teatro antigo com cortinas vinho, máscaras na fachada e palco que encena o Festival da Última Hora com atores congelados e plateia sem rosto.", "event": "A cidade pede que as jogadoras representem Horácio, Amélia, o Sino e o Tempo.", "clue": "A cidade não parou quando Amélia desapareceu. Parou quando Horácio se recusou a aceitar.", "choices": "Usar a Máscara; assistir à peça; representar com empatia; procurar o momento da última badalada."}, {"n": 8, "id": "ponte_instante_perdido", "name": "Ponte do Instante Perdido", "type": "danger", "x": 74, "y": 49, "tagline": "Levar comigo não é ficar preso.", "role": "testar o apego emocional das jogadoras", "desc": "Ponte de pedra sobre um rio imóvel como vidro escuro. No reflexo, cada pessoa vê algo que gostaria de congelar para sempre.", "event": "A ponte oferece um instante bonito e diz: 'Você pode ficar aqui'.", "clue": "A Estagnação prende também pela beleza, não só pela dor.", "choices": "Atravessar; chamar uma colega pelo nome; levar a lembrança sem ficar; recusar a falsa permanência."}, {"n": 9, "id": "torre_sinos_calados", "name": "Torre dos Sinos Calados", "type": "danger", "x": 84, "y": 37, "tagline": "O silêncio também pode ser uma prisão.", "role": "destravar a badalada correta", "desc": "Torre alta com sinos enormes presos por correntes. O último sino não tem número, apenas uma rachadura dourada.", "event": "A badalada errada faz a cidade girar ao contrário; a correta permite que o Menino do Sino fale.", "clue": "Ela queria abrir uma porta, não fechar o mundo.", "choices": "Tocar um sino; procurar a 12ª badalada; ouvir o silêncio; perguntar ao Menino do Sino."}, {"n": 10, "id": "casa_amelia", "name": "Casa de Amélia", "type": "secret", "x": 82, "y": 80, "tagline": "O quarto continua arrumado para alguém que nunca voltou.", "role": "revelar a carta e a vontade de Amélia", "desc": "Casa pequena, simples e delicada, com janela iluminada, flor que não murchou, desenhos infantis, cadeira pequena e uma carta guardada.", "event": "A Carta de Amélia revela que consertar não é voltar, é permitir que continue.", "clue": "Amélia não queria que Horácio fechasse todas as portas.", "choices": "Ler a carta; observar os desenhos; tocar a flor; levar a verdade até Horácio."}, {"n": 11, "id": "torre_relojoeiro_mor", "name": "Torre do Relojoeiro-Mor", "type": "danger", "x": 43, "y": 26, "tagline": "Um homem tentou segurar o mundo com as próprias mãos.", "role": "confronto emocional com Horácio", "desc": "Torre de pedra e bronze coberta por relógios, nomes e engrenagens externas. No alto, Horácio segura a Chave do Relojoeiro.", "event": "Quando o nome de Amélia é dito, todas as engrenagens param junto com Horácio.", "clue": "Horácio não queria prender a cidade. Ele não soube deixá-la ir sozinha.", "choices": "Mostrar a carta; falar com empatia; pedir a chave; perguntar o que Amélia queria."}, {"n": 12, "id": "relogio_coracao", "name": "Relógio-Coração", "type": "portal", "x": 51, "y": 31, "tagline": "No centro do tempo parado, algo ainda tenta bater.", "role": "clímax e resolução do mapa", "desc": "Torre central gigantesca com um relógio em forma de coração mecânico. Engrenagens como veias, correntes, ponteiros tremendo e luz dourada pulsando.", "event": "A voz pequena pergunta: 'Se eu continuar, ele vai esquecer de mim?'", "clue": "Lembrar é permitir que algo continue vivendo.", "choices": "Destravar; responder à voz; usar a Carta de Amélia; libertar Horácio da obrigação de segurar tudo."}, {"n": 13, "id": "estacao_trem_horas_perdidas", "name": "Estação do Trem das Horas Perdidas", "type": "portal", "x": 85, "y": 17, "tagline": "A cidade ficou para trás, mas não ficou presa.", "role": "saída para Picos Arcaicos", "desc": "Estação antiga na névoa azul-dourada, com trilhos sumindo no horizonte e um trem de bronze e sombra aguardando a próxima jornada.", "event": "O condutor diz: 'Vocês não chegaram tarde. Chegaram quando a cidade estava pronta.'", "clue": "Próxima parada: Picos Arcaicos.", "choices": "Entrar no trem; olhar para trás; guardar a lembrança; seguir para os Picos Arcaicos."}], "cards": [{"n": 1, "id": "relogio_sem_ponteiros", "name": "Relógio Sem Ponteiros", "type": "item", "rarity": "comum", "location_id": "portao_horas_imoveis", "text": "Um relógio de bolso sem ponteiros vibra quando uma lembrança importante está perto.", "effect": "Revela pistas escondidas, falas antigas ou caminhos ocultos em ciclos temporais.", "flavor": "Nem toda hora precisa ser marcada para ter existido."}, {"n": 2, "id": "praca_congelada", "name": "Praça Congelada", "type": "pista", "rarity": "comum", "location_id": "praca_meio_dia_eterno", "text": "A praça avança por um segundo e devolve risos, badaladas e o nome de Amélia.", "effect": "Revela que o Festival da Última Hora foi o centro da tragédia.", "flavor": "O festival começou. O futuro não."}, {"n": 3, "id": "ponteiro_torto", "name": "Ponteiro Torto", "type": "item", "rarity": "incomum", "location_id": "rua_ponteiros_tortos", "text": "Um ponteiro gigante aponta para a lembrança mais forte, não para o norte.", "effect": "Permite sair de ruas repetidas ou revelar uma passagem escondida.", "flavor": "Aqui, direção é lembrança."}, {"n": 4, "id": "minuto_quebrado", "name": "Minuto Quebrado", "type": "pista", "rarity": "incomum", "location_id": "oficina_minutos_quebrados", "text": "Uma peça dourada guarda a voz de Horácio: 'Se eu consertar o instante certo, talvez ela volte.'", "effect": "Revela que Horácio queria corrigir uma dor, não dominar a cidade.", "flavor": "Nem todo conserto devolve o que foi perdido."}, {"n": 5, "id": "gota_suspensa", "name": "Gota Suspensa", "type": "pista", "rarity": "incomum", "location_id": "fonte_segundos_suspensos", "text": "Uma gota mostra Amélia caminhando em direção à Torre dos Sinos.", "effect": "Revela que Amélia não foi arrastada; ela seguiu uma badalada ou música.", "flavor": "A água caiu, mas esqueceu de chegar ao chão."}, {"n": 6, "id": "pagina_repetida", "name": "Página Repetida", "type": "pista", "rarity": "incomum", "location_id": "biblioteca_dias_repetidos", "text": "Um livro reescreve o mesmo dia e deixa uma palavra diferente em cada versão.", "effect": "Permite comparar duas lembranças e descobrir uma omissão.", "flavor": "O tempo parado mente por repetição."}, {"n": 7, "id": "mascara_ultima_badalada", "name": "Máscara da Última Badalada", "type": "evento", "rarity": "rara", "location_id": "teatro_ultima_badalada", "text": "A máscara abre as cortinas e obriga a cidade a encenar a Última Hora.", "effect": "Revela a sequência emocional: festa, ausência, busca, badalada e decisão de Horácio.", "flavor": "A peça nunca termina porque ninguém aceitou o final."}, {"n": 8, "id": "instante_perdido", "name": "Instante Perdido", "type": "desafio", "rarity": "rara", "location_id": "ponte_instante_perdido", "text": "A ponte oferece uma lembrança bonita e pede que a personagem fique ali.", "effect": "Quem escolhe seguir ganha a frase-chave: 'Levar comigo não é ficar preso.'", "flavor": "A Estagnação também prende pela beleza."}, {"n": 9, "id": "sino_calado", "name": "Sino Calado", "type": "item", "rarity": "rara", "location_id": "torre_sinos_calados", "text": "Um sino enorme não está quebrado. Está amarrado por correntes antigas.", "effect": "A badalada correta destrava parte da cidade e permite ao Menino do Sino falar.", "flavor": "O silêncio também pode ser uma prisão."}, {"n": 10, "id": "carta_de_amelia", "name": "Carta de Amélia", "type": "revelação", "rarity": "épica", "location_id": "casa_amelia", "text": "A carta diz: 'Consertar não é voltar. Consertar é permitir que continue.'", "effect": "Chave emocional para Horácio e para o Relógio-Coração.", "flavor": "Guardar não é esconder."}, {"n": 11, "id": "chave_do_relojoeiro", "name": "Chave do Relojoeiro", "type": "item", "rarity": "épica", "location_id": "torre_relojoeiro_mor", "text": "A chave não parece abrir uma porta. Parece dar corda em algo vivo.", "effect": "Só pode ser obtida por compreensão da dor de Horácio, não por força.", "flavor": "Eu só queria chegar um segundo antes."}, {"n": 12, "id": "relogio_coracao", "name": "Relógio-Coração", "type": "especial", "rarity": "épica", "location_id": "relogio_coracao", "text": "Uma cidade inteira tenta segurar uma única lembrança. A voz pergunta: 'Já posso ir?'", "effect": "Clímax: destravar o Relógio-Coração, não destruir.", "flavor": "Lembrar é permitir que algo continue vivendo."}], "events": [{"id": "tic_tac_que_nao_existe", "name": "O Tic-Tac que Não Existe", "location": "qualquer local inicial", "text": "Mesmo sem relógio funcionando, todos ouvem tic-tac. O som acelera quando alguém hesita ou esconde medo.", "purpose": "Mostrar que o Relógio-Coração ainda tenta bater."}, {"id": "xicara_que_nunca_cai", "name": "A Xícara que Nunca Cai", "location": "Praça ou Casa de Amélia", "text": "Uma xícara suspensa cai por um segundo, quebra, alguém grita 'Amélia?' e tudo volta.", "purpose": "Mostrar repetição e dor interrompida."}, {"id": "crianca_que_pisca", "name": "A Criança que Pisca", "location": "Praça ou Torre dos Sinos", "text": "Uma criança congelada pisca e sussurra: 'Não foi o tempo que levou ela.'", "purpose": "Revelar que Amélia caminhou voluntariamente."}, {"id": "rua_que_se_repete", "name": "A Rua que Se Repete", "location": "Rua dos Ponteiros Tortos", "text": "A rua repete os mesmos pontos, mas um detalhe muda: uma lágrima de ferrugem na estátua.", "purpose": "Criar desafio de observação."}, {"id": "fonte_mostra_o_que_faltou", "name": "A Fonte Mostra o Que Faltou", "location": "Fonte dos Segundos Suspensos", "text": "A fonte mostra Horácio olhando para a torre tarde demais.", "purpose": "Mostrar a culpa de Horácio."}, {"id": "plateia_sem_rosto", "name": "A Plateia Sem Rosto", "location": "Teatro da Última Badalada", "text": "A peça começa e as jogadoras precisam representar Horácio, Amélia, o Sino e o Tempo.", "purpose": "Transformar o trauma em teatro emocional."}, {"id": "ponte_oferece_um_instante", "name": "A Ponte Oferece Um Instante", "location": "Ponte do Instante Perdido", "text": "Cada personagem vê uma lembrança bela que convida a ficar.", "purpose": "Testar o tema: levar não é ficar preso."}, {"id": "badalada_errada", "name": "A Badalada Errada", "location": "Torre dos Sinos Calados", "text": "O sino errado faz a cidade girar ao contrário e fortalece ecos da Estagnação.", "purpose": "Ensinar que mexer no tempo sem compreensão tem consequência."}, {"id": "horacio_escuta_nome_dela", "name": "Horácio Escuta o Nome Dela", "location": "Torre do Relojoeiro-Mor", "text": "Ao ouvir o nome de Amélia, Horácio para e diz que o nome dela não cabe na boca de quem chegou depois.", "purpose": "Abrir o confronto emocional."}, {"id": "voz_relogio_coracao", "name": "A Voz no Relógio-Coração", "location": "Relógio-Coração", "text": "A voz pergunta: 'Se eu continuar, ele vai esquecer de mim?'", "purpose": "Clímax emocional."}, {"id": "trem_horas_perdidas", "name": "O Trem das Horas Perdidas", "location": "Estação", "text": "O trem chega e o condutor diz que eles chegaram quando a cidade estava pronta.", "purpose": "Transição para Picos Arcaicos."}, {"id": "cidade_respira", "name": "A Cidade Respira", "location": "após grandes verdades", "text": "Uma gota cai, uma bandeira balança, uma criança inspira. A cidade volta em pequenos sinais.", "purpose": "Mostrar progresso narrativo."}], "key_phrases": ["Continuar não é esquecer.", "Levar comigo não é ficar preso.", "Consertar não é voltar. Consertar é permitir que continue.", "Lembrar é permitir que algo continue vivendo.", "Relógios não medem tempo. Medem lembranças."], "ai_rules": {"can_improvise": ["descrições de ruas secundárias", "ecos menores", "pequenos desafios", "objetos congelados", "reações emocionais da cidade"], "cannot_change": ["Horácio é o Relojoeiro-Mor", "Horácio é antagonista trágico", "Amélia é filha de Horácio", "A ameaça é a Estagnação", "O Relógio-Coração deve ser destravado, não destruído", "A saída leva aos Picos Arcaicos"]}}
+</script>
+<script id="tr-cidade-relogios-deck-v2108" type="application/json">
+{"version": "v21.0.8", "zone_id": "cidade_relogios", "zone_name": "Cidade dos Relógios Parados", "deck_name": "Baralho da Cidade dos Relógios Parados", "cards": [{"n": 1, "id": "relogio_sem_ponteiros", "name": "Relógio Sem Ponteiros", "type": "item", "rarity": "comum", "location_id": "portao_horas_imoveis", "text": "Um relógio de bolso sem ponteiros vibra quando uma lembrança importante está perto.", "effect": "Revela pistas escondidas, falas antigas ou caminhos ocultos em ciclos temporais.", "flavor": "Nem toda hora precisa ser marcada para ter existido."}, {"n": 2, "id": "praca_congelada", "name": "Praça Congelada", "type": "pista", "rarity": "comum", "location_id": "praca_meio_dia_eterno", "text": "A praça avança por um segundo e devolve risos, badaladas e o nome de Amélia.", "effect": "Revela que o Festival da Última Hora foi o centro da tragédia.", "flavor": "O festival começou. O futuro não."}, {"n": 3, "id": "ponteiro_torto", "name": "Ponteiro Torto", "type": "item", "rarity": "incomum", "location_id": "rua_ponteiros_tortos", "text": "Um ponteiro gigante aponta para a lembrança mais forte, não para o norte.", "effect": "Permite sair de ruas repetidas ou revelar uma passagem escondida.", "flavor": "Aqui, direção é lembrança."}, {"n": 4, "id": "minuto_quebrado", "name": "Minuto Quebrado", "type": "pista", "rarity": "incomum", "location_id": "oficina_minutos_quebrados", "text": "Uma peça dourada guarda a voz de Horácio: 'Se eu consertar o instante certo, talvez ela volte.'", "effect": "Revela que Horácio queria corrigir uma dor, não dominar a cidade.", "flavor": "Nem todo conserto devolve o que foi perdido."}, {"n": 5, "id": "gota_suspensa", "name": "Gota Suspensa", "type": "pista", "rarity": "incomum", "location_id": "fonte_segundos_suspensos", "text": "Uma gota mostra Amélia caminhando em direção à Torre dos Sinos.", "effect": "Revela que Amélia não foi arrastada; ela seguiu uma badalada ou música.", "flavor": "A água caiu, mas esqueceu de chegar ao chão."}, {"n": 6, "id": "pagina_repetida", "name": "Página Repetida", "type": "pista", "rarity": "incomum", "location_id": "biblioteca_dias_repetidos", "text": "Um livro reescreve o mesmo dia e deixa uma palavra diferente em cada versão.", "effect": "Permite comparar duas lembranças e descobrir uma omissão.", "flavor": "O tempo parado mente por repetição."}, {"n": 7, "id": "mascara_ultima_badalada", "name": "Máscara da Última Badalada", "type": "evento", "rarity": "rara", "location_id": "teatro_ultima_badalada", "text": "A máscara abre as cortinas e obriga a cidade a encenar a Última Hora.", "effect": "Revela a sequência emocional: festa, ausência, busca, badalada e decisão de Horácio.", "flavor": "A peça nunca termina porque ninguém aceitou o final."}, {"n": 8, "id": "instante_perdido", "name": "Instante Perdido", "type": "desafio", "rarity": "rara", "location_id": "ponte_instante_perdido", "text": "A ponte oferece uma lembrança bonita e pede que a personagem fique ali.", "effect": "Quem escolhe seguir ganha a frase-chave: 'Levar comigo não é ficar preso.'", "flavor": "A Estagnação também prende pela beleza."}, {"n": 9, "id": "sino_calado", "name": "Sino Calado", "type": "item", "rarity": "rara", "location_id": "torre_sinos_calados", "text": "Um sino enorme não está quebrado. Está amarrado por correntes antigas.", "effect": "A badalada correta destrava parte da cidade e permite ao Menino do Sino falar.", "flavor": "O silêncio também pode ser uma prisão."}, {"n": 10, "id": "carta_de_amelia", "name": "Carta de Amélia", "type": "revelação", "rarity": "épica", "location_id": "casa_amelia", "text": "A carta diz: 'Consertar não é voltar. Consertar é permitir que continue.'", "effect": "Chave emocional para Horácio e para o Relógio-Coração.", "flavor": "Guardar não é esconder."}, {"n": 11, "id": "chave_do_relojoeiro", "name": "Chave do Relojoeiro", "type": "item", "rarity": "épica", "location_id": "torre_relojoeiro_mor", "text": "A chave não parece abrir uma porta. Parece dar corda em algo vivo.", "effect": "Só pode ser obtida por compreensão da dor de Horácio, não por força.", "flavor": "Eu só queria chegar um segundo antes."}, {"n": 12, "id": "relogio_coracao", "name": "Relógio-Coração", "type": "especial", "rarity": "épica", "location_id": "relogio_coracao", "text": "Uma cidade inteira tenta segurar uma única lembrança. A voz pergunta: 'Já posso ir?'", "effect": "Clímax: destravar o Relógio-Coração, não destruir.", "flavor": "Lembrar é permitir que algo continue vivendo."}]}
+</script>
+<script id="tr-cidade-relogios-events-v2108" type="application/json">
+{"version": "v21.0.8", "zone_id": "cidade_relogios", "events": [{"id": "tic_tac_que_nao_existe", "name": "O Tic-Tac que Não Existe", "location": "qualquer local inicial", "text": "Mesmo sem relógio funcionando, todos ouvem tic-tac. O som acelera quando alguém hesita ou esconde medo.", "purpose": "Mostrar que o Relógio-Coração ainda tenta bater."}, {"id": "xicara_que_nunca_cai", "name": "A Xícara que Nunca Cai", "location": "Praça ou Casa de Amélia", "text": "Uma xícara suspensa cai por um segundo, quebra, alguém grita 'Amélia?' e tudo volta.", "purpose": "Mostrar repetição e dor interrompida."}, {"id": "crianca_que_pisca", "name": "A Criança que Pisca", "location": "Praça ou Torre dos Sinos", "text": "Uma criança congelada pisca e sussurra: 'Não foi o tempo que levou ela.'", "purpose": "Revelar que Amélia caminhou voluntariamente."}, {"id": "rua_que_se_repete", "name": "A Rua que Se Repete", "location": "Rua dos Ponteiros Tortos", "text": "A rua repete os mesmos pontos, mas um detalhe muda: uma lágrima de ferrugem na estátua.", "purpose": "Criar desafio de observação."}, {"id": "fonte_mostra_o_que_faltou", "name": "A Fonte Mostra o Que Faltou", "location": "Fonte dos Segundos Suspensos", "text": "A fonte mostra Horácio olhando para a torre tarde demais.", "purpose": "Mostrar a culpa de Horácio."}, {"id": "plateia_sem_rosto", "name": "A Plateia Sem Rosto", "location": "Teatro da Última Badalada", "text": "A peça começa e as jogadoras precisam representar Horácio, Amélia, o Sino e o Tempo.", "purpose": "Transformar o trauma em teatro emocional."}, {"id": "ponte_oferece_um_instante", "name": "A Ponte Oferece Um Instante", "location": "Ponte do Instante Perdido", "text": "Cada personagem vê uma lembrança bela que convida a ficar.", "purpose": "Testar o tema: levar não é ficar preso."}, {"id": "badalada_errada", "name": "A Badalada Errada", "location": "Torre dos Sinos Calados", "text": "O sino errado faz a cidade girar ao contrário e fortalece ecos da Estagnação.", "purpose": "Ensinar que mexer no tempo sem compreensão tem consequência."}, {"id": "horacio_escuta_nome_dela", "name": "Horácio Escuta o Nome Dela", "location": "Torre do Relojoeiro-Mor", "text": "Ao ouvir o nome de Amélia, Horácio para e diz que o nome dela não cabe na boca de quem chegou depois.", "purpose": "Abrir o confronto emocional."}, {"id": "voz_relogio_coracao", "name": "A Voz no Relógio-Coração", "location": "Relógio-Coração", "text": "A voz pergunta: 'Se eu continuar, ele vai esquecer de mim?'", "purpose": "Clímax emocional."}, {"id": "trem_horas_perdidas", "name": "O Trem das Horas Perdidas", "location": "Estação", "text": "O trem chega e o condutor diz que eles chegaram quando a cidade estava pronta.", "purpose": "Transição para Picos Arcaicos."}, {"id": "cidade_respira", "name": "A Cidade Respira", "location": "após grandes verdades", "text": "Uma gota cai, uma bandeira balança, uma criança inspira. A cidade volta em pequenos sinais.", "purpose": "Mostrar progresso narrativo."}]}
+</script>
+
+
+<style id="tr-v21-1-9-hotfix-ia-css">
+.trAIWatchV2119{
+  margin:8px 0 12px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(241,207,120,.25)!important;
+  border-radius:12px!important;
+  background:rgba(8,18,30,.70)!important;
+  color:#f3d58a!important;
+}
+</style>
 
 </body></html>

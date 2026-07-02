@@ -1,0 +1,79 @@
+{
+  "map_id": "floresta_negra",
+  "version": "v22.0.6",
+  "asset_folder": "assets/cards/floresta_negra_v22/",
+  "cards": [
+    {
+      "slug": "pegadas_na_nevoa",
+      "filename": "01_pegadas_na_nevoa.webp"
+    },
+    {
+      "slug": "sussurro_das_folhas_altas",
+      "filename": "02_sussurro_das_folhas_altas.webp"
+    },
+    {
+      "slug": "desenho_da_cabana_vazia",
+      "filename": "03_desenho_da_cabana_vazia.webp"
+    },
+    {
+      "slug": "reflexo_do_lago_quieto",
+      "filename": "04_reflexo_do_lago_quieto.webp"
+    },
+    {
+      "slug": "nome_riscado_no_tronco",
+      "filename": "05_nome_riscado_no_tronco.webp"
+    },
+    {
+      "slug": "fita_da_menina",
+      "filename": "06_fita_da_menina.webp"
+    },
+    {
+      "slug": "cauda_da_raposa_de_nevoa",
+      "filename": "07_cauda_da_raposa_de_nevoa.webp"
+    },
+    {
+      "slug": "jardim_das_pegadas",
+      "filename": "08_jardim_das_pegadas.webp"
+    },
+    {
+      "slug": "semente_de_luz_verde",
+      "filename": "09_semente_de_luz_verde.webp"
+    },
+    {
+      "slug": "lanterna_de_promessa",
+      "filename": "10_lanterna_de_promessa.webp"
+    },
+    {
+      "slug": "galho_que_escolhe_o_grupo",
+      "filename": "11_galho_que_escolhe_o_grupo.webp"
+    },
+    {
+      "slug": "mapa_que_nao_fica_parado",
+      "filename": "12_mapa_que_nao_fica_parado.webp"
+    },
+    {
+      "slug": "coracao_da_floresta",
+      "filename": "13_coracao_da_floresta.webp"
+    },
+    {
+      "slug": "olhos_na_nevoa",
+      "filename": "14_olhos_na_nevoa.webp"
+    },
+    {
+      "slug": "lembranca_da_cabana_vazia",
+      "filename": "15_lembranca_da_cabana_vazia.webp"
+    },
+    {
+      "slug": "promessa_entre_arvores",
+      "filename": "16_promessa_entre_arvores.webp"
+    },
+    {
+      "slug": "portal_da_fabrica",
+      "filename": "17_portal_da_fabrica.webp"
+    },
+    {
+      "slug": "ninguem_fica_para_tras",
+      "filename": "18_ninguem_fica_para_tras.webp"
+    }
+  ]
+}

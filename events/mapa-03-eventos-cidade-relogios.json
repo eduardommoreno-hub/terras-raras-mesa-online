@@ -1,0 +1,90 @@
+{
+  "version": "v21.0.8",
+  "map_id": "cidade_relogios",
+  "events": [
+    {
+      "id": "tic_tac_que_nao_existe",
+      "name": "O Tic-Tac que Não Existe",
+      "location": "qualquer local inicial",
+      "text": "Mesmo sem relógio funcionando, todos ouvem tic-tac. O som acelera quando alguém hesita ou esconde medo.",
+      "purpose": "Mostrar que o Relógio-Coração ainda tenta bater."
+    },
+    {
+      "id": "xicara_que_nunca_cai",
+      "name": "A Xícara que Nunca Cai",
+      "location": "Praça ou Casa de Amélia",
+      "text": "Uma xícara suspensa cai por um segundo, quebra, alguém grita 'Amélia?' e tudo volta.",
+      "purpose": "Mostrar repetição e dor interrompida."
+    },
+    {
+      "id": "crianca_que_pisca",
+      "name": "A Criança que Pisca",
+      "location": "Praça ou Torre dos Sinos",
+      "text": "Uma criança congelada pisca e sussurra: 'Não foi o tempo que levou ela.'",
+      "purpose": "Revelar que Amélia caminhou voluntariamente."
+    },
+    {
+      "id": "rua_que_se_repete",
+      "name": "A Rua que Se Repete",
+      "location": "Rua dos Ponteiros Tortos",
+      "text": "A rua repete os mesmos pontos, mas um detalhe muda: uma lágrima de ferrugem na estátua.",
+      "purpose": "Criar desafio de observação."
+    },
+    {
+      "id": "fonte_mostra_o_que_faltou",
+      "name": "A Fonte Mostra o Que Faltou",
+      "location": "Fonte dos Segundos Suspensos",
+      "text": "A fonte mostra Horácio olhando para a torre tarde demais.",
+      "purpose": "Mostrar a culpa de Horácio."
+    },
+    {
+      "id": "plateia_sem_rosto",
+      "name": "A Plateia Sem Rosto",
+      "location": "Teatro da Última Badalada",
+      "text": "A peça começa e as jogadoras precisam representar Horácio, Amélia, o Sino e o Tempo.",
+      "purpose": "Transformar o trauma em teatro emocional."
+    },
+    {
+      "id": "ponte_oferece_um_instante",
+      "name": "A Ponte Oferece Um Instante",
+      "location": "Ponte do Instante Perdido",
+      "text": "Cada personagem vê uma lembrança bela que convida a ficar.",
+      "purpose": "Testar o tema: levar não é ficar preso."
+    },
+    {
+      "id": "badalada_errada",
+      "name": "A Badalada Errada",
+      "location": "Torre dos Sinos Calados",
+      "text": "O sino errado faz a cidade girar ao contrário e fortalece ecos da Estagnação.",
+      "purpose": "Ensinar que mexer no tempo sem compreensão tem consequência."
+    },
+    {
+      "id": "horacio_escuta_nome_dela",
+      "name": "Horácio Escuta o Nome Dela",
+      "location": "Torre do Relojoeiro-Mor",
+      "text": "Ao ouvir o nome de Amélia, Horácio para e diz que o nome dela não cabe na boca de quem chegou depois.",
+      "purpose": "Abrir o confronto emocional."
+    },
+    {
+      "id": "voz_relogio_coracao",
+      "name": "A Voz no Relógio-Coração",
+      "location": "Relógio-Coração",
+      "text": "A voz pergunta: 'Se eu continuar, ele vai esquecer de mim?'",
+      "purpose": "Clímax emocional."
+    },
+    {
+      "id": "trem_horas_perdidas",
+      "name": "O Trem das Horas Perdidas",
+      "location": "Estação",
+      "text": "O trem chega e o condutor diz que eles chegaram quando a cidade estava pronta.",
+      "purpose": "Transição para Picos Arcaicos."
+    },
+    {
+      "id": "cidade_respira",
+      "name": "A Cidade Respira",
+      "location": "após grandes verdades",
+      "text": "Uma gota cai, uma bandeira balança, uma criança inspira. A cidade volta em pequenos sinais.",
+      "purpose": "Mostrar progresso narrativo."
+    }
+  ]
+}

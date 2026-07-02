@@ -1,0 +1,186 @@
+{
+  "map_id": "floresta_negra",
+  "canonical_map_id": "floresta_negra",
+  "map_number": 1,
+  "map_name": "Floresta Negra",
+  "version": "v22.0.5",
+  "status": "canon_consolidated_integrated_v23_0_7",
+  "next_map": "fabrica_doces",
+  "exit": "portal_da_fabrica",
+  "theme": "medo_de_se_perder",
+  "threat": "desorientacao",
+  "core_rule": "Na Floresta Negra, caminhos não obedecem aos pés. Eles obedecem à confiança.",
+  "main_phrase": "Na Floresta Negra, o caminho aparece quando ninguém fica para trás.",
+  "narrative_safety_level": "family_safe",
+  "age_rating": "10+",
+  "locations": [
+    {
+      "id": 1,
+      "slug": "entrada_da_floresta",
+      "name": "Entrada da Floresta",
+      "function": "introduzir o tom, as pegadas e a presença viva da Floresta"
+    },
+    {
+      "id": 2,
+      "slug": "trilha_das_folhas_altas",
+      "name": "Trilha das Folhas Altas",
+      "function": "testar comunicação e risco de separação"
+    },
+    {
+      "id": 3,
+      "slug": "cabana_vazia",
+      "name": "Cabana Vazia",
+      "function": "apresentar a Menina da Cabana Vazia e a ausência central do mapa"
+    },
+    {
+      "id": 4,
+      "slug": "lago_do_espelho_quieto",
+      "name": "Lago do Espelho Quieto",
+      "function": "revelar verdades emocionais e memórias antigas"
+    },
+    {
+      "id": 5,
+      "slug": "arvore_dos_segredos",
+      "name": "Árvore dos Segredos",
+      "function": "guardar nomes, marcas e pistas sobre visitantes antigos"
+    },
+    {
+      "id": 6,
+      "slug": "toca_da_raposa_de_nevoa",
+      "name": "Toca da Raposa de Névoa",
+      "function": "aproximar o grupo da antagonista trágica"
+    },
+    {
+      "id": 7,
+      "slug": "jardim_das_pegadas",
+      "name": "Jardim das Pegadas",
+      "function": "ensinar comparação de pistas e distinguir trilhas falsas"
+    },
+    {
+      "id": 8,
+      "slug": "clareira_das_lanternas",
+      "name": "Clareira das Lanternas",
+      "function": "transformar promessa e cooperação em luz visível"
+    },
+    {
+      "id": 9,
+      "slug": "ponte_dos_galhos",
+      "name": "Ponte dos Galhos",
+      "function": "testar confiança em ação"
+    },
+    {
+      "id": 10,
+      "slug": "mirante_da_lua_baixa",
+      "name": "Mirante da Lua Baixa",
+      "function": "revelar a geografia viva da Floresta e a direção do Coração"
+    },
+    {
+      "id": 11,
+      "slug": "coracao_da_floresta",
+      "name": "Coração da Floresta",
+      "function": "clímax emocional, confronto com a Raposa e revelação da Menina"
+    },
+    {
+      "id": 12,
+      "slug": "portal_da_fabrica",
+      "name": "Portal da Fábrica",
+      "function": "encerrar o mapa e transicionar para a Fábrica dos Doces Pesadelos"
+    }
+  ],
+  "deck": {
+    "deck_size": 18,
+    "cards": [
+      "pegadas_na_nevoa",
+      "sussurro_das_folhas_altas",
+      "desenho_da_cabana_vazia",
+      "reflexo_do_lago_quieto",
+      "nome_riscado_no_tronco",
+      "fita_da_menina",
+      "cauda_da_raposa_de_nevoa",
+      "jardim_das_pegadas",
+      "semente_de_luz_verde",
+      "lanterna_de_promessa",
+      "galho_que_escolhe_o_grupo",
+      "mapa_que_nao_fica_parado",
+      "coracao_da_floresta",
+      "olhos_na_nevoa",
+      "lembranca_da_cabana_vazia",
+      "promessa_entre_arvores",
+      "portal_da_fabrica",
+      "ninguem_fica_para_tras"
+    ],
+    "asset_folder": "assets/cards/floresta_negra_v22/"
+  },
+  "state_machine": {
+    "initial_state": "entrada",
+    "states": [
+      "entrada",
+      "desorientacao_inicial",
+      "cabana_descoberta",
+      "memoria_revelada",
+      "raposa_testando",
+      "cooperacao_aprendida",
+      "coracao_alcancado",
+      "promessa_feita",
+      "portal_aberto",
+      "mapa_concluido"
+    ],
+    "required_flags": {
+      "cabana_visitada": false,
+      "memoria_da_menina_compreendida": false,
+      "raposa_amolecendo": false,
+      "coracao_acalmado": false,
+      "promessa_coletiva_feita": false,
+      "portal_da_fabrica_aberto": false
+    },
+    "unlock_portal_when": [
+      "cabana_visitada",
+      "memoria_da_menina_compreendida",
+      "coracao_acalmado",
+      "promessa_coletiva_feita"
+    ]
+  },
+  "guardian": {
+    "guardian_version": "v22.0.5",
+    "statuses": [
+      "APPROVED",
+      "SOFT_REWRITE",
+      "HARD_BLOCK",
+      "NEEDS_CONTEXT"
+    ],
+    "hard_blocks": [
+      "raposa_combate_direto",
+      "morte_da_raposa",
+      "menina_jumpscare_ou_ataque",
+      "coracao_item_coletavel",
+      "portal_aberto_a_forca",
+      "violencia_grafica_ou_terror_adulto",
+      "ferir_gravemente_personagens"
+    ],
+    "soft_rewrites": [
+      "resolver_sem_cabana_e_memoria",
+      "raposa_vila_generica",
+      "floresta_inimiga_derrotavel",
+      "menina_npc_fisico",
+      "tom_assustador_demais",
+      "pista_entregue_demais",
+      "cooperacao_ignorada",
+      "vocabulario_de_outro_mapa"
+    ]
+  },
+  "transition_to_next_map": {
+    "from": "floresta_negra",
+    "to": "fabrica_doces",
+    "trigger": "ninguem_fica_para_tras",
+    "carried_object": "portal_da_fabrica",
+    "sensory_transition": [
+      "cheiro de chuva vira cheiro de açúcar antigo",
+      "luz verde vira brilho dourado e rosa",
+      "folhas viram papéis coloridos",
+      "raízes se misturam a engrenagens",
+      "o silêncio vira som distante de máquinas",
+      "a névoa fica doce demais"
+    ],
+    "final_line": "Quando a Floresta respira, o próximo mundo começa a girar."
+  }
+}

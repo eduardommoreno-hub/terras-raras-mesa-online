@@ -1,0 +1,59 @@
+{
+  "status": "draft_assets_cropped_from_generated_sheets",
+  "target_size": "768x1024",
+  "notes": [
+    "Arquivos individuais em WEBP gerados a partir das pranchas/imagens já criadas nesta conversa.",
+    "Algumas cartas têm texto/tipo/raridade visual divergente do cânone; use como artes provisórias até revisão fina.",
+    "O nome de arquivo e a pasta seguem o padrão de integração definido no projeto."
+  ],
+  "floresta_negra_v22": [
+    "01_pegadas_na_nevoa.webp",
+    "02_sussurro_das_folhas_altas.webp",
+    "03_desenho_da_cabana_vazia.webp",
+    "04_reflexo_do_lago_quieto.webp",
+    "05_nome_riscado_no_tronco.webp",
+    "06_fita_da_menina.webp",
+    "07_cauda_da_raposa_de_nevoa.webp",
+    "08_jardim_das_pegadas.webp",
+    "09_semente_de_luz_verde.webp",
+    "10_lanterna_de_promessa.webp",
+    "11_galho_que_escolhe_o_grupo.webp",
+    "12_mapa_que_nao_fica_parado.webp",
+    "13_coracao_da_floresta.webp",
+    "14_olhos_na_nevoa.webp",
+    "15_lembranca_da_cabana_vazia.webp",
+    "16_promessa_entre_arvores.webp",
+    "17_portal_da_fabrica.webp",
+    "18_ninguem_fica_para_tras.webp"
+  ],
+  "fabrica_doces_pesadelos_v23": [
+    "01_portao_de_acucar_quebrado.webp",
+    "02_entrem_sorrindo.webp",
+    "03_esteira_dos_doces_faceis.webp",
+    "04_aroma_de_acucar_queimado.webp",
+    "05_pirulito_torto.webp",
+    "06_receita_incompleta.webp",
+    "07_caixa_sem_nome.webp",
+    "08_doce_perfeito_demais.webp",
+    "09_sonho_engarrafado.webp",
+    "10_recheio_de_sombra.webp",
+    "11_avental_de_ofelia.webp",
+    "12_bilhete_nunca_enviado.webp",
+    "13_caldeira_da_mentira_amarga.webp",
+    "14_colher_da_receita_verdadeira.webp",
+    "15_crianca_do_ultimo_doce.webp",
+    "16_receita_verdadeira.webp",
+    "17_relogio_de_bolso_na_caixa.webp",
+    "18_primeiro_tic_tac_verdadeiro.webp"
+  ],
+  "known_review_points": [
+    "Floresta: algumas cartas da prancha usam tipo/raridade visual diferente do canon v22.",
+    "Fábrica: carta 01 veio de prancha horizontal e foi redimensionada; revisar em geração final.",
+    "Fábrica: carta 03 aparece como PERIGO/TENTAÇÃO em uma versão, mas no canon é DESAFIO/TENTAÇÃO.",
+    "Textos dentro das imagens devem ser tratados como placeholder visual; a verdade canônica está no canon/catalog.json."
+  ],
+  "fix_version": "FIX_FLORESTA_CORTES",
+  "fix_notes": "Recorte das cartas da Floresta Negra corrigido para remover sobreposição de cartas vizinhas; assets da Fábrica mantidos.",
+  "forest_card_count": 18,
+  "factory_card_count": 18
+}

@@ -1,0 +1,222 @@
+{
+  "map_id": "fabrica_doces",
+  "canonical_map_id": "fabrica_dos_doces_pesadelos",
+  "map_number": 2,
+  "map_name": "Fábrica dos Doces Pesadelos",
+  "version": "v23.0.5",
+  "status": "canon_consolidated_integrated_v23_0_7",
+  "previous_map": "floresta_negra",
+  "next_map": "cidade_relogios",
+  "entry_from": "portal_da_fabrica",
+  "exit": "relogio_de_bolso_na_caixa",
+  "theme": "medo_de_sentir_o_que_foi_escondido",
+  "threat": "mentira_amarga",
+  "core_rule": "Na Fábrica dos Doces Pesadelos, tudo que é engolido sem verdade volta em forma de sonho ruim.",
+  "main_phrase": "Todo doce feito de mentira deixa um gosto de pesadelo.",
+  "narrative_safety_level": "family_safe",
+  "age_rating": "10+",
+  "locations": [
+    {
+      "id": 1,
+      "slug": "portao_de_acucar_quebrado",
+      "name": "Portão de Açúcar Quebrado",
+      "function": "introduzir a contradição da Fábrica: beleza doce por fora, amargura por dentro"
+    },
+    {
+      "id": 2,
+      "slug": "saguao_das_esteiras_doces",
+      "name": "Saguão das Esteiras Doces",
+      "function": "apresentar a produção automática e a tentação do caminho fácil"
+    },
+    {
+      "id": 3,
+      "slug": "sala_dos_aromas_impossiveis",
+      "name": "Sala dos Aromas Impossíveis",
+      "function": "ativar lembranças e revelar o cheiro da verdade escondida"
+    },
+    {
+      "id": 4,
+      "slug": "corredor_dos_pirulitos_tortos",
+      "name": "Corredor dos Pirulitos Tortos",
+      "function": "testar atalhos bonitos e direções falsas"
+    },
+    {
+      "id": 5,
+      "slug": "cozinha_das_receitas_esquecidas",
+      "name": "Cozinha das Receitas Esquecidas",
+      "function": "revelar que emoções viram receitas e introduzir a Receita Verdadeira"
+    },
+    {
+      "id": 6,
+      "slug": "deposito_das_caixas_sem_nome",
+      "name": "Depósito das Caixas Sem Nome",
+      "function": "ensinar que sentimentos sem nome ficam presos"
+    },
+    {
+      "id": 7,
+      "slug": "vitrine_dos_doces_perfeitos",
+      "name": "Vitrine dos Doces Perfeitos",
+      "function": "testar a tentação da perfeição falsa"
+    },
+    {
+      "id": 8,
+      "slug": "sala_dos_sonhos_engarrafados",
+      "name": "Sala dos Sonhos Engarrafados",
+      "function": "mostrar sonhos guardados e lembranças que pedem ar"
+    },
+    {
+      "id": 9,
+      "slug": "linha_de_montagem_dos_pesadelos",
+      "name": "Linha de Montagem dos Pesadelos",
+      "function": "revelar como doces bonitos carregam recheios de sombra"
+    },
+    {
+      "id": 10,
+      "slug": "escritorio_de_ofelia",
+      "name": "Escritório de Ofélia",
+      "function": "humanizar Ofélia e revelar sua motivação trágica"
+    },
+    {
+      "id": 11,
+      "slug": "caldeira_da_mentira_amarga",
+      "name": "Caldeira da Mentira Amarga",
+      "function": "clímax emocional, revelação da Criança e resolução pela Receita Verdadeira"
+    },
+    {
+      "id": 12,
+      "slug": "caixa_do_relogio_de_bolso",
+      "name": "Caixa do Relógio de Bolso",
+      "function": "encerrar o mapa e abrir a passagem para a Cidade dos Relógios Parados"
+    }
+  ],
+  "deck": {
+    "deck_size": 18,
+    "cards": [
+      "portao_de_acucar_quebrado",
+      "entrem_sorrindo",
+      "esteira_dos_doces_faceis",
+      "aroma_de_acucar_queimado",
+      "pirulito_torto",
+      "receita_incompleta",
+      "caixa_sem_nome",
+      "doce_perfeito_demais",
+      "sonho_engarrafado",
+      "recheio_de_sombra",
+      "avental_de_ofelia",
+      "bilhete_nunca_enviado",
+      "caldeira_da_mentira_amarga",
+      "colher_da_receita_verdadeira",
+      "crianca_do_ultimo_doce",
+      "receita_verdadeira",
+      "relogio_de_bolso_na_caixa",
+      "primeiro_tic_tac_verdadeiro"
+    ],
+    "asset_folder": "assets/cards/fabrica_doces_pesadelos_v23/"
+  },
+  "session_flags": {
+    "receita_verdadeira_descoberta": false,
+    "sentimento_nomeado": false,
+    "mentira_amarga_compreendida": false,
+    "ofelia_motivacao_compreendida": false,
+    "lembranca_aceita": false,
+    "promessa_sem_acucar_feita": false,
+    "escolha_coletiva_feita": false,
+    "verdade_dita_sem_castigar": false,
+    "crianca_do_ultimo_doce_lembrada": false,
+    "caldeira_acalmada": false,
+    "receita_verdadeira_completa": false,
+    "relogio_de_bolso_encontrado": false,
+    "exit_unlocked": false,
+    "carries_to_next_map": false
+  },
+  "state_machine": {
+    "initial_state": "entrada",
+    "states": [
+      "entrada",
+      "tentacao_inicial",
+      "aromas_e_atalhos",
+      "receita_descoberta",
+      "sentimento_nomeado",
+      "mentira_amarga_compreendida",
+      "ofelia_investigada",
+      "caldeira_alcancada",
+      "crianca_lembrada",
+      "receita_em_preparo",
+      "receita_completa",
+      "caldeira_acalmada",
+      "relogio_encontrado",
+      "mapa_concluido"
+    ],
+    "resolution_requires": [
+      "sentimento_nomeado",
+      "lembranca_aceita",
+      "promessa_sem_acucar_feita",
+      "escolha_coletiva_feita",
+      "verdade_dita_sem_castigar"
+    ],
+    "unlock_exit_when": [
+      "receita_verdadeira_completa",
+      "caldeira_acalmada"
+    ],
+    "carry_to_next_map": [
+      "relogio_de_bolso_na_caixa"
+    ]
+  },
+  "ofelia_state_machine": {
+    "initial": "defensiva",
+    "type": "investigative",
+    "presence": "broadcast",
+    "states": [
+      "defensiva",
+      "justificando",
+      "abalada",
+      "arrependida",
+      "despedida"
+    ]
+  },
+  "guardian": {
+    "guardian_version": "v23.0.5",
+    "statuses": [
+      "APPROVED",
+      "SOFT_REWRITE",
+      "HARD_BLOCK",
+      "NEEDS_CONTEXT"
+    ],
+    "hard_blocks": [
+      "ofelia_combate_direto",
+      "morte_punicao_ou_humilhacao_de_ofelia",
+      "caldeira_destruida_como_solucao",
+      "doces_com_dano_grave_ou_vicio_realista",
+      "crianca_jumpscare_ou_fantasma_de_horror",
+      "receita_individual",
+      "relogio_antes_da_receita",
+      "fabrica_destruida_em_vez_de_transformada",
+      "terror_adulto_gore_violencia_grafica"
+    ],
+    "soft_rewrites": [
+      "ofelia_bruxa_caricata_ou_vila_simples",
+      "crianca_npc_fisico_comum",
+      "fabrica_cenario_abandonado",
+      "comedia_pastelao_pura",
+      "pista_entregue_demais",
+      "verdade_como_castigo",
+      "resolucao_por_item_individual",
+      "vocabulario_de_outro_mapa"
+    ]
+  },
+  "transition_to_next_map": {
+    "from": "fabrica_doces",
+    "to": "cidade_relogios",
+    "trigger": "primeiro_tic_tac_verdadeiro",
+    "carried_object": "relogio_de_bolso_na_caixa",
+    "sensory_transition": [
+      "cheiro de açúcar queimado vira cheiro de bronze antigo",
+      "máquinas desaceleram até parecerem tic-tac",
+      "calda escorre em linhas finas como ponteiros",
+      "papéis de bala se dobram como páginas de calendário",
+      "luzes coloridas ficam douradas e frias",
+      "o chão da Fábrica começa a se alinhar como ruas de pedra"
+    ],
+    "final_line": "O primeiro tic-tac verdadeiro nasce quando a Fábrica para de fingir."
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "version": "v21.1.1",
+  "type": "player_cards_by_map",
+  "map_id": "cidade_relogios",
+  "cards": [
+    {
+      "id": "katrina",
+      "name": "Katrina",
+      "image": "cards/players/cidade_relogios/01_katrina_cidade_relogios.webp"
+    },
+    {
+      "id": "lina",
+      "name": "Lina",
+      "image": "cards/players/cidade_relogios/02_lina_cidade_relogios.webp"
+    },
+    {
+      "id": "mira",
+      "name": "Mira",
+      "image": "cards/players/cidade_relogios/03_mira_cidade_relogios.webp"
+    },
+    {
+      "id": "theo",
+      "name": "Theo",
+      "image": "cards/players/cidade_relogios/04_theo_cidade_relogios.webp"
+    },
+    {
+      "id": "naya",
+      "name": "Naya",
+      "image": "cards/players/cidade_relogios/05_naya_cidade_relogios.webp"
+    },
+    {
+      "id": "cael",
+      "name": "Cael",
+      "image": "cards/players/cidade_relogios/06_cael_cidade_relogios.webp"
+    },
+    {
+      "id": "selene",
+      "name": "Selene",
+      "image": "cards/players/cidade_relogios/07_selene_cidade_relogios.webp"
+    },
+    {
+      "id": "lyra",
+      "name": "Lyra",
+      "image": "cards/players/cidade_relogios/08_lyra_cidade_relogios.webp"
+    },
+    {
+      "id": "dorian",
+      "name": "Dorian",
+      "image": "cards/players/cidade_relogios/09_dorian_cidade_relogios.webp"
+    },
+    {
+      "id": "silas",
+      "name": "Silas",
+      "image": "cards/players/cidade_relogios/10_silas_cidade_relogios.webp"
+    },
+    {
+      "id": "orion",
+      "name": "Orion",
+      "image": "cards/players/cidade_relogios/11_orion_cidade_relogios.webp"
+    },
+    {
+      "id": "riven",
+      "name": "Riven",
+      "image": "cards/players/cidade_relogios/12_riven_cidade_relogios.webp"
+    }
+  ],
+  "note": "Lyra, Silas, Orion e Riven foram integrados a partir do layout aprovado. Podem receber artes full premium depois, sem quebrar a integração."
+}

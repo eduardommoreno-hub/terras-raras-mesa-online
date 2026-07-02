@@ -1,0 +1,206 @@
+{
+  "version": "v22.0.1",
+  "zone_id": "floresta_negra",
+  "zone_name": "Floresta Negra",
+  "deck_name": "Baralho da Floresta Negra",
+  "cards": [
+    {
+      "n": 1,
+      "id": "pegadas_na_nevoa",
+      "name": "Pegadas na Névoa",
+      "type": "pista",
+      "rarity": "comum",
+      "location_id": "entrada_da_floresta",
+      "text": "A primeira pista não mostra a saída. Mostra quem se perdeu.",
+      "effect": "Revela que alguém pequeno já passou por ali e que a Floresta está mostrando uma pista, não apenas assustando o grupo.",
+      "flavor": "A primeira pista não mostra a saída. Mostra quem se perdeu."
+    },
+    {
+      "n": 2,
+      "id": "sussurro_das_folhas_altas",
+      "name": "Sussurro das Folhas Altas",
+      "type": "perigo",
+      "rarity": "comum",
+      "location_id": "trilha_das_folhas_altas",
+      "text": "As folhas altas repetem nomes das jogadoras com vozes quase perfeitas.",
+      "effect": "Testa se o grupo compara as vozes antes de se separar.",
+      "flavor": "Nem toda voz conhecida vem de alguém confiável."
+    },
+    {
+      "n": 3,
+      "id": "desenho_da_cabana_vazia",
+      "name": "Desenho da Cabana Vazia",
+      "type": "pista",
+      "rarity": "comum",
+      "location_id": "cabana_vazia",
+      "text": "Um desenho em carvão mostra uma menina segurando a mão de uma raposa.",
+      "effect": "Apresenta a ausência da Menina da Cabana Vazia.",
+      "flavor": "Algumas ausências continuam desenhando sozinhas."
+    },
+    {
+      "n": 4,
+      "id": "reflexo_do_lago_quieto",
+      "name": "Reflexo do Lago Quieto",
+      "type": "revelacao",
+      "rarity": "incomum",
+      "location_id": "lago_do_espelho_quieto",
+      "text": "O lago mostra uma cena antiga em vez de refletir rostos.",
+      "effect": "Revela uma verdade emocional sobre quem ficou para trás.",
+      "flavor": "A água não mostra quem você é. Mostra o que você tenta esconder."
+    },
+    {
+      "n": 5,
+      "id": "nome_riscado_no_tronco",
+      "name": "Nome Riscado no Tronco",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "arvore_dos_segredos",
+      "text": "Um nome infantil está quase apagado no tronco da Árvore dos Segredos.",
+      "effect": "Revela que a Floresta tentou esquecer e lembrar ao mesmo tempo.",
+      "flavor": "O tronco lembra nomes que a floresta tentou esquecer."
+    },
+    {
+      "n": 6,
+      "id": "fita_da_menina",
+      "name": "Fita da Menina",
+      "type": "item",
+      "rarity": "incomum",
+      "location_id": "cabana_vazia",
+      "text": "Uma fita antiga aponta para a Cabana Vazia quando alguém fala com gentileza.",
+      "effect": "Serve como memória-guia da Menina.",
+      "flavor": "Nem todo caminho aponta para frente. Alguns apontam para quem ficou."
+    },
+    {
+      "n": 7,
+      "id": "cauda_da_raposa_de_nevoa",
+      "name": "Cauda da Raposa de Névoa",
+      "type": "evento",
+      "rarity": "incomum",
+      "location_id": "toca_da_raposa_de_nevoa",
+      "text": "Uma cauda prateada desaparece entre raízes e névoa.",
+      "effect": "Apresenta a Raposa como presença desconfiada, não inimiga de combate.",
+      "flavor": "A Raposa não foge do grupo. Ela foge da repetição da perda."
+    },
+    {
+      "n": 8,
+      "id": "jardim_das_pegadas",
+      "name": "Jardim das Pegadas",
+      "type": "desafio",
+      "rarity": "incomum",
+      "location_id": "jardim_das_pegadas",
+      "text": "Pegadas crescem como flores no chão, muitas levando a lugar nenhum.",
+      "effect": "Ensina o grupo a comparar pistas.",
+      "flavor": "Todo caminho parece verdadeiro até alguém perguntar para onde ele leva."
+    },
+    {
+      "n": 9,
+      "id": "semente_de_luz_verde",
+      "name": "Semente de Luz Verde",
+      "type": "item",
+      "rarity": "incomum",
+      "location_id": "jardim_das_pegadas",
+      "text": "Uma semente brilha mais forte quando duas ou mais personagens a seguram juntas.",
+      "effect": "Reforça cooperação como fonte de luz.",
+      "flavor": "A menor luz cresce quando ninguém tenta carregá-la sozinho."
+    },
+    {
+      "n": 10,
+      "id": "lanterna_de_promessa",
+      "name": "Lanterna de Promessa",
+      "type": "item",
+      "rarity": "rara",
+      "location_id": "clareira_das_lanternas",
+      "text": "Uma lanterna acende com promessa verdadeira, não com fogo comum.",
+      "effect": "Materializa a promessa de não deixar ninguém para trás.",
+      "flavor": "Promessa verdadeira ilumina mais que fogo."
+    },
+    {
+      "n": 11,
+      "id": "galho_que_escolhe_o_grupo",
+      "name": "Galho que Escolhe o Grupo",
+      "type": "desafio",
+      "rarity": "rara",
+      "location_id": "ponte_dos_galhos",
+      "text": "A ponte viva se firma quando o grupo combina a travessia.",
+      "effect": "Testa confiança em ação.",
+      "flavor": "A ponte não segura pés apressados. Ela segura decisões compartilhadas."
+    },
+    {
+      "n": 12,
+      "id": "mapa_que_nao_fica_parado",
+      "name": "Mapa que Não Fica Parado",
+      "type": "revelacao",
+      "rarity": "rara",
+      "location_id": "mirante_da_lua_baixa",
+      "text": "As trilhas da Floresta se movem até o grupo olhar junto para o mesmo ponto.",
+      "effect": "Revela que direção depende de decisão coletiva.",
+      "flavor": "A Floresta muda menos quando o grupo decide olhar junto."
+    },
+    {
+      "n": 13,
+      "id": "coracao_da_floresta",
+      "name": "Coração da Floresta",
+      "type": "especial",
+      "rarity": "lendaria",
+      "location_id": "coracao_da_floresta",
+      "text": "Raízes luminosas pulsam como respiração. A Floresta está assustada.",
+      "effect": "Clímax emocional do mapa; deve ser acalmado, não coletado.",
+      "flavor": "O coração da floresta não precisa ser vencido. Precisa voltar a confiar."
+    },
+    {
+      "n": 14,
+      "id": "olhos_na_nevoa",
+      "name": "Olhos na Névoa",
+      "type": "evento",
+      "rarity": "rara",
+      "location_id": "coracao_da_floresta",
+      "text": "Dois olhos prateados surgem na névoa e perguntam o que o grupo vai levar dali.",
+      "effect": "Confronto emocional com a Raposa.",
+      "flavor": "A pergunta da Raposa não testa força. Testa intenção."
+    },
+    {
+      "n": 15,
+      "id": "lembranca_da_cabana_vazia",
+      "name": "Lembrança da Cabana Vazia",
+      "type": "revelacao",
+      "rarity": "lendaria",
+      "location_id": "coracao_da_floresta",
+      "text": "A Cabana aparece dentro das raízes luminosas como memória preservada.",
+      "effect": "Revela que a Menina quer ser lembrada, não resgatada fisicamente.",
+      "flavor": "Algumas pessoas não voltam. Mas podem deixar de estar perdidas."
+    },
+    {
+      "n": 16,
+      "id": "promessa_entre_arvores",
+      "name": "Promessa Entre Árvores",
+      "type": "resolution_card",
+      "rarity": "rara",
+      "location_id": "coracao_da_floresta",
+      "text": "As árvores esperam uma promessa coletiva do grupo.",
+      "effect": "Condição de resolução da Floresta.",
+      "flavor": "A saída começa quando a promessa deixa de ser de uma pessoa só."
+    },
+    {
+      "n": 17,
+      "id": "portal_da_fabrica",
+      "name": "Portal da Fábrica",
+      "type": "portal",
+      "rarity": "lendaria",
+      "location_id": "portal_da_fabrica",
+      "text": "Raízes se abrem e revelam engrenagens doces do próximo mundo.",
+      "effect": "Saída para a Fábrica dos Doces Pesadelos.",
+      "flavor": "Quando a Floresta respira, o próximo mundo começa a girar."
+    },
+    {
+      "n": 18,
+      "id": "ninguem_fica_para_tras",
+      "name": "Ninguém Fica Para Trás",
+      "type": "carta_final",
+      "rarity": "lendaria",
+      "location_id": "portal_da_fabrica",
+      "text": "A névoa se afasta e forma uma trilha clara até o Portal.",
+      "effect": "Conclusão emocional do mapa.",
+      "flavor": "Na Floresta Negra, o caminho aparece quando ninguém fica para trás."
+    }
+  ]
+}

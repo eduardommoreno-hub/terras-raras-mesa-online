@@ -1,0 +1,43 @@
+{
+  "map_id": "fabrica_doces",
+  "canonical_map_id": "fabrica_dos_doces_pesadelos",
+  "version": "v23.0.2",
+  "event_count": 18,
+  "reaction_event_count": 4,
+  "events": [
+    "portao_abre_sorrindo",
+    "placa_muda_sorrindo",
+    "esteira_caminho_facil",
+    "cheiro_que_nao_combina",
+    "pirulito_aponta_mentira",
+    "pagina_escreve_sozinha",
+    "caixa_fica_leve",
+    "vitrine_sorriso_errado",
+    "sonho_pede_ar",
+    "balas_recheio_sombra",
+    "avental_nao_parece_vila",
+    "so_queria_doesse_menos",
+    "caldeira_ferve_risadas_falsas",
+    "colher_mexe_com_verdade",
+    "ultimo_doce_mostra_crianca",
+    "receita_verdadeira_sem_acucar",
+    "caixa_chega_esteira_final",
+    "primeiro_tic_tac_verdadeiro"
+  ],
+  "reaction_events": [
+    "esteira_acelera",
+    "doce_derrete_na_mao",
+    "embalagem_sorri_errado",
+    "ofelia_fecha_livro"
+  ],
+  "required_resolution_flags": [
+    "sentimento_nomeado",
+    "lembranca_aceita",
+    "promessa_sem_acucar_feita",
+    "escolha_coletiva_feita",
+    "verdade_dita_sem_castigar",
+    "crianca_do_ultimo_doce_lembrada",
+    "caldeira_acalmada",
+    "relogio_de_bolso_encontrado"
+  ]
+}

@@ -1,0 +1,20 @@
+# Terras Raras / Summer Worlds — v20.1.4
+# Copie este arquivo para .env e preencha os valores reais.
+
+APP_BASE_URL=http://127.0.0.1:8000
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback
+
+GOOGLE_CLIENT_ID=COLE_AQUI_O_CLIENT_ID
+GOOGLE_CLIENT_SECRET=COLE_AQUI_O_CLIENT_SECRET
+
+JWT_SECRET=troque-por-um-segredo-forte
+ADMIN_PASSWORD=troque-por-uma-senha-forte
+ADMIN_EMAILS=seuemail@gmail.com
+
+ASAAS_ENV=sandbox
+ASAAS_API_KEY=
+ASAAS_WEBHOOK_TOKEN=
+PLAN_MESTRE_FAMILIA_VALUE=19.90
+ENABLE_BILLING_GATES=false
+
+LOCAL_AI_WORKER_TOKEN=troque-por-um-token-forte

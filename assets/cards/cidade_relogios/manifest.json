@@ -1,0 +1,66 @@
+{
+  "version": "v21.1.1",
+  "map_id": "cidade_relogios",
+  "cards": [
+    {
+      "id": "relogio_sem_ponteiros",
+      "name": "Relógio Sem Ponteiros",
+      "image": "cards/cidade_relogios/01_relogio_sem_ponteiros.webp"
+    },
+    {
+      "id": "praca_congelada",
+      "name": "Praça Congelada",
+      "image": "cards/cidade_relogios/02_praca_congelada.webp"
+    },
+    {
+      "id": "ponteiro_torto",
+      "name": "Ponteiro Torto",
+      "image": "cards/cidade_relogios/03_ponteiro_torto.webp"
+    },
+    {
+      "id": "minuto_quebrado",
+      "name": "Minuto Quebrado",
+      "image": "cards/cidade_relogios/04_minuto_quebrado.webp"
+    },
+    {
+      "id": "gota_suspensa",
+      "name": "Gota Suspensa",
+      "image": "cards/cidade_relogios/05_gota_suspensa.webp"
+    },
+    {
+      "id": "pagina_repetida",
+      "name": "Página Repetida",
+      "image": "cards/cidade_relogios/06_pagina_repetida.webp"
+    },
+    {
+      "id": "mascara_ultima_badalada",
+      "name": "Máscara da Última Badalada",
+      "image": "cards/cidade_relogios/07_mascara_ultima_badalada.webp"
+    },
+    {
+      "id": "instante_perdido",
+      "name": "Instante Perdido",
+      "image": "cards/cidade_relogios/08_instante_perdido.webp"
+    },
+    {
+      "id": "sino_calado",
+      "name": "Sino Calado",
+      "image": "cards/cidade_relogios/09_sino_calado.webp"
+    },
+    {
+      "id": "carta_de_amelia",
+      "name": "Carta de Amélia",
+      "image": "cards/cidade_relogios/10_carta_de_amelia.webp"
+    },
+    {
+      "id": "chave_do_relojoeiro",
+      "name": "Chave do Relojoeiro",
+      "image": "cards/cidade_relogios/11_chave_do_relojoeiro.webp"
+    },
+    {
+      "id": "relogio_coracao",
+      "name": "Relógio-Coração",
+      "image": "cards/cidade_relogios/12_relogio_coracao.webp"
+    }
+  ]
+}

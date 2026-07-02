@@ -1,0 +1,79 @@
+{
+  "map_id": "fabrica_doces",
+  "version": "v23.0.6",
+  "asset_folder": "assets/cards/fabrica_doces_pesadelos_v23/",
+  "cards": [
+    {
+      "slug": "portao_de_acucar_quebrado",
+      "filename": "01_portao_de_acucar_quebrado.webp"
+    },
+    {
+      "slug": "entrem_sorrindo",
+      "filename": "02_entrem_sorrindo.webp"
+    },
+    {
+      "slug": "esteira_dos_doces_faceis",
+      "filename": "03_esteira_dos_doces_faceis.webp"
+    },
+    {
+      "slug": "aroma_de_acucar_queimado",
+      "filename": "04_aroma_de_acucar_queimado.webp"
+    },
+    {
+      "slug": "pirulito_torto",
+      "filename": "05_pirulito_torto.webp"
+    },
+    {
+      "slug": "receita_incompleta",
+      "filename": "06_receita_incompleta.webp"
+    },
+    {
+      "slug": "caixa_sem_nome",
+      "filename": "07_caixa_sem_nome.webp"
+    },
+    {
+      "slug": "doce_perfeito_demais",
+      "filename": "08_doce_perfeito_demais.webp"
+    },
+    {
+      "slug": "sonho_engarrafado",
+      "filename": "09_sonho_engarrafado.webp"
+    },
+    {
+      "slug": "recheio_de_sombra",
+      "filename": "10_recheio_de_sombra.webp"
+    },
+    {
+      "slug": "avental_de_ofelia",
+      "filename": "11_avental_de_ofelia.webp"
+    },
+    {
+      "slug": "bilhete_nunca_enviado",
+      "filename": "12_bilhete_nunca_enviado.webp"
+    },
+    {
+      "slug": "caldeira_da_mentira_amarga",
+      "filename": "13_caldeira_da_mentira_amarga.webp"
+    },
+    {
+      "slug": "colher_da_receita_verdadeira",
+      "filename": "14_colher_da_receita_verdadeira.webp"
+    },
+    {
+      "slug": "crianca_do_ultimo_doce",
+      "filename": "15_crianca_do_ultimo_doce.webp"
+    },
+    {
+      "slug": "receita_verdadeira",
+      "filename": "16_receita_verdadeira.webp"
+    },
+    {
+      "slug": "relogio_de_bolso_na_caixa",
+      "filename": "17_relogio_de_bolso_na_caixa.webp"
+    },
+    {
+      "slug": "primeiro_tic_tac_verdadeiro",
+      "filename": "18_primeiro_tic_tac_verdadeiro.webp"
+    }
+  ]
+}

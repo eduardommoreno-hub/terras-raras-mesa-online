@@ -1,0 +1,618 @@
+{
+  "id": "cidade_relogios",
+  "canonical_id": "cidade_dos_relogios_parados",
+  "version": "v21.1.1",
+  "title": "Cidade dos Relógios Parados",
+  "subtitle": "Onde o tempo cansou de obedecer.",
+  "tagline": "Nem todo atraso é perda. Às vezes, o tempo para para que alguém consiga lembrar.",
+  "theme": "medo da mudança",
+  "threat": "Estagnação",
+  "antagonist": {
+    "name": "Horácio Vellum",
+    "title": "Relojoeiro-Mor",
+    "role": "antagonista trágico"
+  },
+  "emotional_figure": {
+    "name": "Amélia Vellum",
+    "relation": "filha de Horácio",
+    "role": "centro emocional"
+  },
+  "heart": {
+    "name": "Relógio-Coração",
+    "canonical_solution": "destravar",
+    "bad_solution": "destruir"
+  },
+  "entry": "Relógio de bolso encontrado dentro de uma caixa de doces antigos na Fábrica dos Doces Pesadelos.",
+  "exit": {
+    "name": "Trem das Horas Perdidas",
+    "next_map": "Picos Arcaicos"
+  },
+  "map_image": "assets/maps/cidade_dos_relogios_parados_widescreen.png",
+  "map_image_webp": "assets/maps/cidade_dos_relogios_parados_widescreen.webp",
+  "locations": [
+    {
+      "n": 1,
+      "id": "portao_horas_imoveis",
+      "name": "Portão das Horas Imóveis",
+      "type": "normal",
+      "x": 16,
+      "y": 83,
+      "tagline": "Onde ninguém entra no momento certo.",
+      "role": "entrada do mapa e primeira distorção temporal",
+      "desc": "Grande arco de pedra e bronze com dezenas de relógios parados marcando horas diferentes. Ao passar, as sombras das jogadoras chegam atrasadas.",
+      "event": "Todos ouvem um tic-tac que não vem de relógio nenhum.",
+      "clue": "A cidade não está morta. Está lembrando errado.",
+      "choices": "Observar os relógios; atravessar juntas; procurar pegadas; abrir o Relógio Sem Ponteiros."
+    },
+    {
+      "n": 2,
+      "id": "praca_meio_dia_eterno",
+      "name": "Praça do Meio-Dia Eterno",
+      "type": "normal",
+      "x": 28,
+      "y": 65,
+      "tagline": "O festival começou. O futuro não.",
+      "role": "mostrar a cidade congelada durante uma celebração",
+      "desc": "Praça circular com festival suspenso: bandeiras paradas, músicos imóveis, mesa de doces, crianças congeladas brincando e o sol preso no alto.",
+      "event": "A praça avança por um segundo: risos, badaladas e o nome de Amélia sendo chamado.",
+      "clue": "Tudo aconteceu ao meio-dia, mas terminou à meia-noite.",
+      "choices": "Tocar uma fita; investigar a mesa; ouvir os músicos; procurar quem chamou Amélia."
+    },
+    {
+      "n": 3,
+      "id": "rua_ponteiros_tortos",
+      "name": "Rua dos Ponteiros Tortos",
+      "type": "secret",
+      "x": 30,
+      "y": 44,
+      "tagline": "Aqui, direção é lembrança.",
+      "role": "desafio de orientação e repetição",
+      "desc": "Rua estreita onde placas apontam para lugares impossíveis e ponteiros gigantes atravessam fachadas como se relógios invisíveis crescessem dentro das casas.",
+      "event": "A rua se repete, mas uma estátua muda uma lágrima de ferrugem no rosto.",
+      "clue": "Direção não depende de espaço. Depende de lembrança.",
+      "choices": "Seguir o Ponteiro Torto; procurar a diferença; falar sobre perda; usar o Relógio Sem Ponteiros."
+    },
+    {
+      "n": 4,
+      "id": "oficina_minutos_quebrados",
+      "name": "Oficina dos Minutos Quebrados",
+      "type": "secret",
+      "x": 14,
+      "y": 48,
+      "tagline": "Nem todo conserto devolve o que foi perdido.",
+      "role": "revelar Horácio e sua obsessão pelo minuto anterior",
+      "desc": "Oficina antiga iluminada por luz âmbar, cheia de relógios desmontados, engrenagens, molas, diários e desenhos do Relógio-Coração.",
+      "event": "Um Minuto Quebrado prende uma frase em repetição até alguém falar uma verdade.",
+      "clue": "Horácio não construiu uma arma. Construiu uma tentativa desesperada de despedida.",
+      "choices": "Ler os diários; tocar a engrenagem; procurar a Chave do Relojoeiro; entender o minuto quebrado."
+    },
+    {
+      "n": 5,
+      "id": "fonte_segundos_suspensos",
+      "name": "Fonte dos Segundos Suspensos",
+      "type": "secret",
+      "x": 47,
+      "y": 62,
+      "tagline": "A água caiu, mas esqueceu de chegar ao chão.",
+      "role": "mostrar visões fragmentadas do passado",
+      "desc": "Fonte circular com gotas de água suspensas no ar. Cada gota reflete uma cena: Amélia correndo, Horácio procurando, sinos vibrando.",
+      "event": "Uma gota mostra Horácio olhando para a Torre dos Sinos tarde demais.",
+      "clue": "Amélia caminhou em direção à Torre dos Sinos. Ninguém a puxou.",
+      "choices": "Tocar uma gota; olhar o reflexo; procurar Amélia; perguntar qual segundo faltou."
+    },
+    {
+      "n": 6,
+      "id": "biblioteca_dias_repetidos",
+      "name": "Biblioteca dos Dias Repetidos",
+      "type": "secret",
+      "x": 62,
+      "y": 49,
+      "tagline": "Toda repetição tenta esconder uma diferença.",
+      "role": "revelar versões alternativas do mesmo dia",
+      "desc": "Prédio alto com vitrais e páginas flutuando. Cada livro conta o mesmo dia com pequenas diferenças, como se a cidade tentasse reescrever o impossível.",
+      "event": "Um livro escreve o futuro do grupo e deixa uma frase incompleta para ser respondida.",
+      "clue": "O tempo parado mente por repetição.",
+      "choices": "Ler o livro; procurar a palavra que mudou; chamar Dona Merídia; comparar versões do Festival."
+    },
+    {
+      "n": 7,
+      "id": "teatro_ultima_badalada",
+      "name": "Teatro da Última Badalada",
+      "type": "secret",
+      "x": 66,
+      "y": 70,
+      "tagline": "A peça nunca termina porque ninguém aceitou o final.",
+      "role": "encenar o trauma central da cidade",
+      "desc": "Teatro antigo com cortinas vinho, máscaras na fachada e palco que encena o Festival da Última Hora com atores congelados e plateia sem rosto.",
+      "event": "A cidade pede que as jogadoras representem Horácio, Amélia, o Sino e o Tempo.",
+      "clue": "A cidade não parou quando Amélia desapareceu. Parou quando Horácio se recusou a aceitar.",
+      "choices": "Usar a Máscara; assistir à peça; representar com empatia; procurar o momento da última badalada."
+    },
+    {
+      "n": 8,
+      "id": "ponte_instante_perdido",
+      "name": "Ponte do Instante Perdido",
+      "type": "danger",
+      "x": 74,
+      "y": 49,
+      "tagline": "Levar comigo não é ficar preso.",
+      "role": "testar o apego emocional das jogadoras",
+      "desc": "Ponte de pedra sobre um rio imóvel como vidro escuro. No reflexo, cada pessoa vê algo que gostaria de congelar para sempre.",
+      "event": "A ponte oferece um instante bonito e diz: 'Você pode ficar aqui'.",
+      "clue": "A Estagnação prende também pela beleza, não só pela dor.",
+      "choices": "Atravessar; chamar uma colega pelo nome; levar a lembrança sem ficar; recusar a falsa permanência."
+    },
+    {
+      "n": 9,
+      "id": "torre_sinos_calados",
+      "name": "Torre dos Sinos Calados",
+      "type": "danger",
+      "x": 84,
+      "y": 37,
+      "tagline": "O silêncio também pode ser uma prisão.",
+      "role": "destravar a badalada correta",
+      "desc": "Torre alta com sinos enormes presos por correntes. O último sino não tem número, apenas uma rachadura dourada.",
+      "event": "A badalada errada faz a cidade girar ao contrário; a correta permite que o Menino do Sino fale.",
+      "clue": "Ela queria abrir uma porta, não fechar o mundo.",
+      "choices": "Tocar um sino; procurar a 12ª badalada; ouvir o silêncio; perguntar ao Menino do Sino."
+    },
+    {
+      "n": 10,
+      "id": "casa_amelia",
+      "name": "Casa de Amélia",
+      "type": "secret",
+      "x": 82,
+      "y": 80,
+      "tagline": "O quarto continua arrumado para alguém que nunca voltou.",
+      "role": "revelar a carta e a vontade de Amélia",
+      "desc": "Casa pequena, simples e delicada, com janela iluminada, flor que não murchou, desenhos infantis, cadeira pequena e uma carta guardada.",
+      "event": "A Carta de Amélia revela que consertar não é voltar, é permitir que continue.",
+      "clue": "Amélia não queria que Horácio fechasse todas as portas.",
+      "choices": "Ler a carta; observar os desenhos; tocar a flor; levar a verdade até Horácio."
+    },
+    {
+      "n": 11,
+      "id": "torre_relojoeiro_mor",
+      "name": "Torre do Relojoeiro-Mor",
+      "type": "danger",
+      "x": 43,
+      "y": 26,
+      "tagline": "Um homem tentou segurar o mundo com as próprias mãos.",
+      "role": "confronto emocional com Horácio",
+      "desc": "Torre de pedra e bronze coberta por relógios, nomes e engrenagens externas. No alto, Horácio segura a Chave do Relojoeiro.",
+      "event": "Quando o nome de Amélia é dito, todas as engrenagens param junto com Horácio.",
+      "clue": "Horácio não queria prender a cidade. Ele não soube deixá-la ir sozinha.",
+      "choices": "Mostrar a carta; falar com empatia; pedir a chave; perguntar o que Amélia queria."
+    },
+    {
+      "n": 12,
+      "id": "relogio_coracao",
+      "name": "Relógio-Coração",
+      "type": "portal",
+      "x": 51,
+      "y": 31,
+      "tagline": "No centro do tempo parado, algo ainda tenta bater.",
+      "role": "clímax e resolução do mapa",
+      "desc": "Torre central gigantesca com um relógio em forma de coração mecânico. Engrenagens como veias, correntes, ponteiros tremendo e luz dourada pulsando.",
+      "event": "A voz pequena pergunta: 'Se eu continuar, ele vai esquecer de mim?'",
+      "clue": "Lembrar é permitir que algo continue vivendo.",
+      "choices": "Destravar; responder à voz; usar a Carta de Amélia; libertar Horácio da obrigação de segurar tudo."
+    },
+    {
+      "n": 13,
+      "id": "estacao_trem_horas_perdidas",
+      "name": "Estação do Trem das Horas Perdidas",
+      "type": "portal",
+      "x": 85,
+      "y": 17,
+      "tagline": "A cidade ficou para trás, mas não ficou presa.",
+      "role": "saída para Picos Arcaicos",
+      "desc": "Estação antiga na névoa azul-dourada, com trilhos sumindo no horizonte e um trem de bronze e sombra aguardando a próxima jornada.",
+      "event": "O condutor diz: 'Vocês não chegaram tarde. Chegaram quando a cidade estava pronta.'",
+      "clue": "Próxima parada: Picos Arcaicos.",
+      "choices": "Entrar no trem; olhar para trás; guardar a lembrança; seguir para os Picos Arcaicos."
+    }
+  ],
+  "cards": [
+    {
+      "n": 1,
+      "id": "relogio_sem_ponteiros",
+      "name": "Relógio Sem Ponteiros",
+      "type": "item",
+      "rarity": "comum",
+      "location_id": "portao_horas_imoveis",
+      "text": "Um relógio de bolso sem ponteiros vibra quando uma lembrança importante está perto.",
+      "effect": "Revela pistas escondidas, falas antigas ou caminhos ocultos em ciclos temporais.",
+      "flavor": "Nem toda hora precisa ser marcada para ter existido.",
+      "image": "assets/cards/cidade_relogios/01_relogio_sem_ponteiros.webp",
+      "image_path": "cards/cidade_relogios/01_relogio_sem_ponteiros.webp"
+    },
+    {
+      "n": 2,
+      "id": "praca_congelada",
+      "name": "Praça Congelada",
+      "type": "pista",
+      "rarity": "comum",
+      "location_id": "praca_meio_dia_eterno",
+      "text": "A praça avança por um segundo e devolve risos, badaladas e o nome de Amélia.",
+      "effect": "Revela que o Festival da Última Hora foi o centro da tragédia.",
+      "flavor": "O festival começou. O futuro não.",
+      "image": "assets/cards/cidade_relogios/02_praca_congelada.webp",
+      "image_path": "cards/cidade_relogios/02_praca_congelada.webp"
+    },
+    {
+      "n": 3,
+      "id": "ponteiro_torto",
+      "name": "Ponteiro Torto",
+      "type": "item",
+      "rarity": "incomum",
+      "location_id": "rua_ponteiros_tortos",
+      "text": "Um ponteiro gigante aponta para a lembrança mais forte, não para o norte.",
+      "effect": "Permite sair de ruas repetidas ou revelar uma passagem escondida.",
+      "flavor": "Aqui, direção é lembrança.",
+      "image": "assets/cards/cidade_relogios/03_ponteiro_torto.webp",
+      "image_path": "cards/cidade_relogios/03_ponteiro_torto.webp"
+    },
+    {
+      "n": 4,
+      "id": "minuto_quebrado",
+      "name": "Minuto Quebrado",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "oficina_minutos_quebrados",
+      "text": "Uma peça dourada guarda a voz de Horácio: 'Se eu consertar o instante certo, talvez ela volte.'",
+      "effect": "Revela que Horácio queria corrigir uma dor, não dominar a cidade.",
+      "flavor": "Nem todo conserto devolve o que foi perdido.",
+      "image": "assets/cards/cidade_relogios/04_minuto_quebrado.webp",
+      "image_path": "cards/cidade_relogios/04_minuto_quebrado.webp"
+    },
+    {
+      "n": 5,
+      "id": "gota_suspensa",
+      "name": "Gota Suspensa",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "fonte_segundos_suspensos",
+      "text": "Uma gota mostra Amélia caminhando em direção à Torre dos Sinos.",
+      "effect": "Revela que Amélia não foi arrastada; ela seguiu uma badalada ou música.",
+      "flavor": "A água caiu, mas esqueceu de chegar ao chão.",
+      "image": "assets/cards/cidade_relogios/05_gota_suspensa.webp",
+      "image_path": "cards/cidade_relogios/05_gota_suspensa.webp"
+    },
+    {
+      "n": 6,
+      "id": "pagina_repetida",
+      "name": "Página Repetida",
+      "type": "pista",
+      "rarity": "incomum",
+      "location_id": "biblioteca_dias_repetidos",
+      "text": "Um livro reescreve o mesmo dia e deixa uma palavra diferente em cada versão.",
+      "effect": "Permite comparar duas lembranças e descobrir uma omissão.",
+      "flavor": "O tempo parado mente por repetição.",
+      "image": "assets/cards/cidade_relogios/06_pagina_repetida.webp",
+      "image_path": "cards/cidade_relogios/06_pagina_repetida.webp"
+    },
+    {
+      "n": 7,
+      "id": "mascara_ultima_badalada",
+      "name": "Máscara da Última Badalada",
+      "type": "evento",
+      "rarity": "rara",
+      "location_id": "teatro_ultima_badalada",
+      "text": "A máscara abre as cortinas e obriga a cidade a encenar a Última Hora.",
+      "effect": "Revela a sequência emocional: festa, ausência, busca, badalada e decisão de Horácio.",
+      "flavor": "A peça nunca termina porque ninguém aceitou o final.",
+      "image": "assets/cards/cidade_relogios/07_mascara_ultima_badalada.webp",
+      "image_path": "cards/cidade_relogios/07_mascara_ultima_badalada.webp"
+    },
+    {
+      "n": 8,
+      "id": "instante_perdido",
+      "name": "Instante Perdido",
+      "type": "desafio",
+      "rarity": "rara",
+      "location_id": "ponte_instante_perdido",
+      "text": "A ponte oferece uma lembrança bonita e pede que a personagem fique ali.",
+      "effect": "Quem escolhe seguir ganha a frase-chave: 'Levar comigo não é ficar preso.'",
+      "flavor": "A Estagnação também prende pela beleza.",
+      "image": "assets/cards/cidade_relogios/08_instante_perdido.webp",
+      "image_path": "cards/cidade_relogios/08_instante_perdido.webp"
+    },
+    {
+      "n": 9,
+      "id": "sino_calado",
+      "name": "Sino Calado",
+      "type": "item",
+      "rarity": "rara",
+      "location_id": "torre_sinos_calados",
+      "text": "Um sino enorme não está quebrado. Está amarrado por correntes antigas.",
+      "effect": "A badalada correta destrava parte da cidade e permite ao Menino do Sino falar.",
+      "flavor": "O silêncio também pode ser uma prisão.",
+      "image": "assets/cards/cidade_relogios/09_sino_calado.webp",
+      "image_path": "cards/cidade_relogios/09_sino_calado.webp"
+    },
+    {
+      "n": 10,
+      "id": "carta_de_amelia",
+      "name": "Carta de Amélia",
+      "type": "revelação",
+      "rarity": "épica",
+      "location_id": "casa_amelia",
+      "text": "A carta diz: 'Consertar não é voltar. Consertar é permitir que continue.'",
+      "effect": "Chave emocional para Horácio e para o Relógio-Coração.",
+      "flavor": "Guardar não é esconder.",
+      "image": "assets/cards/cidade_relogios/10_carta_de_amelia.webp",
+      "image_path": "cards/cidade_relogios/10_carta_de_amelia.webp"
+    },
+    {
+      "n": 11,
+      "id": "chave_do_relojoeiro",
+      "name": "Chave do Relojoeiro",
+      "type": "item",
+      "rarity": "épica",
+      "location_id": "torre_relojoeiro_mor",
+      "text": "A chave não parece abrir uma porta. Parece dar corda em algo vivo.",
+      "effect": "Só pode ser obtida por compreensão da dor de Horácio, não por força.",
+      "flavor": "Eu só queria chegar um segundo antes.",
+      "image": "assets/cards/cidade_relogios/11_chave_do_relojoeiro.webp",
+      "image_path": "cards/cidade_relogios/11_chave_do_relojoeiro.webp"
+    },
+    {
+      "n": 12,
+      "id": "relogio_coracao",
+      "name": "Relógio-Coração",
+      "type": "especial",
+      "rarity": "épica",
+      "location_id": "relogio_coracao",
+      "text": "Uma cidade inteira tenta segurar uma única lembrança. A voz pergunta: 'Já posso ir?'",
+      "effect": "Clímax: destravar o Relógio-Coração, não destruir.",
+      "flavor": "Lembrar é permitir que algo continue vivendo.",
+      "image": "assets/cards/cidade_relogios/12_relogio_coracao.webp",
+      "image_path": "cards/cidade_relogios/12_relogio_coracao.webp"
+    }
+  ],
+  "events": [
+    {
+      "id": "tic_tac_que_nao_existe",
+      "name": "O Tic-Tac que Não Existe",
+      "location": "qualquer local inicial",
+      "text": "Mesmo sem relógio funcionando, todos ouvem tic-tac. O som acelera quando alguém hesita ou esconde medo.",
+      "purpose": "Mostrar que o Relógio-Coração ainda tenta bater."
+    },
+    {
+      "id": "xicara_que_nunca_cai",
+      "name": "A Xícara que Nunca Cai",
+      "location": "Praça ou Casa de Amélia",
+      "text": "Uma xícara suspensa cai por um segundo, quebra, alguém grita 'Amélia?' e tudo volta.",
+      "purpose": "Mostrar repetição e dor interrompida."
+    },
+    {
+      "id": "crianca_que_pisca",
+      "name": "A Criança que Pisca",
+      "location": "Praça ou Torre dos Sinos",
+      "text": "Uma criança congelada pisca e sussurra: 'Não foi o tempo que levou ela.'",
+      "purpose": "Revelar que Amélia caminhou voluntariamente."
+    },
+    {
+      "id": "rua_que_se_repete",
+      "name": "A Rua que Se Repete",
+      "location": "Rua dos Ponteiros Tortos",
+      "text": "A rua repete os mesmos pontos, mas um detalhe muda: uma lágrima de ferrugem na estátua.",
+      "purpose": "Criar desafio de observação."
+    },
+    {
+      "id": "fonte_mostra_o_que_faltou",
+      "name": "A Fonte Mostra o Que Faltou",
+      "location": "Fonte dos Segundos Suspensos",
+      "text": "A fonte mostra Horácio olhando para a torre tarde demais.",
+      "purpose": "Mostrar a culpa de Horácio."
+    },
+    {
+      "id": "plateia_sem_rosto",
+      "name": "A Plateia Sem Rosto",
+      "location": "Teatro da Última Badalada",
+      "text": "A peça começa e as jogadoras precisam representar Horácio, Amélia, o Sino e o Tempo.",
+      "purpose": "Transformar o trauma em teatro emocional."
+    },
+    {
+      "id": "ponte_oferece_um_instante",
+      "name": "A Ponte Oferece Um Instante",
+      "location": "Ponte do Instante Perdido",
+      "text": "Cada personagem vê uma lembrança bela que convida a ficar.",
+      "purpose": "Testar o tema: levar não é ficar preso."
+    },
+    {
+      "id": "badalada_errada",
+      "name": "A Badalada Errada",
+      "location": "Torre dos Sinos Calados",
+      "text": "O sino errado faz a cidade girar ao contrário e fortalece ecos da Estagnação.",
+      "purpose": "Ensinar que mexer no tempo sem compreensão tem consequência."
+    },
+    {
+      "id": "horacio_escuta_nome_dela",
+      "name": "Horácio Escuta o Nome Dela",
+      "location": "Torre do Relojoeiro-Mor",
+      "text": "Ao ouvir o nome de Amélia, Horácio para e diz que o nome dela não cabe na boca de quem chegou depois.",
+      "purpose": "Abrir o confronto emocional."
+    },
+    {
+      "id": "voz_relogio_coracao",
+      "name": "A Voz no Relógio-Coração",
+      "location": "Relógio-Coração",
+      "text": "A voz pergunta: 'Se eu continuar, ele vai esquecer de mim?'",
+      "purpose": "Clímax emocional."
+    },
+    {
+      "id": "trem_horas_perdidas",
+      "name": "O Trem das Horas Perdidas",
+      "location": "Estação",
+      "text": "O trem chega e o condutor diz que eles chegaram quando a cidade estava pronta.",
+      "purpose": "Transição para Picos Arcaicos."
+    },
+    {
+      "id": "cidade_respira",
+      "name": "A Cidade Respira",
+      "location": "após grandes verdades",
+      "text": "Uma gota cai, uma bandeira balança, uma criança inspira. A cidade volta em pequenos sinais.",
+      "purpose": "Mostrar progresso narrativo."
+    }
+  ],
+  "key_phrases": [
+    "Continuar não é esquecer.",
+    "Levar comigo não é ficar preso.",
+    "Consertar não é voltar. Consertar é permitir que continue.",
+    "Lembrar é permitir que algo continue vivendo.",
+    "Relógios não medem tempo. Medem lembranças."
+  ],
+  "ai_rules": {
+    "can_improvise": [
+      "descrições de ruas secundárias",
+      "ecos menores",
+      "pequenos desafios",
+      "objetos congelados",
+      "reações emocionais da cidade"
+    ],
+    "cannot_change": [
+      "Horácio é o Relojoeiro-Mor",
+      "Horácio é antagonista trágico",
+      "Amélia é filha de Horácio",
+      "A ameaça é a Estagnação",
+      "O Relógio-Coração deve ser destravado, não destruído",
+      "A saída leva aos Picos Arcaicos"
+    ]
+  },
+  "player_cards": [
+    {
+      "n": 1,
+      "id": "katrina",
+      "name": "Katrina",
+      "role": "Guerreira",
+      "title": "A Guardiã dos Ecos",
+      "ability": "Fúria de Aço",
+      "origin": "Zona Diamante",
+      "text": "Ouve ecos presos em relógios, metais e paredes. Na Cidade dos Relógios Parados, protege o grupo quando uma lembrança tenta se repetir.",
+      "image_path": "cards/players/cidade_relogios/01_katrina_cidade_relogios.webp"
+    },
+    {
+      "n": 2,
+      "id": "lina",
+      "name": "Lina",
+      "role": "Estrategista",
+      "title": "A Tecelã de Instantes",
+      "ability": "Visão Tática",
+      "origin": "Zona Áurea",
+      "text": "Costura pistas, horários e decisões. Onde o tempo se quebra em pedaços, Lina organiza o caminho para que a verdade apareça.",
+      "image_path": "cards/players/cidade_relogios/02_lina_cidade_relogios.webp"
+    },
+    {
+      "n": 3,
+      "id": "mira",
+      "name": "Mira",
+      "role": "Caçadora",
+      "title": "A Desregistrada do Tempo",
+      "ability": "Olho de Águia",
+      "origin": "Picos Arcaicos",
+      "text": "Percebe registros falsos, rastros apagados e versões incompletas do passado. O tempo falha perto dela quando tenta mentir.",
+      "image_path": "cards/players/cidade_relogios/03_mira_cidade_relogios.webp"
+    },
+    {
+      "n": 4,
+      "id": "theo",
+      "name": "Theo",
+      "role": "Sábio",
+      "title": "O Cronista do Inacabado",
+      "ability": "Engrenagem Sábia",
+      "origin": "Zona Esmeralda",
+      "text": "Lê livros, mecanismos e confissões antigas. Sua função é impedir que a cidade transforme dor em lenda falsa.",
+      "image_path": "cards/players/cidade_relogios/04_theo_cidade_relogios.webp"
+    },
+    {
+      "n": 5,
+      "id": "naya",
+      "name": "Naya",
+      "role": "Curandeira",
+      "title": "A Curandeira das Horas Feridas",
+      "ability": "Cura da Raiz",
+      "origin": "Alexandria",
+      "text": "Cura memórias rachadas sem forçá-las a voltar. Suas raízes de luz fazem engrenagens cansadas respirarem outra vez.",
+      "image_path": "cards/players/cidade_relogios/05_naya_cidade_relogios.webp"
+    },
+    {
+      "n": 6,
+      "id": "cael",
+      "name": "Cael",
+      "role": "Explorador",
+      "title": "O Andarilho das Horas Vazias",
+      "ability": "Rastro do Gelo",
+      "origin": "Gelo Eterno",
+      "text": "Atravessa pausas, fissuras e segundos congelados. Quando o relógio prende a respiração, Cael encontra passagem.",
+      "image_path": "cards/players/cidade_relogios/06_cael_cidade_relogios.webp"
+    },
+    {
+      "n": 7,
+      "id": "selene",
+      "name": "Selene",
+      "role": "Cronista",
+      "title": "A Leitora do Pêndulo",
+      "ability": "Pêndulo da Memória",
+      "origin": "Cidade dos Relógios Parados",
+      "text": "Lê o tempo nos detalhes esquecidos. Pêndulos, correntes e sinos revelam para ela o que está prestes a ceder.",
+      "image_path": "cards/players/cidade_relogios/07_selene_cidade_relogios.webp"
+    },
+    {
+      "n": 8,
+      "id": "lyra",
+      "name": "Lyra",
+      "role": "Oraculista",
+      "title": "A Oraculista dos Ecos Futuros",
+      "ability": "Olho do Vazio",
+      "origin": "O Vazio",
+      "text": "Escuta ecos do que ainda não aconteceu. Em relógios sem hora, vê futuros possíveis antes que virem prisão.",
+      "image_path": "cards/players/cidade_relogios/08_lyra_cidade_relogios.webp"
+    },
+    {
+      "n": 9,
+      "id": "dorian",
+      "name": "Dorian",
+      "role": "Inventor",
+      "title": "O Leitor das Engrenagens",
+      "ability": "Engrenagem Mestra",
+      "origin": "Cidade dos Relógios Parados",
+      "text": "Conserta mecanismos e encontra saídas impossíveis. Para ele, toda máquina guarda uma intenção e toda intenção deixa marca.",
+      "image_path": "cards/players/cidade_relogios/09_dorian_cidade_relogios.webp"
+    },
+    {
+      "n": 10,
+      "id": "silas",
+      "name": "Silas",
+      "role": "Alquimista",
+      "title": "O Alquimista da Hora Amarga",
+      "ability": "Doce Ruptura",
+      "origin": "Fábrica dos Doces Pesadelos",
+      "text": "Mistura açúcar, veneno e verdade. Na Cidade dos Relógios Parados, transforma mentiras antigas em pistas úteis.",
+      "image_path": "cards/players/cidade_relogios/10_silas_cidade_relogios.webp"
+    },
+    {
+      "n": 11,
+      "id": "orion",
+      "name": "Orion",
+      "role": "Guardião",
+      "title": "O Guardião da Última Badalada",
+      "ability": "Escudo da Tempestade",
+      "origin": "Tempestade dos Deuses",
+      "text": "Enfrenta o caos sem recuar. Diante da Torre dos Sinos, segura a badalada errada até o grupo compreender a certa.",
+      "image_path": "cards/players/cidade_relogios/11_orion_cidade_relogios.webp"
+    },
+    {
+      "n": 12,
+      "id": "riven",
+      "name": "Riven",
+      "role": "Corredor",
+      "title": "O Corredor do Último Segundo",
+      "ability": "Sprint do Último Caminho",
+      "origin": "Correr ou Morrer",
+      "text": "Corre no instante em que todos hesitam. Seu dom lembra que chegar rápido não vale se alguém ficar para trás.",
+      "image_path": "cards/players/cidade_relogios/12_riven_cidade_relogios.webp"
+    }
+  ]
+}

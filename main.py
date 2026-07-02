@@ -1,11 +1,36 @@
-from fastapi.responses import FileResponse
+import os
+
+# ---------- v20.1.4 local .env loader ----------
+def _tr_load_local_env_v214():
+    """Carrega variáveis de um arquivo .env local sem depender de pacote externo."""
+    try:
+        env_path = os.path.join(os.path.dirname(__file__), ".env")
+        if not os.path.exists(env_path):
+            return
+        with open(env_path, "r", encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception:
+        pass
+
+_tr_load_local_env_v214()
+
+from fastapi.responses import FileResponse, RedirectResponse
 import os, json, random, string, hashlib, secrets, re
+import urllib.parse, urllib.request, urllib.error
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List
 
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -17,7 +42,7 @@ from sqlalchemy.pool import StaticPool
 import zipfile
 
 APP_NAME = "Terras Raras — Mesa Online"
-APP_VERSION = "v19.6.11.18-assets-bundle"
+APP_VERSION = "v21.1.9-hotfix-ia-narradora-painel-respostas"
 SECRET = os.getenv("JWT_SECRET", "troque-este-segredo-terras-raras")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "eduardo")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
@@ -26,6 +51,28 @@ LOCAL_AI_WORKER_TOKEN = os.getenv("LOCAL_AI_WORKER_TOKEN", "terras-local-worker-
 WORKER_LAST_SEEN = None
 WORKER_LAST_MODEL = ""
 WORKER_LAST_URL = ""
+
+# v20.0.0 — Google OAuth + Asaas/planos
+APP_BASE_URL = os.getenv("APP_BASE_URL", "").rstrip("/")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
+ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
+
+ASAAS_API_KEY = os.getenv("ASAAS_API_KEY", "").strip()
+ASAAS_ENV = os.getenv("ASAAS_ENV", "sandbox").strip().lower()
+ASAAS_API_BASE = os.getenv(
+    "ASAAS_API_BASE",
+    "https://sandbox.asaas.com/api/v3" if ASAAS_ENV != "production" else "https://api.asaas.com/v3"
+).rstrip("/")
+ASAAS_WEBHOOK_TOKEN = os.getenv("ASAAS_WEBHOOK_TOKEN", "").strip()
+ENABLE_BILLING_GATES = os.getenv("ENABLE_BILLING_GATES", "false").lower() in ("1", "true", "yes", "sim")
+
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "").strip()
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "").strip()
+DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "").strip()
+
+
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -95,10 +142,49 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     username = Column(String(60), unique=True, nullable=False, index=True)
-    password_hash = Column(String(220), nullable=False)
+    password_hash = Column(String(220), nullable=False, default="")
     approved = Column(Boolean, default=False)
     is_admin = Column(Boolean, default=False)
+    # v20 — identidade externa / plano
+    google_id = Column(String(160), unique=True, nullable=True, index=True)
+    email = Column(String(160), nullable=True, index=True)
+    display_name = Column(String(160), nullable=True)
+    avatar_url = Column(Text, nullable=True)
+    auth_provider = Column(String(30), default="local")
+    plan = Column(String(40), default="free")
+    premium_until = Column(DateTime, nullable=True)
+    asaas_customer_id = Column(String(80), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(40), default="asaas")
+    provider_payment_id = Column(String(120), nullable=True, index=True)
+    provider_subscription_id = Column(String(120), nullable=True, index=True)
+    external_reference = Column(String(160), nullable=True, index=True)
+    status = Column(String(60), default="created")
+    value = Column(Float, default=0.0)
+    plan = Column(String(60), default="mestre_familia")
+    checkout_url = Column(Text, default="")
+    raw_payload = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, nullable=True)
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(40), default="asaas")
+    provider_subscription_id = Column(String(120), nullable=True, index=True)
+    plan = Column(String(60), default="mestre_familia")
+    status = Column(String(60), default="inactive")
+    current_period_end = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
 
 class Character(Base):
     __tablename__ = "characters"
@@ -313,6 +399,17 @@ def current_user(creds: HTTPAuthorizationCredentials = Depends(security), db: Se
         raise HTTPException(403, "Cadastro ainda não autorizado")
     return user
 
+
+def optional_user(authorization: str = Header(None), db: Session = Depends(db_dep)) -> Optional[User]:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1]
+    try:
+        data = jwt.decode(token, SECRET, algorithms=["HS256"])
+        return db.get(User, int(data["sub"]))
+    except Exception:
+        return None
+
 def admin_user(user: User = Depends(current_user)) -> User:
     if not user.is_admin:
         raise HTTPException(403, "Apenas administrador")
@@ -402,6 +499,23 @@ def ensure_schema_columns():
     with engine.begin() as conn:
         dialect = engine.dialect.name
         if dialect == "sqlite":
+
+            user_rows = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
+            user_cols = {r[1] for r in user_rows}
+            for col_name, col_sql in [
+                ("google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR(160)"),
+                ("email", "ALTER TABLE users ADD COLUMN email VARCHAR(160)"),
+                ("display_name", "ALTER TABLE users ADD COLUMN display_name VARCHAR(160)"),
+                ("avatar_url", "ALTER TABLE users ADD COLUMN avatar_url TEXT"),
+                ("auth_provider", "ALTER TABLE users ADD COLUMN auth_provider VARCHAR(30) DEFAULT 'local'"),
+                ("plan", "ALTER TABLE users ADD COLUMN plan VARCHAR(40) DEFAULT 'free'"),
+                ("premium_until", "ALTER TABLE users ADD COLUMN premium_until DATETIME"),
+                ("asaas_customer_id", "ALTER TABLE users ADD COLUMN asaas_customer_id VARCHAR(80)"),
+            ]:
+                if col_name not in user_cols:
+                    conn.exec_driver_sql(col_sql)
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_google_id ON users(google_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_email ON users(email)")
             rows = conn.exec_driver_sql("PRAGMA table_info(rooms)").fetchall()
             cols = {r[1] for r in rows}
             if "is_public" not in cols:
@@ -444,6 +558,17 @@ def ensure_schema_columns():
                 if "revoked_reason" not in ac_cols:
                     conn.exec_driver_sql("ALTER TABLE adventure_cards ADD COLUMN revoked_reason VARCHAR(220) DEFAULT ''")
         else:
+
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(160)")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(160)")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(160)")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(30) DEFAULT 'local'")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(40) DEFAULT 'free'")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMP")
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_customer_id VARCHAR(80)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_google_id ON users(google_id)")
+            conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_users_email ON users(email)")
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE")
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP")
             conn.exec_driver_sql("ALTER TABLE rooms ADD COLUMN IF NOT EXISTS session_status VARCHAR(20) DEFAULT 'waiting'")
@@ -499,7 +624,7 @@ def seed(db: Session):
     maps = [
         ("floresta_negra",1,"Floresta Negra","Uma floresta viva, antiga e consciente. Trilhas mudam, vozes enganam, pistas surgem em lugares errados e o Portal da Próxima Zona observa quem se aproxima.","forest"),
         ("fabrica_doces",2,"Fábrica dos Doces Pesadelos","Uma fábrica colorida, automática e viva. Máquinas trabalham sozinhas, doces guardam sentimentos e a Mentira Amarga revela que a Confeiteira não é vilã: ela esqueceu como a alegria verdadeira funciona.","candy"),
-        ("cidade_relogios",3,"Cidade dos Relógios Parados","Uma cidade antiga onde todos os relógios pararam no mesmo minuto. Janelas acendem sozinhas, ruas repetem ecos e o Minuto Perdido precisa ser libertado para abrir o Portal do Amanhã.","clock"),
+        ("cidade_relogios",3,"Cidade dos Relógios Parados","Uma cidade antiga e mágica presa no tempo. Relógios medem lembranças, a Estagnação tenta impedir mudanças, Horácio Vellum guarda a Chave do Relojoeiro e o Relógio-Coração precisa ser destravado para que o Trem das Horas Perdidas siga até os Picos Arcaicos.","clock"),
         ("montanhas_arcaicas",4,"Montanhas Arcaicas","Cavernas antigas, fósseis luminosos, pterodáctilos azuis e uma guardiã arcaica que não precisa ser derrotada: precisa ser compreendida para despertar o Coração de Pedra.","mountain"),
         ("gelo_eterno",5,"Gelo Eterno","Um reino congelado onde vozes antigas ficaram presas dentro de cristais. Para abrir o Portal da Aurora, as jogadoras precisam libertar a Canção Congelada com coragem, amizade e cuidado.","ice"),
         ("alexandria",6,"Alexandria","Cidade dourada entre areia, mar e estrelas. Livros vivos, mapas impossíveis e o Farol das Perguntas Perdidas guardam a Pergunta Perdida que abre o Portal das Estrelas Escritas.","desert"),
@@ -598,6 +723,17 @@ class MasterEventReq(BaseModel):
     sensory: str=""
     choice: str=""
     visibility: str="public"
+
+class BillingCheckoutReq(BaseModel):
+    plan: str = "mestre_familia"
+    billing_type: str = "UNDEFINED"  # UNDEFINED, PIX, CREDIT_CARD, BOLETO
+
+class AdminGrantAccessReq(BaseModel):
+    user_id: Optional[int] = None
+    email: str = ""
+    username: str = ""
+    plan: str = "mestre_familia"
+    days: int = 31
 
 # ---------- websocket manager ----------
 class WSManager:
@@ -1073,13 +1209,371 @@ def ai_job_dict(j: AIJob):
     return {"id": j.id, "room_id": j.room_id, "job_type": j.job_type, "status": j.status, "prompt": j.prompt, "result": j.result, "error": j.error, "created_at": j.created_at.isoformat(), "updated_at": j.updated_at.isoformat()}
 
 # ---------- routes ----------
+
+
+def oauth_not_configured_page(provider: str, message: str = ""):
+    msg = message or f"{provider} ainda não configurado no servidor."
+    return HTMLResponse(f"""
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Terras Raras — {provider}</title>
+  <style>
+    body {{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      background:#050403;
+      color:#f1d58a;
+      font-family:Georgia,serif;
+    }}
+    .box {{
+      width:min(560px,92vw);
+      border:1px solid rgba(241,207,120,.55);
+      border-radius:22px;
+      padding:34px;
+      background:linear-gradient(180deg,rgba(11,18,14,.96),rgba(5,7,5,.985));
+      box-shadow:0 30px 90px rgba(0,0,0,.72);
+      text-align:center;
+    }}
+    h1 {{margin:0 0 12px;font-size:28px;letter-spacing:.12em;text-transform:uppercase;}}
+    p {{color:#d8c6a1;line-height:1.5;}}
+    button {{
+      margin-top:18px;
+      border:1px solid rgba(241,207,120,.65);
+      border-radius:14px;
+      background:linear-gradient(180deg,rgba(126,88,28,.92),rgba(42,25,8,.95));
+      color:#ffe39a;
+      padding:12px 22px;
+      font-family:Georgia,serif;
+      font-weight:900;
+      cursor:pointer;
+    }}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Terras Raras</h1>
+    <p>{msg}</p>
+    <p>Use o login normal por enquanto ou configure as variáveis OAuth no servidor.</p>
+    <button onclick="location.href='/'">Voltar ao jogo</button>
+  </div>
+</body>
+</html>
+""")
+
+# ---------- v20 auth/billing helpers ----------
+BILLING_PLANS = {
+    "free": {
+        "id": "free",
+        "name": "Gratuito",
+        "price": 0.0,
+        "currency": "BRL",
+        "description": "Floresta Negra, uma sala simples e recursos limitados.",
+    },
+    "mestre_familia": {
+        "id": "mestre_familia",
+        "name": "Mestre / Família",
+        "price": float(os.getenv("PLAN_MESTRE_FAMILIA_VALUE", "19.90")),
+        "currency": "BRL",
+        "description": "Criação de campanhas, convite de jogadoras, ajudante, cartas e mapas.",
+    },
+}
+
+def app_public_base(request: Request) -> str:
+    if APP_BASE_URL:
+        return APP_BASE_URL.rstrip("/")
+    return str(request.base_url).rstrip("/")
+
+def google_redirect_uri(request: Request) -> str:
+    return GOOGLE_REDIRECT_URI or (app_public_base(request) + "/auth/google/callback")
+
+def serialize_user_public(user: User) -> dict:
+    return {
+        "id": user.id,
+        "username": user.username,
+        "is_admin": bool(user.is_admin),
+        "email": getattr(user, "email", None),
+        "display_name": getattr(user, "display_name", None) or user.username,
+        "avatar_url": getattr(user, "avatar_url", None),
+        "auth_provider": getattr(user, "auth_provider", "local") or "local",
+        "plan": getattr(user, "plan", "free") or "free",
+        "premium_until": user.premium_until.isoformat() if getattr(user, "premium_until", None) else None,
+        "premium_active": user_has_active_plan(user),
+    }
+
+def user_has_active_plan(user: User) -> bool:
+    if bool(getattr(user, "is_admin", False)):
+        return True
+    plan = (getattr(user, "plan", "free") or "free").lower()
+    until = getattr(user, "premium_until", None)
+    return plan != "free" and bool(until and until > datetime.utcnow())
+
+def grant_user_plan(db: Session, user: User, plan: str = "mestre_familia", days: int = 31):
+    user.plan = plan
+    current = user.premium_until if user.premium_until and user.premium_until > datetime.utcnow() else datetime.utcnow()
+    user.premium_until = current + timedelta(days=days)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def unique_google_username(db: Session, email: str, name: str = "") -> str:
+    base = (email.split("@")[0] if email else name or "jogador").lower()
+    base = re.sub(r"[^a-z0-9_]+", "", base)[:28] or "jogador"
+    username = base
+    i = 2
+    while db.query(User).filter_by(username=username).first():
+        username = f"{base}{i}"
+        i += 1
+    return username
+
+def http_json_request(url: str, method: str = "GET", payload: Optional[dict] = None, headers: Optional[dict] = None) -> dict:
+    body = None
+    req_headers = headers or {}
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+        req_headers = {"Content-Type": "application/json", **req_headers}
+    req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            raw = resp.read().decode("utf-8")
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(e.code, raw or str(e))
+    except Exception as e:
+        raise HTTPException(502, f"Falha ao acessar provedor externo: {e}")
+
+def exchange_google_code(request: Request, code: str) -> dict:
+    token_url = "https://oauth2.googleapis.com/token"
+    data = urllib.parse.urlencode({
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": google_redirect_uri(request),
+        "grant_type": "authorization_code",
+    }).encode("utf-8")
+    req = urllib.request.Request(token_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(400, f"Falha no login Google: {detail}")
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(400, "Google não retornou access_token")
+    return http_json_request(
+        "https://openidconnect.googleapis.com/v1/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+
+def discord_redirect_uri(request: Request) -> str:
+    return DISCORD_REDIRECT_URI or (app_public_base(request) + "/auth/discord/callback")
+
+def get_or_create_oauth_user(db: Session, provider: str, provider_id: str, email: str = "", name: str = "", avatar_url: str = "") -> User:
+    external_id = f"{provider}:{provider_id}"
+    email = (email or "").strip().lower()
+    user = db.query(User).filter(User.google_id == external_id).first()
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+    if not user:
+        seed = email.split("@")[0] if email else f"{provider}_{provider_id}"
+        username = unique_google_username(db, seed + "@oauth.local", name or seed)
+        user = User(
+            username=username,
+            password_hash=f"{provider}-oauth",
+            approved=True,
+            is_admin=email in ADMIN_EMAILS if email else False,
+            google_id=external_id,
+            email=email or None,
+            display_name=name or username,
+            avatar_url=avatar_url or "",
+            auth_provider=provider,
+            plan="free",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        user.google_id = user.google_id or external_id
+        user.email = email or user.email
+        user.display_name = name or user.display_name or user.username
+        user.avatar_url = avatar_url or user.avatar_url
+        user.auth_provider = provider
+        user.approved = True
+        if email and email in ADMIN_EMAILS:
+            user.is_admin = True
+        db.commit()
+        db.refresh(user)
+    return user
+
+def exchange_discord_code(request: Request, code: str) -> dict:
+    token_url = "https://discord.com/api/oauth2/token"
+    data = urllib.parse.urlencode({
+        "client_id": DISCORD_CLIENT_ID,
+        "client_secret": DISCORD_CLIENT_SECRET,
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": discord_redirect_uri(request),
+    }).encode("utf-8")
+    req = urllib.request.Request(token_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(400, f"Falha no login Discord: {detail}")
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(400, "Discord não retornou access_token")
+    return http_json_request(
+        "https://discord.com/api/users/@me",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+
+def get_or_create_google_user(db: Session, profile: dict) -> User:
+    google_id = profile.get("sub")
+    email = (profile.get("email") or "").strip().lower()
+    if not google_id or not email:
+        raise HTTPException(400, "Perfil Google sem identificador ou e-mail")
+
+    user = db.query(User).filter(User.google_id == google_id).first()
+    if not user:
+        user = db.query(User).filter(User.email == email).first()
+    if not user and email:
+        # Se já existia cadastro local com mesmo nome do e-mail, vincula com cuidado.
+        local_name = email.split("@")[0].lower()
+        user = db.query(User).filter(User.username == local_name).first()
+
+    if not user:
+        username = unique_google_username(db, email, profile.get("name") or "")
+        user = User(
+            username=username,
+            password_hash="google-oauth",
+            approved=True,
+            is_admin=email in ADMIN_EMAILS,
+            google_id=google_id,
+            email=email,
+            display_name=profile.get("name") or username,
+            avatar_url=profile.get("picture") or "",
+            auth_provider="google",
+            plan="free",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        user.google_id = user.google_id or google_id
+        user.email = email or user.email
+        user.display_name = profile.get("name") or user.display_name or user.username
+        user.avatar_url = profile.get("picture") or user.avatar_url
+        user.auth_provider = "google" if user.google_id else (user.auth_provider or "local")
+        user.approved = True
+        if email in ADMIN_EMAILS:
+            user.is_admin = True
+        db.commit()
+        db.refresh(user)
+    return user
+
+def asaas_headers() -> dict:
+    return {"access_token": ASAAS_API_KEY, "User-Agent": "TerrasRaras/20.0.0"}
+
+def asaas_request(path: str, method: str = "GET", payload: Optional[dict] = None) -> dict:
+    if not ASAAS_API_KEY:
+        raise HTTPException(400, "ASAAS_API_KEY não configurada")
+    return http_json_request(f"{ASAAS_API_BASE}{path}", method=method, payload=payload, headers=asaas_headers())
+
+def ensure_asaas_customer(user: User, db: Session) -> str:
+    if getattr(user, "asaas_customer_id", None):
+        return user.asaas_customer_id
+    payload = {
+        "name": user.display_name or user.username,
+        "email": user.email or f"{user.username}@terrasraras.local",
+    }
+    data = asaas_request("/customers", method="POST", payload=payload)
+    cid = data.get("id")
+    if not cid:
+        raise HTTPException(502, "Asaas não retornou ID do cliente")
+    user.asaas_customer_id = cid
+    db.commit()
+    db.refresh(user)
+    return cid
+
+def payment_url_from_asaas(data: dict) -> str:
+    for key in ("invoiceUrl", "bankSlipUrl", "transactionReceiptUrl", "pixQrCodeUrl"):
+        if data.get(key):
+            return data.get(key)
+    return ""
+
+def payment_is_paid(status: str, event: str = "") -> bool:
+    s = (status or "").upper()
+    ev = (event or "").upper()
+    return s in ("RECEIVED", "CONFIRMED") or ev in ("PAYMENT_RECEIVED", "PAYMENT_CONFIRMED")
+
+
+
+# ---------- v20.1.0 production diagnostics/assets ----------
+@app.get("/tr-assets/landing")
+def tr_assets_landing_v210():
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "assets", "ui", "landing_suw_terras_raras_v20_1_0.webp"),
+        os.path.join(os.getcwd(), "assets", "ui", "landing_suw_terras_raras_v20_1_0.webp"),
+        os.path.join(os.path.dirname(__file__), "assets", "ui", "landing_suw_terras_raras_v20_1_0.png"),
+        os.path.join(os.getcwd(), "assets", "ui", "landing_suw_terras_raras_v20_1_0.png"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            media = "image/webp" if path.endswith(".webp") else "image/png"
+            return FileResponse(path, media_type=media)
+    return {"error": "Landing v20.1.0 não encontrada", "checked": candidates}
+
+@app.get("/auth/diagnostics")
+def auth_diagnostics(request: Request, user: Optional[User] = Depends(optional_user)):
+    return {
+        "app_base_url": app_public_base(request),
+        "google": {
+            "configured": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+            "client_id_present": bool(GOOGLE_CLIENT_ID),
+            "client_secret_present": bool(GOOGLE_CLIENT_SECRET),
+            "redirect_uri": google_redirect_uri(request),
+            "required_redirect_uri": google_redirect_uri(request),
+        },
+        "discord": {
+            "configured": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET) if "DISCORD_CLIENT_ID" in globals() else False,
+            "client_id_present": bool(DISCORD_CLIENT_ID) if "DISCORD_CLIENT_ID" in globals() else False,
+            "client_secret_present": bool(DISCORD_CLIENT_SECRET) if "DISCORD_CLIENT_SECRET" in globals() else False,
+            "redirect_uri": discord_redirect_uri(request) if "discord_redirect_uri" in globals() else app_public_base(request) + "/auth/discord/callback",
+        },
+        "asaas": {
+            "configured": bool(ASAAS_API_KEY),
+            "environment": ASAAS_ENV,
+            "webhook_token_present": bool(ASAAS_WEBHOOK_TOKEN),
+        },
+        "billing_gates_enabled": ENABLE_BILLING_GATES,
+        "admin": bool(user and user.is_admin),
+    }
+
 @app.get("/")
 def home():
-    return HTMLResponse(Path("index.html").read_text(encoding="utf-8"))
+    # v21.1.7 — evita cache velho do HTML durante testes locais.
+    return HTMLResponse(
+        Path("index.html").read_text(encoding="utf-8"),
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 @app.get("/script.js")
 def script_js():
-    return HTMLResponse(Path("script.js").read_text(encoding="utf-8"), media_type="application/javascript")
+    # v21.1.7 — evita o navegador reaproveitar script antigo, principalmente quando o querystring não muda.
+    return HTMLResponse(
+        Path("script.js").read_text(encoding="utf-8"),
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 @app.get("/health")
 def health(): return {"status":"ok", "service": APP_NAME, "version": APP_VERSION}
@@ -1177,18 +1671,265 @@ def login(req: LoginReq, db: Session = Depends(db_dep)):
             user.is_admin = True
             db.commit()
             db.refresh(user)
-        return {"token": make_token(user), "user": {"id": user.id, "username": user.username, "is_admin": user.is_admin}}
+        return {"token": make_token(user), "user": serialize_user_public(user)}
 
     user = db.query(User).filter_by(username=username).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(401, "Login inválido")
     if not user.approved:
         raise HTTPException(403, "Cadastro ainda pendente de autorização")
-    return {"token": make_token(user), "user": {"id": user.id, "username": user.username, "is_admin": user.is_admin}}
+    return {"token": make_token(user), "user": serialize_user_public(user)}
 
 @app.get("/me")
 def me(user: User = Depends(current_user)):
-    return {"id":user.id,"username":user.username,"is_admin":user.is_admin}
+    return serialize_user_public(user)
+
+
+@app.get("/auth/config")
+def auth_config(request: Request):
+    return {
+        "google_enabled": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "discord_enabled": bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET),
+        "apple_enabled": False,
+        "android_enabled": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "google_start_url": "/auth/google/start",
+        "billing_enabled": True,
+        "asaas_configured": bool(ASAAS_API_KEY),
+        "billing_gates_enabled": ENABLE_BILLING_GATES,
+        "app_base_url": app_public_base(request),
+    }
+
+@app.get("/auth/google/start")
+def google_start(request: Request):
+    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
+        return oauth_not_configured_page("Google", "Google OAuth ainda não configurado no servidor.")
+    state = jwt.encode({"nonce": secrets.token_urlsafe(16), "ts": datetime.utcnow().isoformat()}, SECRET, algorithm="HS256")
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": google_redirect_uri(request),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "prompt": "select_account",
+    }
+    return RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params))
+
+@app.get("/auth/google/callback")
+def google_callback(request: Request, code: str = "", state: str = "", db: Session = Depends(db_dep)):
+    if not code:
+        raise HTTPException(400, "Código Google ausente")
+    try:
+        jwt.decode(state, SECRET, algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(400, "Estado OAuth inválido")
+    profile = exchange_google_code(request, code)
+    user = get_or_create_google_user(db, profile)
+    token = make_token(user)
+    payload = json.dumps({"token": token, "user": serialize_user_public(user)}, ensure_ascii=False)
+    return HTMLResponse(f"""
+<!doctype html><html><head><meta charset="utf-8"><title>Terras Raras — Login Google</title></head>
+<body style="background:#080502;color:#f1e6d2;font-family:Georgia,serif;display:grid;place-items:center;min-height:100vh">
+<div>✨ Login confirmado. Abrindo Terras Raras...</div>
+<script>
+const data = {payload};
+localStorage.setItem('tr_token', data.token);
+location.href = '/';
+</script>
+</body></html>
+""")
+
+
+@app.get("/auth/discord/start")
+def discord_start(request: Request):
+    if not (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET):
+        return oauth_not_configured_page("Discord", "Discord OAuth ainda não configurado no servidor.")
+    state = jwt.encode({"nonce": secrets.token_urlsafe(16), "ts": datetime.utcnow().isoformat(), "provider": "discord"}, SECRET, algorithm="HS256")
+    params = {
+        "client_id": DISCORD_CLIENT_ID,
+        "redirect_uri": discord_redirect_uri(request),
+        "response_type": "code",
+        "scope": "identify email",
+        "state": state,
+        "prompt": "consent",
+    }
+    return RedirectResponse("https://discord.com/api/oauth2/authorize?" + urllib.parse.urlencode(params))
+
+@app.get("/auth/discord/callback")
+def discord_callback(request: Request, code: str = "", state: str = "", db: Session = Depends(db_dep)):
+    if not code:
+        raise HTTPException(400, "Código Discord ausente")
+    try:
+        jwt.decode(state, SECRET, algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(400, "Estado OAuth inválido")
+    profile = exchange_discord_code(request, code)
+    discord_id = profile.get("id")
+    username = profile.get("global_name") or profile.get("username") or "Discord"
+    avatar = ""
+    if profile.get("avatar") and discord_id:
+        avatar = f"https://cdn.discordapp.com/avatars/{discord_id}/{profile.get('avatar')}.png"
+    user = get_or_create_oauth_user(db, "discord", discord_id, profile.get("email") or "", username, avatar)
+    token = make_token(user)
+    payload = json.dumps({"token": token, "user": serialize_user_public(user)}, ensure_ascii=False)
+    return HTMLResponse(f"""
+<!doctype html><html><head><meta charset="utf-8"><title>Terras Raras — Login Discord</title></head>
+<body style="background:#080502;color:#f1e6d2;font-family:Georgia,serif;display:grid;place-items:center;min-height:100vh">
+<div>✨ Login Discord confirmado. Abrindo Terras Raras...</div>
+<script>
+const data = {payload};
+localStorage.setItem('tr_token', data.token);
+location.href = '/';
+</script>
+</body></html>
+""")
+
+@app.get("/auth/apple/start")
+def apple_start():
+    return oauth_not_configured_page("Apple / iOS", "Login Apple/iOS preparado visualmente. Configure Apple Sign In na próxima etapa.")
+
+@app.get("/auth/android/start")
+def android_start(request: Request):
+    # No Android, a identidade mais natural é a Conta Google.
+    return google_start(request)
+
+@app.get("/billing/plans")
+def billing_plans():
+    return {"plans": list(BILLING_PLANS.values())}
+
+@app.get("/billing/me")
+def billing_me(user: User = Depends(current_user)):
+    return {
+        "user": serialize_user_public(user),
+        "plan": getattr(user, "plan", "free") or "free",
+        "premium_active": user_has_active_plan(user),
+        "premium_until": user.premium_until.isoformat() if getattr(user, "premium_until", None) else None,
+        "billing_gates_enabled": ENABLE_BILLING_GATES,
+        "asaas_configured": bool(ASAAS_API_KEY),
+    }
+
+@app.post("/billing/checkout")
+def billing_checkout(req: BillingCheckoutReq, request: Request, db: Session = Depends(db_dep), user: User = Depends(current_user)):
+    plan = BILLING_PLANS.get(req.plan)
+    if not plan or plan["id"] == "free":
+        raise HTTPException(400, "Plano inválido")
+    external_ref = f"tr-{user.id}-{secrets.token_hex(8)}"
+    local_payment = Payment(
+        user_id=user.id,
+        provider="asaas",
+        external_reference=external_ref,
+        status="pending_configuration" if not ASAAS_API_KEY else "created",
+        value=float(plan["price"]),
+        plan=plan["id"],
+    )
+    db.add(local_payment)
+    db.commit()
+    db.refresh(local_payment)
+
+    if not ASAAS_API_KEY:
+        return {
+            "ok": True,
+            "configured": False,
+            "message": "ASAAS_API_KEY não configurada. Cobrança real não foi criada.",
+            "payment_id": local_payment.id,
+            "plan": plan,
+        }
+
+    customer_id = ensure_asaas_customer(user, db)
+    due_date = (datetime.utcnow() + timedelta(days=3)).date().isoformat()
+    payload = {
+        "customer": customer_id,
+        "billingType": req.billing_type or "UNDEFINED",
+        "value": float(plan["price"]),
+        "dueDate": due_date,
+        "description": f"Terras Raras — {plan['name']}",
+        "externalReference": external_ref,
+    }
+    data = asaas_request("/payments", method="POST", payload=payload)
+    local_payment.provider_payment_id = data.get("id") or ""
+    local_payment.status = data.get("status") or "created"
+    local_payment.checkout_url = payment_url_from_asaas(data)
+    local_payment.raw_payload = json.dumps(data, ensure_ascii=False)
+    db.commit()
+    return {
+        "ok": True,
+        "configured": True,
+        "payment_id": local_payment.id,
+        "asaas_payment_id": local_payment.provider_payment_id,
+        "status": local_payment.status,
+        "checkout_url": local_payment.checkout_url,
+        "plan": plan,
+        "raw": data,
+    }
+
+@app.post("/billing/asaas/webhook")
+async def asaas_webhook(request: Request, db: Session = Depends(db_dep)):
+    if ASAAS_WEBHOOK_TOKEN:
+        header_token = request.headers.get("asaas-access-token") or request.headers.get("x-asaas-token") or request.headers.get("authorization", "").replace("Bearer ", "")
+        query_token = request.query_params.get("token", "")
+        if ASAAS_WEBHOOK_TOKEN not in (header_token, query_token):
+            raise HTTPException(401, "Webhook não autorizado")
+    payload = await request.json()
+    event = payload.get("event") or ""
+    payment = payload.get("payment") or payload.get("object") or {}
+    provider_payment_id = payment.get("id") or payload.get("id") or ""
+    external_ref = payment.get("externalReference") or payload.get("externalReference") or ""
+
+    q = db.query(Payment)
+    local_payment = None
+    if provider_payment_id:
+        local_payment = q.filter(Payment.provider_payment_id == provider_payment_id).first()
+    if not local_payment and external_ref:
+        local_payment = q.filter(Payment.external_reference == external_ref).first()
+
+    if local_payment:
+        local_payment.status = payment.get("status") or event or local_payment.status
+        local_payment.raw_payload = json.dumps(payload, ensure_ascii=False)
+        if payment_is_paid(local_payment.status, event):
+            local_payment.paid_at = datetime.utcnow()
+            paid_user = db.get(User, local_payment.user_id)
+            if paid_user:
+                grant_user_plan(db, paid_user, local_payment.plan or "mestre_familia", days=31)
+        db.commit()
+
+    return {"ok": True, "received": event, "payment_found": bool(local_payment)}
+
+@app.post("/admin/billing/grant/{user_id}")
+def admin_grant_billing(user_id: int, plan: str = "mestre_familia", days: int = 31, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    grant_user_plan(db, target, plan, days)
+    return {"ok": True, "user": serialize_user_public(target)}
+
+
+@app.get("/admin/users")
+def admin_users(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    users = db.query(User).order_by(User.created_at.desc()).limit(200).all()
+    out = []
+    for u in users:
+        out.append({
+            **serialize_user_public(u),
+            "approved": bool(u.approved),
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        })
+    return out
+
+@app.post("/admin/billing/grant-access")
+def admin_grant_access(req: AdminGrantAccessReq, _: User = Depends(admin_user), db: Session = Depends(db_dep)):
+    q = db.query(User)
+    target = None
+    if req.user_id:
+        target = db.get(User, req.user_id)
+    if not target and req.email.strip():
+        target = q.filter(User.email == req.email.strip().lower()).first()
+    if not target and req.username.strip():
+        target = q.filter(User.username == req.username.strip()).first()
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    days = max(1, min(int(req.days or 31), 3650))
+    plan = req.plan or "mestre_familia"
+    grant_user_plan(db, target, plan, days)
+    return {"ok": True, "user": serialize_user_public(target)}
 
 @app.get("/admin/pending")
 def pending(_: User = Depends(admin_user), db: Session = Depends(db_dep)):
@@ -1299,6 +2040,10 @@ def maps(db: Session = Depends(db_dep), user: User = Depends(current_user)):
 def create_room(req: CreateRoomReq, db: Session = Depends(db_dep), user: User = Depends(current_user)):
     # v19.6.11: quem cria a sala é sempre Mestre, sem personagem e sem token próprio.
     chosen_role = "mestre"
+    if ENABLE_BILLING_GATES and not user_has_active_plan(user):
+        owned_count = db.query(Room).filter_by(owner_id=user.id).count()
+        if owned_count >= 1 and not user.is_admin:
+            raise HTTPException(402, "Plano Mestre/Família necessário para criar mais campanhas.")
     r = Room(
         id=rid(),
         code=unique_room_code(db, "JOG", "code"),
@@ -1819,6 +2564,9 @@ async def request_local_ai(room_id: str, req: AIRequestReq, db: Session = Depend
     db.add(job)
     db.add(EventLog(room_id=room_id, kind="ai", text=f"Pedido de IA local criado: {job_type}."))
     db.commit(); db.refresh(job)
+    # v21.1.9: além do evento ai_job, envia state completo.
+    # Isso corrige casos em que o front antigo ignorava ai_job e o painel IA ficava sem mostrar o pedido.
+    await manager.broadcast(room_id, {"type":"state", "state": room_state(db, room_id)})
     await manager.broadcast(room_id, {"type":"ai_job", "job": ai_job_dict(job)})
     return {"ok": True, "job": ai_job_dict(job), "message":"Pedido enviado para a IA local. Rode o worker no seu computador para processar."}
 
@@ -3204,3 +3952,33 @@ def tr_assets_fabrica_map_webp_v32():
         if os.path.exists(path):
             return FileResponse(path, media_type="image/webp")
     return {"error": "Mapa panorâmico WEBP da Fábrica não encontrado", "checked": candidates}
+
+
+
+# TR_V21_0_8_CIDADE_RELOGIOS_ROUTE
+@app.get("/tr-assets/cidade-relogios-map")
+def tr_assets_cidade_relogios_map_v2108():
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "assets", "visual", "cidade_dos_relogios_parados_widescreen.png"),
+        os.path.join(os.path.dirname(__file__), "assets", "maps", "cidade_dos_relogios_parados_widescreen.png"),
+        os.path.join(os.getcwd(), "assets", "visual", "cidade_dos_relogios_parados_widescreen.png"),
+        os.path.join(os.getcwd(), "assets", "maps", "cidade_dos_relogios_parados_widescreen.png"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return FileResponse(path, media_type="image/png")
+    return {"error": "Mapa da Cidade dos Relógios Parados não encontrado", "checked": candidates}
+
+@app.get("/tr-assets/cidade-relogios-map.webp")
+def tr_assets_cidade_relogios_map_webp_v2108():
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "assets", "visual", "cidade_dos_relogios_parados_widescreen.webp"),
+        os.path.join(os.path.dirname(__file__), "assets", "maps", "cidade_dos_relogios_parados_widescreen.webp"),
+        os.path.join(os.getcwd(), "assets", "visual", "cidade_dos_relogios_parados_widescreen.webp"),
+        os.path.join(os.getcwd(), "assets", "maps", "cidade_dos_relogios_parados_widescreen.webp"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return FileResponse(path, media_type="image/webp")
+    return {"error": "Mapa WEBP da Cidade dos Relógios Parados não encontrado", "checked": candidates}
+

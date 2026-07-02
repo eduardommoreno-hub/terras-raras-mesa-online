@@ -45,8 +45,8 @@ def generation_options(job_type: str, mode: str) -> dict:
     # Limites menores deixam o Ollama mais rápido em computadores modestos.
     limits = {
         "short": {"question": 160, "narrative": 220, "summary": 240, "image_prompt": 180},
-        "normal": {"question": 260, "narrative": 360, "summary": 420, "image_prompt": 260},
-        "detailed": {"question": 450, "narrative": 620, "summary": 700, "image_prompt": 360},
+        "normal": {"question": 220, "narrative": 260, "summary": 340, "image_prompt": 220},
+        "detailed": {"question": 380, "narrative": 480, "summary": 560, "image_prompt": 320},
     }
     num_predict = limits.get(mode, limits["short"]).get(job_type, 260)
     return {
